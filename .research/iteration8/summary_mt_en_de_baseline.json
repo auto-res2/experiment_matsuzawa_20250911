@@ -1,0 +1,14 @@
+{
+  "exp_id": 1,
+  "seed": 23,
+  "condition": "mt_en_de-baseline",
+  "primary": {
+    "BLEU": 3.1866544213875407
+  },
+  "secondary": {
+    "latency_median_ms": 0.00029243528842926025,
+    "latency_p99_ms": 0.0012744590640068076,
+    "energy_j": 1.4046248970031736
+  },
+  "timestamp": "2025-09-11T06:15:16.814834"
+}

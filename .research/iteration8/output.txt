@@ -1,0 +1,109 @@
+=== uv sync start Thu Sep 11 06:10:25 AM UTC 2025 ===
+=== uv install end Thu Sep 11 06:11:31 AM UTC 2025 ===
+=== experiment start Thu Sep 11 06:11:31 AM UTC 2025 ===
+[WARN] Falling back to EchoModel for 'bitdiffusion/bitdiffusion-t5-large': bitdiffusion/bitdiffusion-t5-large is not a local folder and is not a valid model identifier listed on 'https://huggingface.co/models'
+If this is a private repository, make sure to pass a token having permission to this repo either by logging in with `hf auth login` or by passing `token=<your_token>`
+
+===== EXP-1 mt_en_de/baseline =====
+{
+  "exp_id": 1,
+  "seed": 11,
+  "condition": "mt_en_de-baseline",
+  "primary": {
+    "BLEU": 3.1866544213875407
+  },
+  "secondary": {
+    "latency_median_ms": 0.00027567148208618164,
+    "latency_p99_ms": 0.0012397021055221592,
+    "energy_j": 1.4261961345672607
+  },
+  "timestamp": "2025-09-11T06:14:55.936169"
+}
+Figure saved: exp1_seed11_mt_en_de_baseline_latency.pdf
+[INFO] Skipping Exp-2 – `conductor-ai` not installed.
+[INFO] Skipping Exp-3 – `conductor-ai` not installed.
+[WARN] Falling back to EchoModel for 'bitdiffusion/bitdiffusion-t5-large': bitdiffusion/bitdiffusion-t5-large is not a local folder and is not a valid model identifier listed on 'https://huggingface.co/models'
+If this is a private repository, make sure to pass a token having permission to this repo either by logging in with `hf auth login` or by passing `token=<your_token>`
+
+===== EXP-1 mt_en_de/baseline =====
+{
+  "exp_id": 1,
+  "seed": 13,
+  "condition": "mt_en_de-baseline",
+  "primary": {
+    "BLEU": 3.1866544213875407
+  },
+  "secondary": {
+    "latency_median_ms": 0.0003073364496231079,
+    "latency_p99_ms": 0.004281066358089451,
+    "energy_j": 1.5253254907131195
+  },
+  "timestamp": "2025-09-11T06:15:02.534002"
+}
+Figure saved: exp1_seed13_mt_en_de_baseline_latency.pdf
+[INFO] Skipping Exp-2 – `conductor-ai` not installed.
+[INFO] Skipping Exp-3 – `conductor-ai` not installed.
+[WARN] Falling back to EchoModel for 'bitdiffusion/bitdiffusion-t5-large': bitdiffusion/bitdiffusion-t5-large is not a local folder and is not a valid model identifier listed on 'https://huggingface.co/models'
+If this is a private repository, make sure to pass a token having permission to this repo either by logging in with `hf auth login` or by passing `token=<your_token>`
+
+===== EXP-1 mt_en_de/baseline =====
+{
+  "exp_id": 1,
+  "seed": 17,
+  "condition": "mt_en_de-baseline",
+  "primary": {
+    "BLEU": 3.1866544213875407
+  },
+  "secondary": {
+    "latency_median_ms": 0.0003110617399215698,
+    "latency_p99_ms": 0.001437962055206333,
+    "energy_j": 1.419843826293945
+  },
+  "timestamp": "2025-09-11T06:15:07.112609"
+}
+Figure saved: exp1_seed17_mt_en_de_baseline_latency.pdf
+[INFO] Skipping Exp-2 – `conductor-ai` not installed.
+[INFO] Skipping Exp-3 – `conductor-ai` not installed.
+[WARN] Falling back to EchoModel for 'bitdiffusion/bitdiffusion-t5-large': bitdiffusion/bitdiffusion-t5-large is not a local folder and is not a valid model identifier listed on 'https://huggingface.co/models'
+If this is a private repository, make sure to pass a token having permission to this repo either by logging in with `hf auth login` or by passing `token=<your_token>`
+
+===== EXP-1 mt_en_de/baseline =====
+{
+  "exp_id": 1,
+  "seed": 19,
+  "condition": "mt_en_de-baseline",
+  "primary": {
+    "BLEU": 3.1866544213875407
+  },
+  "secondary": {
+    "latency_median_ms": 0.0002980232238769531,
+    "latency_p99_ms": 0.00332463532686234,
+    "energy_j": 1.4411749713420867
+  },
+  "timestamp": "2025-09-11T06:15:12.277330"
+}
+Figure saved: exp1_seed19_mt_en_de_baseline_latency.pdf
+[INFO] Skipping Exp-2 – `conductor-ai` not installed.
+[INFO] Skipping Exp-3 – `conductor-ai` not installed.
+[WARN] Falling back to EchoModel for 'bitdiffusion/bitdiffusion-t5-large': bitdiffusion/bitdiffusion-t5-large is not a local folder and is not a valid model identifier listed on 'https://huggingface.co/models'
+If this is a private repository, make sure to pass a token having permission to this repo either by logging in with `hf auth login` or by passing `token=<your_token>`
+
+===== EXP-1 mt_en_de/baseline =====
+{
+  "exp_id": 1,
+  "seed": 23,
+  "condition": "mt_en_de-baseline",
+  "primary": {
+    "BLEU": 3.1866544213875407
+  },
+  "secondary": {
+    "latency_median_ms": 0.00029243528842926025,
+    "latency_p99_ms": 0.0012744590640068076,
+    "energy_j": 1.4046248970031736
+  },
+  "timestamp": "2025-09-11T06:15:16.814834"
+}
+Figure saved: exp1_seed23_mt_en_de_baseline_latency.pdf
+[INFO] Skipping Exp-2 – `conductor-ai` not installed.
+[INFO] Skipping Exp-3 – `conductor-ai` not installed.
+=== experiment end Thu Sep 11 06:15:19 AM UTC 2025 ===
