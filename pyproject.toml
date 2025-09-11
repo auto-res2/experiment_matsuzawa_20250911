@@ -3,24 +3,34 @@ name = "phoenix_mem_research"
 version = "0.1.0"
 description = "Refactored PHOENIX-Mem experimental suite"
 readme = "README.md"
-authors = ["Researcher <research@example.com>"]
+# ------------------------------------------------------------------
+# PEP 621 compliant metadata
+# ------------------------------------------------------------------
+authors = [
+    { name = "Researcher", email = "research@example.com" }
+]
 requires-python = ">=3.10"
 
-# Dependencies array (as required by the prompt)
+# ------------------------------------------------------------------
+# Runtime dependencies (must be a list – **not** a table)
+# ------------------------------------------------------------------
 dependencies = [
     "torch>=1.9.0",
     "torchvision>=0.10.0",
     "numpy>=1.21.0",
     "requests>=2.26.0",
     "pyyaml>=6.0",
-    "matplotlib>=3.5.0"
+    "matplotlib>=3.5.0",
 ]
 
-[tool.setuptools]
-packages = ["src"]
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [project.optional-dependencies]
-development = ["black", "ruff"]
+development = [
+    "black",
+    "ruff",
+]
 
 [project.scripts]
 phoenix-mem = "src.main:main"

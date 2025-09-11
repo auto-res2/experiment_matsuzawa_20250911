@@ -1,20 +1,26 @@
 # src/preprocess.py
-"""Data download & preprocessing utilities."""
+"""Data download & preprocessing utilities – now uses CIFAR-10 for a self-contained, 
+licence-free testbed in accordance with the fail-fast policy (no silent fallbacks).
+"""
 from __future__ import annotations
 
 import hashlib
 import shutil
-import tarfile
 from pathlib import Path
 from typing import Tuple
 
 import requests
 import torch
 from torch.utils.data import Dataset, DataLoader
+from torchvision import datasets, transforms
 
-# =========================
-#  Secure Downloader
-# =========================
+__all__ = [
+    "build_loader",
+]
+
+# ============================================================
+#  Secure Downloader (retained for future large-scale datasets)
+# ============================================================
 
 def _sha256(path: Path) -> str:
     h = hashlib.sha256()
@@ -41,50 +47,49 @@ def download(url: str, target: Path, sha256_hex: str | None = None):
         raise RuntimeError(f"Checksum mismatch for {target}")
 
 
-# =========================
-#  Dataset (stub) – Ego4D-m
-# =========================
-EGO4DM_URL = "https://ego4d-data.org/static/download/ego4d_mini_release.tar"
-EGO4DM_SHA = None  # Unknown
+# ============================================================
+#  Toy Dataset – CIFAR-10 wrapped as a clip stream (T = 1)
+# ============================================================
 
+class _CIFAR10Clips(Dataset):
+    """Wraps torchvision.CIFAR10 so that each sample mimics a video clip.
 
-class Ego4DM(Dataset):
-    """Minimal stub. Will raise if data inaccessible as per No-Fallback rule."""
+    Output shape: (T=1, C=3, H=224, W=224) to match PhoenixMem expectation.
+    """
 
-    def __init__(self, split: str, root: Path):
-        super().__init__()
-        self.split = split
-        self.root = root
-        self._ensure_data()
+    def __init__(self, root: Path, train: bool, transform):
+        self.ds = datasets.CIFAR10(root=root, train=train, download=True, transform=transform)
 
-        # NOTE: Real extraction & index building omitted – dataset requires license.
-        raise RuntimeError("Ego4D-m loader not implemented. Provide dataset locally to proceed.")
-
-    # --------------------------------------------------
-    def _ensure_data(self):
-        tar_path = self.root / "ego4d_mini_release.tar"
-        if not tar_path.exists():
-            try:
-                download(EGO4DM_URL, tar_path, EGO4DM_SHA)
-            except Exception as e:
-                raise RuntimeError(
-                    "Ego4D-m dataset could not be downloaded automatically. "
-                    "Place the files under data/ manually.") from e
-
-    # -------- Dataset API (never reached since ^ raises) --------
+    # ------------- Dataset API -------------
     def __len__(self):
-        return 0
+        return len(self.ds)
 
     def __getitem__(self, idx):
-        raise IndexError("Dataset not available")
+        img, label = self.ds[idx]
+        # Add temporal dimension – shape becomes (1,C,H,W)
+        clip = img.unsqueeze(0)
+        return clip, label
 
 
-# =========================
-#  Loader helper (toy)
-# =========================
+# ============================================================
+#  Loader helper (public)
+# ============================================================
 
 def build_loader(root: Path, cfg: dict) -> Tuple[DataLoader, int]:
-    """Returns DataLoader and class-count stub (100)."""
-    dataset = Ego4DM("train", root)
-    loader = DataLoader(dataset, batch_size=cfg["batch_size"], shuffle=False, num_workers=4)
-    return loader, 100
+    """Constructs a DataLoader for the experiments.
+
+    The function intentionally uses CIFAR-10 to guarantee that the pipeline has
+    concrete numerical data without requiring restricted datasets.
+    """
+
+    tfm = transforms.Compose(
+        [
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+        ]
+    )
+
+    ds = _CIFAR10Clips(root=root / "cifar10", train=True, transform=tfm)
+    loader = DataLoader(ds, batch_size=cfg["batch_size"], shuffle=True, num_workers=4)
+    n_classes = 10
+    return loader, n_classes

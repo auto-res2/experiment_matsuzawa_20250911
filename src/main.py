@@ -1,5 +1,9 @@
 # src/main.py
-"""Unified entry point orchestrating PHOENIX-Mem experiments."""
+"""Unified entry point orchestrating PHOENIX-Mem experiments.
+
+All artefacts (figures, JSON) are written to the mandatory
+`.research/iteration2` hierarchy as required by the task description.
+"""
 from __future__ import annotations
 
 import json
@@ -20,10 +24,11 @@ from .evaluate import evaluate_model
 # =========================
 #  Paths
 # =========================
-RESEARCH_ROOT = Path(".research/iteration1")
+RESEARCH_ROOT = Path(".research/iteration2")
 IMG_DIR = RESEARCH_ROOT / "images"
 IMG_DIR.mkdir(parents=True, exist_ok=True)
 RES_DIR = RESEARCH_ROOT
+RES_DIR.mkdir(parents=True, exist_ok=True)
 
 CONFIG_PATH = Path("config/config.yaml")
 
@@ -57,15 +62,10 @@ def run_experiment_1(cfg: dict):
     try:
         model, train_logs = train_model(model, loader, cfg, device)
     except RuntimeError as e:
-        raise RuntimeError("Training failed – dataset probably unavailable.") from e
+        raise RuntimeError("Training failed – dataset unavailable or corrupt.") from e
 
-    # ---------- Evaluation (placeholder) ----------
-    metrics = {"top1": 0.0, "min_class": 0.0}
-    try:
-        metrics = evaluate_model(model, loader, device)
-    except Exception:
-        # keep placeholders – real evaluation requires dataset
-        pass
+    # ---------- Evaluation ----------
+    metrics = evaluate_model(model, loader, device)
 
     # ---------- Serialise results ----------
     result = {
@@ -84,13 +84,12 @@ def run_experiment_1(cfg: dict):
         import matplotlib.pyplot as plt
 
         plt.figure()
-        plt.plot([0, 1], [0, 1])
-        plt.title("placeholder – accuracy curve")
+        epochs = range(len([k for k in train_logs if k.startswith("epoch_")]))
+        losses = [train_logs[f"epoch_{e}_loss"] for e in epochs]
+        plt.plot(epochs, losses, marker="o")
+        plt.title("Training loss (CIFAR-10 stub)")
         plt.xlabel("epoch")
-        plt.ylabel("accuracy")
-        plt.annotate("0.0", (0, 0))
-        plt.annotate("1.0", (1, 1))
-        plt.legend(["top-1"])
+        plt.ylabel("loss")
         fig_path = IMG_DIR / "training_loss_phoenix_mem.pdf"
         plt.savefig(fig_path, bbox_inches="tight")
         print("Names of figures summarising the numerical data:")
@@ -108,7 +107,7 @@ def main():
         cfg = load_config()
         start = time.time()
         run_experiment_1(cfg["experiment1"])
-        # Potential: run_experiment_2(cfg["experiment2"]), etc.
+        # Potential: run_experiment_2(cfg["experiment2"], ...)
         print(f"\nAll requested experiments completed in {(time.time() - start) / 60:.2f} min.")
     except Exception:
         print("\nFATAL: experiment pipeline aborted. Reason:")
