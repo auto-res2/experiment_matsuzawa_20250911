@@ -1,10 +1,17 @@
 """src/preprocess.py
 Data-acquisition & validation utilities (formerly *datasets.py*).
 
-Fix applied: the *ego4d* subset was discovered to be gated on the Hub, which
-caused the pipeline to abort when no *HF_TOKEN* was supplied.  The registry now
-correctly marks this entry as `requires_token: True`, so it is skipped – with a
-clear WARNING – whenever the token is absent.
+Fixes in this revision:
+1. Wikipedia snapshot *20231101.en* does **not** exist on the public Hub – the
+   newest English dump currently available is *20220301.en*.  The registry entry
+   has therefore been updated to the valid config string so that the download no
+   longer aborts.
+2. The previous *reddit* entry pointed to a non-existent config "submissions".
+   The Hugging Face dataset builder exposes a *default* configuration when no
+   name is supplied, so `config` is now set to *None* which safely loads that
+   default split.
+
+All other logic stays unchanged.
 """
 from __future__ import annotations
 
@@ -18,7 +25,7 @@ from datasets import load_dataset
 from .train import get_logger  # shared helper
 
 # ---------------------------------------------------------------------
-# Registry of datasets – added/updated `requires_token` flags
+# Registry of datasets – UPDATED wikipedia & reddit configs
 # ---------------------------------------------------------------------
 
 _DATASETS: Dict[str, Dict[str, Union[str, bool, None]]] = {
@@ -29,11 +36,9 @@ _DATASETS: Dict[str, Dict[str, Union[str, bool, None]]] = {
         "requires_token": True,  # gated – ImageNet licence agreement
     },
     "ego4d": {
-        # The previously chosen subset is in fact *gated*; mark accordingly so it
-        # will be skipped when $HF_TOKEN is not defined.
         "hf_name": "chenjoya/videollm-online-chat-ego4d-134k",
         "config": None,
-        "requires_token": True,  # ← fixed
+        "requires_token": True,
     },
     # Audio -----------------------------------------------------------
     "librispeech": {
@@ -49,36 +54,30 @@ _DATASETS: Dict[str, Dict[str, Union[str, bool, None]]] = {
     # Text ------------------------------------------------------------
     "wikipedia": {
         "hf_name": "wikipedia",
-        "config": "20231101.en",
+        "config": "20220301.en",  # ← fixed to existing snapshot
         "requires_token": False,
     },
     "reddit": {
         "hf_name": "reddit",
-        "config": "submissions",
+        "config": None,  # default configuration
         "requires_token": False,
     },
 }
 
 # ---------------------------------------------------------------------
-# Helper functions
+# Helper functions (unchanged)
 # ---------------------------------------------------------------------
 
 def _have_token() -> bool:
-    """Utility helper – *str* token or *True* in env counts as supplied."""
     return bool(os.environ.get("HF_TOKEN"))
 
 
 def _download_dataset(hf_name: str, config: Optional[str], cache_dir: Path, token: Optional[str]) -> None:
-    """Wrapper around *load_dataset* that omits the *name* argument when *config* is None.
-    Added `streaming=True` so that enormous datasets are *not* fully fetched – only
-    their metadata is downloaded, which is sufficient for placeholder experiments
-    and drastically reduces CI runtime.
-    """
     common_kwargs = {
         "cache_dir": str(cache_dir),
         "token": token,
         "download_mode": "reuse_dataset_if_exists",
-        "streaming": True,  # ← lightweight access
+        "streaming": True,
     }
 
     if config is None:
@@ -87,15 +86,7 @@ def _download_dataset(hf_name: str, config: Optional[str], cache_dir: Path, toke
         load_dataset(hf_name, name=config, **common_kwargs, trust_remote_code=True)
 
 
-def download_all(data_dir: Path) -> None:  # noqa: D401 – imperative style
-    """Download all datasets defined in *_DATASETS*.
-
-    Behaviour:
-        1. Datasets marked `requires_token` are *skipped* (with WARNING) when the
-           token is not present.
-        2. Any download attempt failure still terminates the program to respect
-           the global fail-fast policy.
-    """
+def download_all(data_dir: Path) -> None:  # noqa: D401
     logger = get_logger("datasets")
     data_dir.mkdir(parents=True, exist_ok=True)
 
@@ -104,9 +95,7 @@ def download_all(data_dir: Path) -> None:  # noqa: D401 – imperative style
         token_available: bool = _have_token()
 
         if needs_token and not token_available:
-            logger.warning(
-                "Skipping gated dataset '%s' because $HF_TOKEN is not set.", ds_name
-            )
+            logger.warning("Skipping gated dataset '%s' because $HF_TOKEN is not set.", ds_name)
             continue
 
         logger.info("Downloading dataset: %s", ds_name)
@@ -120,7 +109,6 @@ def download_all(data_dir: Path) -> None:  # noqa: D401 – imperative style
         except Exception as e:
             logger.error("Failed to download %s: %s", ds_name, e)
             raise RuntimeError(
-                f"Dataset {ds_name} could not be accessed. "
-                "Per STRICT NO-FALLBACK RULE execution terminates."
+                f"Dataset {ds_name} could not be accessed. Per STRICT NO-FALLBACK RULE execution terminates."
             ) from e
         logger.info("✓ %s ready", ds_name)
