@@ -1,0 +1,6 @@
+{
+  "experiment": "Experiment 2 \u2013 synthetic placeholder",
+  "max_leakage_bit": 0.0024,
+  "energy_overhead_mj": 0.12,
+  "remanence_curve_figure": ".research/iteration3/images/experiment2_leakage.png"
+}

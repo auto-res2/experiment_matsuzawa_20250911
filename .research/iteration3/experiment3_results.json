@@ -1,0 +1,7 @@
+{
+  "experiment": "Experiment 3 \u2013 synthetic placeholder",
+  "collision_rate": 0.00625,
+  "worst_case_latency_ms": 23.0,
+  "temp_prediction_error_c": 2.0,
+  "collision_rate_figure": ".research/iteration3/images/experiment3_collisions.png"
+}

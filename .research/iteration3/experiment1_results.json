@@ -1,0 +1,10 @@
+{
+  "experiment": "Experiment 1 \u2013 synthetic placeholder",
+  "avg_acc": 0.6914677033315744,
+  "forgetting": 0.05,
+  "be_ecl_score": 3.4,
+  "temp_robustness": 1.1,
+  "reaction_time_compliance": 0.997,
+  "energy_per_update_mj": 0.42,
+  "latency_histogram_figure": ".research/iteration3/images/experiment1_accuracy.png"
+}

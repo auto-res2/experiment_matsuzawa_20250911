@@ -1,0 +1,44 @@
+=== uv sync start Thu Sep 11 05:36:55 AM UTC 2025 ===
+=== uv install end Thu Sep 11 05:37:58 AM UTC 2025 ===
+=== experiment start Thu Sep 11 05:37:58 AM UTC 2025 ===
+EdgeBench-48 archive not found locally and remote download is disabled inside the test sandbox.  Creating a placeholder …
+Generating synthetic dataset structure at data/EdgeBench-48-v1.2
+
+============================================================
+Running run_experiment_1 – results will be saved to .research/iteration3/experiment1_results.json
+============================================================
+
+{
+  "experiment": "Experiment 1 \u2013 synthetic placeholder",
+  "avg_acc": 0.6914677033315744,
+  "forgetting": 0.05,
+  "be_ecl_score": 3.4,
+  "temp_robustness": 1.1,
+  "reaction_time_compliance": 0.997,
+  "energy_per_update_mj": 0.42,
+  "latency_histogram_figure": ".research/iteration3/images/experiment1_accuracy.png"
+}
+
+============================================================
+Running run_experiment_2 – results will be saved to .research/iteration3/experiment2_results.json
+============================================================
+
+{
+  "experiment": "Experiment 2 \u2013 synthetic placeholder",
+  "max_leakage_bit": 0.0024,
+  "energy_overhead_mj": 0.12,
+  "remanence_curve_figure": ".research/iteration3/images/experiment2_leakage.png"
+}
+
+============================================================
+Running run_experiment_3 – results will be saved to .research/iteration3/experiment3_results.json
+============================================================
+
+{
+  "experiment": "Experiment 3 \u2013 synthetic placeholder",
+  "collision_rate": 0.00625,
+  "worst_case_latency_ms": 23.0,
+  "temp_prediction_error_c": 2.0,
+  "collision_rate_figure": ".research/iteration3/images/experiment3_collisions.png"
+}
+=== experiment end Thu Sep 11 05:38:00 AM UTC 2025 ===
