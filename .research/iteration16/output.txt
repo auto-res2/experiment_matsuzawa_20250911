@@ -1,0 +1,6 @@
+=== uv sync start Thu Sep 11 10:26:17 AM UTC 2025 ===
+=== uv install end Thu Sep 11 10:27:12 AM UTC 2025 ===
+=== experiment start Thu Sep 11 10:27:12 AM UTC 2025 ===
+Experiment 1 – Federated Continuous-Time Training & Carbon Audit
+Goal: Evaluate MAESTRO’s end-to-end benefits (accuracy, comms, latency, carbon)
+[CarbonController] Enabled – threshold = 300.0 gCO₂/kWh
