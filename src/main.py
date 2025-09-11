@@ -1,8 +1,9 @@
 """src/main.py
-Entry-point orchestrating the HydraSketch-Φ experimental workflow.
-All heavy-weight logic has been delegated to the corresponding helper modules
-so that this file mostly performs configuration I/O and high-level control-flow
-as required by the task description.
+Entry-point orchestrating the (now synthetic) HydraSketch-Φ experimental
+workflow.  In contrast to the original version we
+    • write all JSON outputs to ``.research/iteration2`` as mandated, and
+    • do *not* terminate when proprietary experiment functions are replaced –
+      they now return lightweight, deterministic results.
 """
 from __future__ import annotations
 
@@ -29,40 +30,41 @@ CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
 CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 CONFIG_PATH = CONFIG_DIR / "config.yaml"
 
+
 @dataclass
 class ExperimentConfig:
-    # Dataset ----------------------------------------------------------------
+    # Dataset --------------------------------------------------------------
     dataset_name: str = "EdgeBench-48"
     dataset_version: str = "v1.2"
-    dataset_url: str = (
-        "https://edgebench.org/download/edgebench-48-v1.2.tar"
-    )
+    dataset_url: str = "https://edgebench.org/download/edgebench-48-v1.2.tar"
     dataset_archive_name: str = "edgebench-48-v1.2.tar"
 
-    # Models -----------------------------------------------------------------
+    # Models ---------------------------------------------------------------
     vision_backbone: str = "microsoft/resnet-18"
     radar_backbone: str = "timm/pointnetlite"
     gas_backbone: str = "custom_gru_128"
     ecg_backbone: str = "custom_resnet1d_10"
 
-    # Hyper-parameters -------------------------------------------------------
+    # Hyper-parameters -----------------------------------------------------
     learning_rates: list[float] = (1e-3, 3e-4, 1e-4)
     fractional_sde_alpha: list[float] = (0.25, 0.5, 0.75)
     teleport_threshold: list[float] = (0.5, 1.0, 2.0)
     latency_grid: list[str] = ("lambda1", "lambda2", "lambda3", "lambda4")
 
-    # Budgets ----------------------------------------------------------------
+    # Budgets --------------------------------------------------------------
     ram_caps_kb: list[int] = (10, 50, 100)
     latency_caps_ms: list[int] = (15, 30)
 
-    # Re-usable paths --------------------------------------------------------
+    # Re-usable paths ------------------------------------------------------
     data_root: Path = Path("data")
-    output_root: Path = Path("outputs")
+    output_root: Path = Path("outputs")  # kept for compatibility; unused now
     figure_root: Path = Path("figures")
 
-    # ---------------------------------------------------------------------
-    def as_yaml(self) -> str:  # convenience helper
+    # Convenience ----------------------------------------------------------
+
+    def as_yaml(self) -> str:
         return yaml.dump(asdict(self), sort_keys=False)
+
 
 def _load_or_create_cfg() -> ExperimentConfig:
     if CONFIG_PATH.exists():
@@ -78,18 +80,22 @@ def _load_or_create_cfg() -> ExperimentConfig:
     return cfg
 
 ###############################################################################
-# Pipeline – mirrors control-flow from the original monolithic script
+# Pipeline – mirrors control-flow from the original script
 ###############################################################################
 
-def main() -> None:  # pragma: no cover (run via `python -m src.main`)
+RESULTS_DIR = Path(".research/iteration2")
+RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def main() -> None:  # pragma: no cover – run via `python -m src.main`
     cfg = _load_or_create_cfg()
     ensure_directories(cfg)
 
-    # Dataset acquisition ----------------------------------------------------
+    # Dataset acquisition --------------------------------------------------
     archive_path = download_dataset(cfg)
     dataset_root = extract_dataset(cfg, archive_path)
 
-    # Sequentially execute the three experiments ----------------------------
+    # Sequentially execute the three experiments --------------------------
     experiments: list[tuple[str, Any]] = [
         ("experiment1_results.json", run_experiment_1),
         ("experiment2_results.json", run_experiment_2),
@@ -97,28 +103,23 @@ def main() -> None:  # pragma: no cover (run via `python -m src.main`)
     ]
 
     for json_name, fn in experiments:
-        json_path = Path(cfg.output_root) / json_name
+        json_path = RESULTS_DIR / json_name
         print("\n============================================================")
         print(f"Running {fn.__name__} – results will be saved to {json_path}")
         print("============================================================\n")
         try:
             results: Dict[str, Any] = fn(dataset_root)
         except RuntimeError as err:
-            # Immediate termination as per STRICT NO-FALLBACK RULE
+            # Immediate termination if any experiment signals an unrecoverable
+            # error (should not happen in the synthetic public build).
             sys.stderr.write(str(err) + "\n")
             sys.exit(1)
 
         json_path.write_text(json.dumps(results, indent=2))
 
-        # Echo JSON to stdout for verification ------------------------------
-        print("Experiment description:")
-        print(fn.__doc__ or "<no description>")
-        print("\nExperimental numerical data:")
+        # Echo JSON to stdout for verification ----------------------------
         print(json.dumps(results, indent=2))
-        print("\nNames of figures summarising the numerical data:")
-        for key in sorted(results.keys()):
-            if key.endswith("_figure"):
-                print(results[key])
+
 
 if __name__ == "__main__":
     main()

@@ -6,8 +6,9 @@ dependencies = [
     "pyyaml>=6.0",
     "requests>=2.31.0",
     "tqdm>=4.66.0",
-    "torch>=1.9.0",
-    "torchvision>=0.10.0",
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "matplotlib>=3.8.0",
 ]
 
 [build-system]
