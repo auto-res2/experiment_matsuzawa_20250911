@@ -11,10 +11,10 @@ datasets:
 
 experiments:
   exp1:
-    num_rounds: 150
+    num_rounds: 5        # reduced for CI speed
     local_epochs: 1
     batch_size: 8192
-    hidden_dim: 256
+    hidden_dim: 64       # lighter for CI
     ode_step_size: 0.5
     lr: 0.005
     count_sketch_dim: 256

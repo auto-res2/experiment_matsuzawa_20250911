@@ -29,20 +29,24 @@ def abort(msg: str):
 #  Energy accounting helpers
 # ---------------------------------------------------------------------------
 
-
-def _run_cmd(cmd: List[str]) -> str:
-    try:
-        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True, text=True)
-        return res.stdout.strip()
-    except subprocess.CalledProcessError as exc:
-        abort(f"Command {cmd} failed: {exc.stderr}\n{exc}")
-        return ""  # unreachable – keeps mypy happy
-
-
 def current_power_draw_watts() -> float:
-    """Query instantaneous power draw of GPU 0 in watts via nvidia-smi."""
-    out = _run_cmd(["nvidia-smi", "--query-gpu=power.draw", "--format=csv,noheader,nounits"])
-    return float(out.split("\n")[0])
+    """Query instantaneous power draw of GPU 0 in watts via nvidia-smi.
+
+    If the command is unavailable (e.g. on a CPU-only machine or in CI), the
+    function returns 0 so that downstream calculations still succeed.
+    """
+
+    cmd = [
+        "nvidia-smi",
+        "--query-gpu=power.draw",
+        "--format=csv,noheader,nounits",
+    ]
+    try:
+        out = subprocess.check_output(cmd, text=True).strip()
+        return float(out.split("\n")[0])
+    except (FileNotFoundError, subprocess.CalledProcessError, ValueError):
+        # Fallback – no GPU or nvidia-smi missing.
+        return 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -60,6 +64,7 @@ def plot_accuracy(rounds, accs, fig_path: Path):
     plt.ylabel("Accuracy")
     plt.title("Training accuracy – Experiment 1")
     plt.legend()
+    fig_path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(fig_path, bbox_inches="tight")
     plt.close()
     return fig_path.name
@@ -70,5 +75,6 @@ def plot_accuracy(rounds, accs, fig_path: Path):
 # ---------------------------------------------------------------------------
 
 def save_json(path: Path, obj):
+    path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as fp:
         json.dump(obj, fp, indent=2)

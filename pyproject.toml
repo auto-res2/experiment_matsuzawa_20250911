@@ -6,7 +6,6 @@ build-backend = "setuptools.build_meta"
 name = "maestro-experiments"
 version = "0.1.0"
 
-# Dependency list – array format as required by the task
 dependencies = [
   "torch>=1.9.0",
   "torch_geometric>=2.4.0",
