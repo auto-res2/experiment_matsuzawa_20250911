@@ -25,7 +25,7 @@ from .train import build_resnet50_hira, run_epoch
 # -----------------------------------------------------------------------------
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
-RESULT_DIR = ROOT / ".research" / "iteration2"
+RESULT_DIR = ROOT / ".research" / "iteration3"
 IMAGE_DIR = RESULT_DIR / "images"  # created by evaluate.py but ensure parent exists
 CONFIG_DIR = ROOT / "config"
 CONFIG_PATH = CONFIG_DIR / "config.yaml"
@@ -91,7 +91,8 @@ def experiment1_imagenette(cfg: Dict) -> None:
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # 1) DATA -----------------------------------------------------------------
-    prepare_imagenette(DATA_DIR / "imagenette2", cfg["datasets"]["imagenette"])
+    dataset_root = DATA_DIR / "imagenette2"
+    prepare_imagenette(dataset_root, cfg["datasets"]["imagenette"])
 
     transform = transforms.Compose(
         [
@@ -102,7 +103,7 @@ def experiment1_imagenette(cfg: Dict) -> None:
         ]
     )
 
-    full_ds = datasets.ImageFolder(DATA_DIR / "imagenette2" / "train", transform=transform)
+    full_ds = datasets.ImageFolder(dataset_root / "train", transform=transform)
 
     # create 10 artificial tasks – one per class
     class_indices: Dict[int, List[int]] = {i: [] for i in range(10)}

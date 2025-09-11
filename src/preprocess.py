@@ -5,6 +5,7 @@ be reused by multiple experiments.
 from __future__ import annotations
 
 import hashlib
+import shutil
 import tarfile
 from pathlib import Path
 from typing import Dict, Optional
@@ -102,18 +103,42 @@ def _safe_extract(tar: tarfile.TarFile, path: Path) -> None:
 #  PUBLIC DATASET PREP FUNCTIONS
 # -----------------------------------------------------------------------------
 
+def _flatten_nested_dir(dest: Path) -> None:
+    """If *dest* contains exactly one sub-directory that has the same name as
+    *dest* (a common pattern when tarballs are extracted into a folder that
+    already has that name), move all grand-children up one level and remove
+    the redundant directory.  This makes the final layout predictable:
+
+    dest/
+      ├─ train/
+      └─ val/
+    """
+    nested = dest / dest.name
+    if nested.is_dir():
+        for item in nested.iterdir():
+            shutil.move(str(item), dest)
+        nested.rmdir()
+
+
 def prepare_imagenette(root: Path, cfg: Dict[str, str]) -> None:
     """Download (if necessary) and extract the *Imagenette* dataset.  The
     configuration dictionary *cfg* is expected to contain keys: ``url``,
     ``filename`` and optional ``sha256``.
     """
     root.mkdir(parents=True, exist_ok=True)
+
+    # Fast-exit if the expected directory already exists
+    if (root / "train").is_dir():
+        return
+
     tar_path = CACHE_DIR / cfg["filename"]
 
-    if not (root / "train").exists():
-        # Determine whether we should enforce SHA-256 verification.
-        # If the provided value is an empty string or None, we skip verification.
-        sha_value = cfg.get("sha256") or None
-        http_download(cfg["url"], tar_path, sha_value)
-        with tarfile.open(tar_path) as tar:
-            _safe_extract(tar, root)
+    # Determine whether we should enforce SHA-256 verification.
+    sha_value = cfg.get("sha256") or None
+    http_download(cfg["url"], tar_path, sha_value)
+
+    with tarfile.open(tar_path) as tar:
+        _safe_extract(tar, root)
+
+    # Handle the common double-nesting case (imagenette2/imagenette2/…)
+    _flatten_nested_dir(root)

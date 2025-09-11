@@ -1,5 +1,5 @@
 # src/evaluate.py
-"""Plotting & evaluation utilities (figures go to ``.research/iteration2/images``).
+"""Plotting & evaluation utilities (figures go to ``.research/iteration3/images``).
 A non-interactive backend is enforced to guarantee headless execution on CI
 servers.
 """
@@ -18,7 +18,7 @@ import seaborn as sns  # noqa: E402
 #  DIRECTORIES
 # -----------------------------------------------------------------------------
 ROOT = Path(__file__).resolve().parent.parent
-IMAGE_DIR = ROOT / ".research" / "iteration2" / "images"
+IMAGE_DIR = ROOT / ".research" / "iteration3" / "images"
 IMAGE_DIR.mkdir(parents=True, exist_ok=True)
 
 # -----------------------------------------------------------------------------
