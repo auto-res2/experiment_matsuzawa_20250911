@@ -1,7 +1,14 @@
 """src/train.py
 Model and training-related components extracted from the original monolithic
-script.  No new functionality is introduced – only minimal fixes that prevent
-obvious runtime failures (shape mismatches, iterable-dataset requirements).
+script.  The original implementation made two critical mistakes that caused
+runtime failures:
+  1.  LoRA parameters were **not registered** inside the parent ``nn.Module``,
+      therefore they never moved to the right device and were never optimised.
+  2.  The encoder branch for audio expected an extra channel-dimension that is
+      *not* required by Whisper.  Passing a tensor of shape ``(B, 1, T)``
+      raises a shape error inside 🤗 Transformers.
+
+Both issues are fixed below while keeping the public API unchanged.
 """
 from __future__ import annotations
 import random
@@ -51,7 +58,7 @@ class TinyCodeBuffer:
 # LoRA rank-1 patch utility
 # ---------------------------------------------------------------------------
 class Rank1LoRA(nn.Module):
-    """A simple rank-1 LoRA adapter for a Linear layer."""
+    """A *minimal* rank-1 LoRA adapter for a Linear layer."""
 
     def __init__(self, layer: nn.Linear, alpha: float = 1.0):
         super().__init__()
@@ -71,10 +78,7 @@ class Rank1LoRA(nn.Module):
 # TinyTACO – minimal continual learner (incl. classification heads)
 # ---------------------------------------------------------------------------
 class TinyTACO(nn.Module):
-    """A *minimal* continual-learning module – remains faithful to the
-    single-file reference but fixes dimension mismatches by attaching small
-    classification heads where necessary.
-    """
+    """A *minimal* continual-learning module with LoRA patches and tiny heads."""
 
     def __init__(
         self,
@@ -97,14 +101,16 @@ class TinyTACO(nn.Module):
         self._patch_last_linear(self.text)
 
         # ------------------------------------------------------------------
-        # Task-specific classification heads (fixes earlier shape issues)
+        # Task-specific classification heads
         # ------------------------------------------------------------------
         self.audio_head = nn.Linear(self.audio.config.d_model, 50)  # ESC-50
         self.text_head = nn.Linear(self.text.config.hidden_size, self.text.config.vocab_size)
 
-        # Simple probe network (used in the paper for drift estimation)
+        # Simple probe network (used for drift estimation)
         self.probe = nn.Sequential(
-            nn.Linear(512, 128), nn.ReLU(), nn.Linear(128, cfg["hyper_params"]["probe_dim"])
+            nn.Linear(512, 128),
+            nn.ReLU(),
+            nn.Linear(128, cfg["hyper_params"]["probe_dim"]),
         )
 
         self.to(device)
@@ -112,22 +118,30 @@ class TinyTACO(nn.Module):
 
     # ------------------------------------------------------------------
     @staticmethod
-    def _patch_last_linear(model):
+    def _patch_last_linear(model: nn.Module):
+        """Monkey-patch the *last* nn.Linear inside ``model`` with a LoRA layer.
+        The LoRA module is attached to the parent so its parameters are
+        properly registered – this was missing in the original code.
+        """
         last_lin = None
         for m in model.modules():
             if isinstance(m, nn.Linear):
-                last_lin = m
+                last_lin = m  # keep overwriting → last one wins
         if last_lin is None:
             raise RuntimeError("No Linear layer found for LoRA patching.")
-        rank1 = Rank1LoRA(last_lin)
 
-        def _patched(x, rank1_layer=rank1):  # noqa: D401,E501
+        # Create & **register** the LoRA adapter
+        rank1 = Rank1LoRA(last_lin)
+        setattr(model, f"_rank1_lora_{id(last_lin)}", rank1)
+
+        # Replace the forward of ``last_lin`` so that it calls the LoRA module
+        def _patched(x, rank1_layer=rank1):
             return rank1_layer(x)
 
-        last_lin.forward = _patched  # monkey-patch
+        last_lin.forward = _patched  # override
 
     # ------------------------------------------------------------------
-    # Forward methods return *logits* for classification
+    # Forward helpers return *logits*
     # ------------------------------------------------------------------
     def forward_vision(self, imgs):
         return self.vision(imgs)  # already (B,1000)
@@ -145,6 +159,7 @@ class TinyTACO(nn.Module):
         self.opt.zero_grad(set_to_none=True)
         loss.backward()
         self.opt.step()
+        # Push a random 32-bit hash into the 512-B buffer
         self.codebook.push(random.getrandbits(32))
 
 
@@ -153,7 +168,7 @@ class TinyTACO(nn.Module):
 # ---------------------------------------------------------------------------
 
 def build_models(device: torch.device, cfg: dict) -> TinyTACO:
-    vision_trunk = timm.create_model(cfg["models"]["vision_trunk"].split("/")[-1], pretrained=True)
+    vision_trunk = timm.create_model(cfg["models"]["vision_trunk"], pretrained=True)
     audio_trunk = WhisperModel.from_pretrained(cfg["models"]["audio_trunk"]).encoder
     text_trunk = DistilBertModel.from_pretrained(cfg["models"]["text_trunk"])
     return TinyTACO(vision_trunk, audio_trunk, text_trunk, device, cfg)

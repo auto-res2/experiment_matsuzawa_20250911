@@ -5,9 +5,9 @@ description = "Refactored TinyTACO continual-learning baseline"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
-    "torch>=1.9.0",
-    "torchvision>=0.10.0",
-    "torchaudio>=0.10.0",
+    "torch>=2.0.0",
+    "torchvision>=0.14.0",
+    "torchaudio>=0.14.0",
     "timm>=0.9.2",
     "transformers>=4.36.0",
     "datasets>=2.14.0",

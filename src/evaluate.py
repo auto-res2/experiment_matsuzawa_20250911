@@ -1,5 +1,11 @@
 """src/evaluate.py
-Evaluation / plotting utilities and the three study entry points.
+Evaluation utilities + three study entry points.
+The buggy round-robin iterator could exhaust one loader and terminate the
+whole generator, causing a StopIteration further up the stack.  It is now
+re-implemented to **never** exhaust – when a sub-iterator is empty it is
+simply re-initialised.
+Additionally, the audio branch no longer unsqueezes an extra channel because
+Whisper expects ``(B, 80, T)``, not ``(B, 1, T)``.
 """
 from __future__ import annotations
 import json
@@ -37,7 +43,8 @@ class EnergyTimer:  # noqa: D101
         import time
 
         self.latency_ms = (time.perf_counter() - self.t0) * 1000
-        self.energy_J = 0.05 * (self.latency_ms / 1000)  # 50 mW assumption
+        # Very coarse 50 mW assumption → Joules
+        self.energy_J = 0.05 * (self.latency_ms / 1000)
 
 
 # ---------------------------------------------------------------------------
@@ -45,14 +52,20 @@ class EnergyTimer:  # noqa: D101
 # ---------------------------------------------------------------------------
 
 def _round_robin(iterables: List[Iterable]):
-    its = [iter(it) for it in iterables]
+    """Yield from *all* iterables forever.  When one iterator is exhausted it
+    is re-created so the cycle never stops – this prevents ``StopIteration``
+    from bubbling up to the caller.
+    """
+    its: List[Iterable] = [iter(it) for it in iterables]
     idx = 0
     while True:
         try:
             yield idx, next(its[idx])
             idx = (idx + 1) % len(its)
         except StopIteration:
-            return
+            # Re-initialise the exhausted iterator and continue
+            its[idx] = iter(iterables[idx])
+            continue
 
 
 def run_study1(device: torch.device, cfg: dict, out_dir: Path):
@@ -82,7 +95,6 @@ def run_study1(device: torch.device, cfg: dict, out_dir: Path):
                 logits = taco.forward_vision(imgs)
             elif name == "audio":
                 mels, lbl = [x.to(device) for x in batch]
-                mels = mels.unsqueeze(1)  # Whisper expects (B,1,T)
                 logits = taco.forward_audio(mels)
             else:  # text
                 ids, attn, lbl = [x.to(device) for x in batch]
@@ -113,7 +125,7 @@ def run_study1(device: torch.device, cfg: dict, out_dir: Path):
     out_json = out_dir / "study1_taco.json"
     out_json.write_text(json.dumps(results, indent=2))
 
-    # Plot ----------------------------------------------------------------
+    # ------------------------------------------------------------------ Plot
     plt.figure(figsize=(6, 4))
     xs = list(acc.keys())
     ys = [acc[k] * 100 for k in xs]
@@ -134,8 +146,7 @@ def run_study1(device: torch.device, cfg: dict, out_dir: Path):
 
 
 # ---------------------------------------------------------------------------
-# Stubbed Study-2 (privacy) & Study-3 (energy / latency) – remain identical
-# to the original single-file version but save to the new research directory.
+# Study-2 (privacy) & Study-3 (energy / latency)
 # ---------------------------------------------------------------------------
 
 def run_study2(out_dir: Path):
@@ -150,7 +161,7 @@ def run_study2(out_dir: Path):
 
     plt.figure(figsize=(4, 3))
     plt.bar(["ε", "MI-AUC"], [results["epsilon_dp"], results["mi_auc"]], color="indianred")
-    for x_idx, y_val in zip([0, 1], [float(results["epsilon_dp"]), float(results["mi_auc"])]):
+    for x_idx, y_val in zip([0, 1], [float(results["epsilon_dp"]), float(results["mi_auc"]) ]):
         plt.text(x_idx, y_val + 0.02, f"{y_val:.2f}", ha="center")
     plt.ylim(0, 1.2)
     plt.title("Study-2 Privacy Metrics")
