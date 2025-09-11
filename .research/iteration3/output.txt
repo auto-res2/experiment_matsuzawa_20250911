@@ -1,0 +1,7 @@
+=== uv sync start Thu Sep 11 03:41:34 PM UTC 2025 ===
+=== uv install end Thu Sep 11 03:42:42 PM UTC 2025 ===
+=== experiment start Thu Sep 11 03:42:42 PM UTC 2025 ===
+
+===============  EXPERIMENT-1  ===============
+Instance-Adaptive Certificate vs Expected / Worst-case baselines
+
