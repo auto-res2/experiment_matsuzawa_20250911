@@ -17,5 +17,8 @@ _SPLIT = "test"
 
 def load_data() -> Any:
     """Load the HumanEval *test* split and return it as a Dataset object."""
-    ds = load_dataset(_DATASET_ID, split=_SPLIT, trust_remote_code=True)
+    # `trust_remote_code` has been removed from the datasets API as of v4.0.
+    # The HumanEval dataset is now packaged as standard metadata, so a plain
+    # call without the flag suffices.
+    ds = load_dataset(_DATASET_ID, split=_SPLIT)
     return ds

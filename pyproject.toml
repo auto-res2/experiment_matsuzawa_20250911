@@ -15,7 +15,7 @@ requires-python = ">=3.9"
 dependencies = [
     "matplotlib>=3.8",
     "huggingface_hub>=0.20",
-    "datasets>=2.19",  # Needed for preprocess.load_data()
+    "datasets>=4.0",  # Ensure we have the new API without trust_remote_code.
     "pynvml>=11.0",
 ]
 

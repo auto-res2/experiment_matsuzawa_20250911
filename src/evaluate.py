@@ -3,7 +3,7 @@ src/evaluate.py
 ================
 Evaluation utilities, plotting helpers and GPU-power instrumentation.
 The *only* change compared to the original file is that all image output
-is now redirected to the mandatory directory ``.research/iteration3/images``
+is now redirected to the mandatory directory ``.research/iteration4/images``
 (see instructions).
 """
 from __future__ import annotations
@@ -19,8 +19,11 @@ from huggingface_hub import list_repo_files
 # Force head-less backend – plots are saved directly to PDF.
 matplotlib.use("Agg")
 
-# Pre-compute image / figure output directory (created lazily).
-_IMG_DIR = Path(".research/iteration3/images")
+# ---------------------------------------------------------------------------
+# Directory management – create lazily but compute up-front so every helper
+# can rely on the constant.
+# ---------------------------------------------------------------------------
+_IMG_DIR = Path(".research/iteration4/images")
 _IMG_DIR.mkdir(parents=True, exist_ok=True)
 
 # ---------------------------------------------------------------------------
@@ -44,8 +47,7 @@ def ensure_hf_model_exists(repo_id: str, revision: str | None = None) -> None:
         )
 
 # ---------------------------------------------------------------------------
-# 2. GPU-power sampler – used to measure instantaneous energy draw. Falls back
-#    gracefully when NVML is unavailable. *Unchanged* from the original code.
+# 2. GPU-power sampler – unchanged logic, optional NVML dependency.
 # ---------------------------------------------------------------------------
 
 try:
@@ -86,8 +88,7 @@ def sample_gpu_power(interval_s: float, stop_event, device_idx: int = 0):
     return readings
 
 # ---------------------------------------------------------------------------
-# 3. Simple line-plot helper – *now* writes to the mandatory location under
-#    ``.research/iteration3/images``.
+# 3. Simple line-plot helper – writes to ``.research/iteration4/images``.
 # ---------------------------------------------------------------------------
 
 def save_line_plot(

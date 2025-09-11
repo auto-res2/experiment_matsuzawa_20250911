@@ -7,7 +7,7 @@ The pipeline does three things:
 1. *Pre-processing*: download the HumanEval dataset.
 2. *Training/statistics*: compute descriptive statistics over prompts.
 3. *Evaluation*: visualise prompt length distribution + write JSON
-   results under the mandatory ``.research/iteration3/`` directory.
+   results under the mandatory ``.research/iteration4/`` directory.
 
 All paths, prints and outputs follow the strict rules given in the task
 instructions.
@@ -26,7 +26,7 @@ from evaluate import save_line_plot
 # ---------------------------------------------------------------------------
 # Constants – centralise directories so that tweaks are easy.
 # ---------------------------------------------------------------------------
-_ITER_DIR = Path(".research/iteration3")
+_ITER_DIR = Path(".research/iteration4")
 _ITER_DIR.mkdir(parents=True, exist_ok=True)
 _IMG_DIR = _ITER_DIR / "images"  # Must match evaluate.save_line_plot.
 _IMG_DIR.mkdir(parents=True, exist_ok=True)
@@ -42,7 +42,7 @@ def _run_experiment() -> Dict[str, float]:
 
     # 3. Evaluation – generate a line plot of the first 30 prompt lengths.
     first_n = 30
-    prompt_lengths = [len(row["prompt"]) for row in dataset[:first_n]]
+    prompt_lengths = [len(row["prompt"]) for row in dataset.select(range(first_n))]
     xs = list(range(1, first_n + 1))
     ys = prompt_lengths
     fig_path = save_line_plot(
@@ -69,7 +69,7 @@ if __name__ == "__main__":
         raise
 
     # Persist results as JSON inside the mandatory directory.
-    json_path = Path(".research/iteration3/experiment_metrics.json")
+    json_path = Path(".research/iteration4/experiment_metrics.json")
     with json_path.open("w", encoding="utf-8") as fp:
         json.dump(results, fp, indent=2, sort_keys=True)
 
