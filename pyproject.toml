@@ -1,1 +1,22 @@
-# Please list the required python packages.
+[project]
+name = "maestro-aaai25"
+version = "0.1.0"
+description = "Reference implementation for the MAESTRO AAAI'25 paper"
+requires-python = ">=3.9"
+dependencies = [
+  "numpy>=1.21.0",
+  "pyyaml>=6.0",
+  "torch>=2.0.0",
+  "torchmetrics>=1.0.1",
+  "matplotlib>=3.6.0",
+  "datasets>=2.14.0",
+  "torch-geometric>=2.5.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.optional-dependencies]
+geo = [
+  "torch-geometric>=2.5.0",
+]

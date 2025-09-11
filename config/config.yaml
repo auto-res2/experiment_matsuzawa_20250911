@@ -1,0 +1,50 @@
+# =============================================================
+#  MAESTRO – benchmark configuration (extractable to YAML)
+# =============================================================
+experiment_1:
+  name: End-to-End Federated Dynamic Training Benchmark
+  datasets:
+    financial_fed:
+      repo: arkiv/Financial-Fed
+      split: null
+    health_fed:
+      repo: arkiv/Health-Fed
+      split: null
+    reddit_year:
+      repo: SocialGrep/one-year-of-tsla-on-reddit
+      split: null
+    ogbn_products:
+      repo: ogbn-products
+      split: null
+  epochs: 400
+  batch_size: 16000
+  lr_grid: [0.01, 0.005, 0.001]
+  ode_dt_grid: [0.25, 0.5, 1.0]
+  hidden: 256
+  seeds: [42, 43, 44, 45, 46]
+experiment_2:
+  name: Two-Level Robustness & Certification Stress-Test
+  datasets:
+    taobao_alive:
+      repo: arkiv/Taobao-Alive
+      split: null
+    twitter_covid:
+      repo: NoCaptain/COVID_Twitter_Reddit_Jan2020_Feb2022
+      split: null
+  stress_regimes:
+    R1: {edge: 0.05, comm: 0.05}
+    R2: {edge: 0.15, comm: 0.20}
+    R3: {edge: "targeted", comm: 0.40}
+  seeds: [0, 1, 2, 3, 4]
+experiment_3:
+  name: Privacy, Traffic-Analysis Resistance & Temporal Fairness
+  datasets:
+    reddit_year:
+      repo: SocialGrep/one-year-of-tsla-on-reddit
+      split: null
+  tau: 30
+  service_days: 180
+  privacy_targets:
+    epsilon_T: 2.0
+    delta: 1e-5
+  seeds: [7, 8, 9]
