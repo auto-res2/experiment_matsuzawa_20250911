@@ -1,0 +1,18 @@
+{
+  "status": "resource_validation_passed",
+  "details": {
+    "datasets": [
+      "ChristophSchuhmann/MS_COCO_2017_URL_TEXT",
+      "redactable-llm/synth-text-recognition"
+    ],
+    "models": [
+      "stabilityai/stable-diffusion-2-1",
+      "openai/clip-vit-large-patch14"
+    ]
+  },
+  "metrics": {
+    "placeholder_FID": 0.0,
+    "placeholder_latency_ms": 0.0,
+    "placeholder_energy_j": 0.0
+  }
+}
