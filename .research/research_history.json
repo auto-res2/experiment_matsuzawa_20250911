@@ -6,5 +6,82 @@
     "continual learning memory compression",
     "lifelong learning memory efficiency",
     "continual learning pruning quantization"
+  ],
+  "research_study_list": [
+    {
+      "title": "Continual Learning in Low-rank Orthogonal Subspaces"
+    },
+    {
+      "title": "Contextual Transformation Networks for Online Continual Learning"
+    },
+    {
+      "title": "Improving Task-free Continual Learning by Distributionally Robust Memory Evolution"
+    },
+    {
+      "title": "Improving Task-free Continual Learning by Distributionally Robust Memory Evolution"
+    },
+    {
+      "title": "SparCL: Sparse Continual Learning on the Edge"
+    },
+    {
+      "title": "Contextual Transformation Networks for Online Continual Learning"
+    },
+    {
+      "title": "Navigating Memory Construction by Global Pseudo-Task Simulation for Continual Learning"
+    },
+    {
+      "title": "MECTA: Memory-Economic Continual Test-Time Model Adaptation"
+    },
+    {
+      "title": "Look-ahead Meta Learning for Continual Learning"
+    },
+    {
+      "title": "Look-ahead Meta Learning for Continual Learning"
+    },
+    {
+      "title": "Online Learned Continual Compression with Adaptive Quantization Modules"
+    },
+    {
+      "title": "Remember the Past: Distilling Datasets into Addressable Memories for Neural Networks"
+    },
+    {
+      "title": "Contextual Transformation Networks for Online Continual Learning"
+    },
+    {
+      "title": "Forget-free Continual Learning with Winning Subnetworks"
+    },
+    {
+      "title": "Forget-free Continual Learning with Winning Subnetworks"
+    },
+    {
+      "title": "Long Live the Lottery: The Existence of Winning Tickets in Lifelong Learning"
+    },
+    {
+      "title": "GAN Memory with No Forgetting"
+    },
+    {
+      "title": "Improved Schemes for Episodic Memory-based Lifelong Learning"
+    },
+    {
+      "title": "Continual Deep Learning by Functional Regularisation of Memorable Past"
+    },
+    {
+      "title": "Continual Deep Learning by Functional Regularisation of Memorable Past"
+    },
+    {
+      "title": "Online Learned Continual Compression with Adaptive Quantization Modules"
+    },
+    {
+      "title": "Uncertainty-guided Continual Learning with Bayesian Neural Networks"
+    },
+    {
+      "title": "Pruning vs Quantization: Which is Better?"
+    },
+    {
+      "title": "Vector Quantization Prompting for Continual Learning"
+    },
+    {
+      "title": "SparCL: Sparse Continual Learning on the Edge"
+    }
   ]
 }
