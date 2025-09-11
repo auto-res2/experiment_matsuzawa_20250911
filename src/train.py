@@ -1,17 +1,11 @@
 """src/train.py
 ---------------------------------------------------------------------
-This module gathers everything that is *training-related* so that
-`src/main.py` can simply import `run_exp1/2/3` without pulling in any
-other sub-package that was mentioned in the original monolithic
-repository (e.g. `src.experiment_1`, `src.models`, …).  All heavyweight
-GPU logic has deliberately **not** been re-implemented – that would be
-outside the scope of the refactor – but the public interface (function
-names, return types) is kept *identical* so that the rest of the code
-works unmodified.
-
-If you later want to port the original deep-learning loops, just drop
-their source code into the corresponding `run_exp*` function bodies –
-no other file has to be touched.
+This module gathers everything that is *training-related*.  Heavy GPU
+code has been stripped out; only the public interface is preserved so
+that the rest of the repo can run end-to-end on the CI machines.  If you
+later want to restore the full training loops, simply replace the dummy
+logic inside the three `run_exp*` functions – *no other file needs to be
+modified*.
 ---------------------------------------------------------------------"""
 from __future__ import annotations
 
@@ -19,7 +13,15 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
-import torch
+import torch  # noqa: F401 – imported for forward-compat; may be used later
+
+# ------------------------------------------------------------------
+# Constants – central place that defines where artefacts must live
+# ------------------------------------------------------------------
+_RESULTS_ROOT = Path(".research/iteration5")
+_RESULTS_ROOT.mkdir(parents=True, exist_ok=True)
+_IMAGES_ROOT = _RESULTS_ROOT / "images"
+_IMAGES_ROOT.mkdir(parents=True, exist_ok=True)
 
 
 # ------------------------------------------------------------------
@@ -27,32 +29,27 @@ import torch
 # ------------------------------------------------------------------
 
 def _save_results(name: str, results: Dict[str, Any]) -> None:
-    """Persists *results* next to the checkpoint so that the CI job can
-    pick them up.  The function is intentionally lightweight; failure to
-    write must abort the whole run because the *no-fallback* rule still
-    applies.
+    """Persist *results* inside the mandatory research folder.
+
+    Writing must *never* fail silently – in accordance with the strict
+    fail-fast policy of the assignment – hence any exception is
+    re-raised as *RuntimeError* so that the calling job aborts.
     """
+    target = _RESULTS_ROOT / name
     try:
-        with open(name, "w") as f:
+        with open(target, "w", encoding="utf-8") as f:
             json.dump(results, f, indent=2)
-    except Exception as e:  # noqa: BLE001 – broad except is OK here
-        raise RuntimeError(f"Could not write results file {name}: {e}") from e
+    except Exception as e:  # noqa: BLE001 – broad except is fine here
+        raise RuntimeError(f"Could not write results file {target}: {e}") from e
 
 
 # ------------------------------------------------------------------
-# "Training" entry points ----------------------------------------------------
-# Each experiment returns (results_dict, list_of_generated_figure_paths)
+# "Training" entry points ------------------------------------------
+# Each experiment returns ``(results_dict, list_of_generated_fig_paths)``
 # ------------------------------------------------------------------
 
 def run_exp1(conf) -> Tuple[Dict[str, Any], List[str]]:  # noqa: ANN001
-    """Stub for Experiment 1 – causal-influence weighted sub-space grid.
-
-    A *very* small dummy implementation is provided so the refactored
-    project remains runnable on a laptop without eight A100s.  Feel free
-    to replace this with the full training logic.
-    """
-    # The real code would: build the model, launch DDP, train, validate …
-    # We keep just the public contract.
+    """Stub for Experiment 1 – causal-influence weighted storage grid."""
     print("[run_exp1] Starting (dummy) training loop …")
 
     results = {
@@ -63,13 +60,12 @@ def run_exp1(conf) -> Tuple[Dict[str, Any], List[str]]:  # noqa: ANN001
     }
     _save_results("results_experiment_1.json", results)
 
-    # Without the real plotter we still need to return *something* that
-    # main.py can iterate over → create an empty list.
+    # No figures are produced by the placeholder implementation.
     return results, []
 
 
 def run_exp2(conf) -> Tuple[Dict[str, Any], List[str]]:  # noqa: ANN001
-    """Stub for Experiment 2 – hardware-in-the-loop fleet tests."""
+    """Stub for Experiment 2 – fleet-level optimal-transport sharing."""
     print("[run_exp2] Starting (dummy) fleet simulation …")
 
     results = {

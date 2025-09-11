@@ -12,7 +12,7 @@ import sys
 import textwrap
 from pathlib import Path
 
-import torch  # still required for device sanity checks further below
+import torch  # noqa: F401 – still required for device sanity checks
 import yaml
 
 # ------------------------------------------------------------------
@@ -41,7 +41,7 @@ with open(conf_path, "r", encoding="utf-8") as f:
 from .preprocess import ensure_all_datasets_exist  # noqa: E402  – local import is fine
 
 try:
-    ensure_all_datasets_exist(conf)  # will raise → _abort() propagated
+    ensure_all_datasets_exist(conf)  # will raise → abort propagated
 except Exception as e:  # noqa: BLE001
     _abort(str(e))
 
@@ -65,9 +65,11 @@ else:
     _abort(f"Unknown experiment id {exp_id}")
 
 # ------------------------------------------------------------------
-# dump & print JSON ----------------------------------------------------------
+# dump & print JSON ------------------------------------------------
 # ------------------------------------------------------------------
-json_name = f"results_{exp_id}.json"
+RESULTS_ROOT = Path(".research/iteration5")
+RESULTS_ROOT.mkdir(parents=True, exist_ok=True)
+json_name = RESULTS_ROOT / f"results_{exp_id}.json"
 with open(json_name, "w", encoding="utf-8") as f:
     json.dump(results_dict, f, indent=2)
 print("\n=== Experimental Results (JSON) ==========================================")

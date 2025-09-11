@@ -2,7 +2,10 @@
 name = "phoenix_mem_minimal"
 version = "0.1.0"
 description = "Refactored, self-contained subset of the PHOENIX-Mem experimental suite"
-authors = ["OpenAI ChatGPT <noreply@example.com>"]
+# PEP-621 requires *array of tables* for authors
+authors = [
+  { name = "OpenAI ChatGPT", email = "noreply@example.com" }
+]
 readme = "README.md"
 requires-python = ">=3.9"
 
@@ -14,9 +17,6 @@ build-backend = "setuptools.build_meta"
 where = ["src"]
 
 [project.optional-dependencies]
-# The assignment forces *array* syntax, not mapping – hence we do not
-# put the list under a nested table.  End-users can install via
-#   pip install .[full]
 full = [
   "numpy>=1.21.0",
   "torch>=1.9.0",
