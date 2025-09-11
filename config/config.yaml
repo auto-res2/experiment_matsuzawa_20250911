@@ -1,8 +1,4 @@
-# config/config.yaml
-# ------------------
-# Centralised run-time configuration consumed by src.main
-
-results_dir: ".research/iteration8"  # JSON outputs + images/ will live here
+results_dir: ".research/iteration9"
 seed: 42
 
 models:
@@ -10,3 +6,6 @@ models:
     memory_budget: 512
   zipp: {}
   derpp: {}
+
+# Note: Only the results directory has changed from iteration8→iteration9 to
+# comply with the mandatory path requirements.
