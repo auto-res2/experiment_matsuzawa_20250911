@@ -66,8 +66,8 @@ def build_model(kind: str, in_dim: int, hidden: int):
 # ---------------------------------------------------------------------------
 
 # Mandatory path change requested by policy: all JSON results under
-# .research/iteration2/  and all images under .research/iteration2/images
-RESULTS_DIR = Path(".research/iteration2")
+# .research/iteration3/  and all images under .research/iteration3/images
+RESULTS_DIR = Path(".research/iteration3")
 FIG_DIR = RESULTS_DIR / "images"
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 FIG_DIR.mkdir(parents=True, exist_ok=True)
@@ -120,4 +120,5 @@ def run_experiment_1(cfg: Dict[str, Any], *, device: str | None = None) -> None:
         title="placeholder",
         path=FIG_DIR / "training_loss_placeholder.pdf",
     )
-    print(f"Figures written to {FIG_DIR.relative_to(Path.cwd())}")
+    # Avoid Path.relative_to – may fail if paths live on different mount points.
+    print(f"Figures written to {FIG_DIR.resolve().as_posix()}")
