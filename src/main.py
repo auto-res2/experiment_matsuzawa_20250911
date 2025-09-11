@@ -40,8 +40,8 @@ def _load_cfg() -> Dict:
 def main() -> None:  # noqa: D401 – simple procedural entry-point
     cfg = _load_cfg()
 
-    # The assignment *requires* all artefacts to live under `.research/iteration2`.
-    results_root = Path(".research/iteration2")
+    # The assignment *requires* all artefacts to live under `.research/iteration3`.
+    results_root = Path(".research/iteration3")
     images_root = results_root / "images"
     images_root.mkdir(parents=True, exist_ok=True)
 
@@ -62,7 +62,7 @@ def main() -> None:  # noqa: D401 – simple procedural entry-point
 
         # ------------------------------------------------------------------
         # Persist results – each experiment gets its own JSON file directly
-        # under `.research/iteration2` as mandated by the rubric.
+        # under `.research/iteration3` as mandated by the rubric.
         # ------------------------------------------------------------------
         json_path = results_root / f"{exp_name}.json"
         with json_path.open("w", encoding="utf-8") as fp:

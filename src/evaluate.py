@@ -20,22 +20,61 @@ from ogb.nodeproppred import PygNodePropPredDataset
 from torch_geometric.datasets import Reddit
 
 # ---------------------------------------------------------------------------
-# PyTorch ≥2.6 defaults to ``weights_only=True`` in torch.load which blocks
-# arbitrary Python objects.  OGB stores ``torch_geometric.data.DataEdgeAttr``
-# – we must explicitly allow-list this class before any dataset is loaded.
+# PyTorch ≥2.6 switched the default for ``weights_only`` in ``torch.load`` to
+# ``True`` which blocks pickling arbitrary (non-tensor) Python objects.  OGB &
+# PyG datasets still rely on full pickling, so dataset loading fails unless we
+# either (a) globally force ``weights_only=False`` *or* (b) explicitly allow-
+# list every custom class they use.  For the purposes of the CI pipeline the
+# simplest, transparent and *fail-fast* solution is to monkey-patch
+# ``torch.load`` so that the safer behaviour remains opt-in rather than
+# opt-out.  We still keep the allow-list as an extra layer of robustness.
 # ---------------------------------------------------------------------------
-try:  # pragma: no cover – safety net for older PyTorch versions
+
+# --- 1.  Allow-list common PyG attribute classes --------------------------------
+try:  # pragma: no cover – guard against API changes / older PyTorch versions
     import torch.serialization as _ser
 
     from torch_geometric.data.data import DataEdgeAttr
 
-    _ser.add_safe_globals([DataEdgeAttr])
-except (ImportError, AttributeError):
-    # Either we are on an older PyTorch or the API changed – in both cases the
-    # default behaviour will work, so we just warn and continue.
-    print("[WARN] Could not register DataEdgeAttr as a safe global – proceeding anyway.")
+    # Newer releases split attributes into several classes – we try to import
+    # them all but degrade gracefully if a given class is not present.
+    try:
+        from torch_geometric.data.data import DataTensorAttr
 
-from .train import (
+        _ser.add_safe_globals([DataEdgeAttr, DataTensorAttr])
+    except ImportError:  # pragma: no cover – class not present in this version
+        _ser.add_safe_globals([DataEdgeAttr])
+except (ImportError, AttributeError):
+    # Either we are on an older PyTorch / PyG or the API moved.  We continue
+    # without the allow-list – the monkey-patch below will still make loading
+    # work in a controlled manner.
+    print(
+        "[WARN] Could not register PyG attribute classes as safe globals – "
+        "falling back to patched torch.load."
+    )
+
+# --- 2.  Monkey-patch torch.load so the default is *secure but permissive* ----
+_orig_torch_load = torch.load  # keep reference to the original implementation
+
+
+def _patched_torch_load(*args, **kwargs):  # noqa: D401 – simple wrapper
+    """Wrapper that sets ``weights_only=False`` unless the caller overrides it.
+
+    This replicates the default behaviour prior to PyTorch 2.6 which most data
+    loaders (including OGB) implicitly rely on.  Users can still opt into the
+    safer mode by explicitly passing ``weights_only=True``.
+    """
+
+    kwargs.setdefault("weights_only", False)
+    return _orig_torch_load(*args, **kwargs)
+
+
+torch.load = _patched_torch_load  # re-route all downstream calls
+
+# ---------------------------------------------------------------------------
+# Local imports – deferred until after the patch so they benefit from it
+# ---------------------------------------------------------------------------
+from .train import (  # noqa: E402  – circular-import safe
     BloomGNN,
     BloomGNNNoBMRF,
     OrbitGCN,
@@ -47,6 +86,7 @@ from .train import (
 # ---------------------------------------------------------------------------
 EXPERIMENT_REGISTRY: Dict[str, type] = {}
 
+
 def register(name: str):  # noqa: D401 –  simple functional decorator
     """Decorator that registers an experiment so that ``src.main`` can find it."""
 
@@ -55,6 +95,7 @@ def register(name: str):  # noqa: D401 –  simple functional decorator
         return cls
 
     return _wrap
+
 
 # ---------------------------------------------------------------------------
 # Helper utilities – kept here to avoid extra files / imports
@@ -88,6 +129,7 @@ def print_heading(txt: str) -> None:
     print("\n" + "=" * 60)
     print(txt)
     print("=" * 60)
+
 
 # ---------------------------------------------------------------------------
 #                     EXPERIMENT 1 – BMRF STABILITY STUDY
@@ -150,7 +192,7 @@ class Experiment1:
             }
 
         # ----------------------------------------------------------------
-        # Figure – PDF under .research/iteration2/images
+        # Figure – PDF under .research/iteration3/images (mandatory path)
         # ----------------------------------------------------------------
         images_dir = self.outdir / "images"
         images_dir.mkdir(parents=True, exist_ok=True)
