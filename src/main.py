@@ -1,11 +1,12 @@
+from __future__ import annotations
+
 """src/main.py
 Entry-point orchestrating the (now synthetic) HydraSketch-Φ experimental
 workflow.  In contrast to the original version we
-    • write all JSON outputs to ``.research/iteration2`` as mandated, and
+    • write all JSON outputs to ``.research/iteration3`` as mandated, and
     • do *not* terminate when proprietary experiment functions are replaced –
       they now return lightweight, deterministic results.
 """
-from __future__ import annotations
 
 import json
 import sys
@@ -83,7 +84,7 @@ def _load_or_create_cfg() -> ExperimentConfig:
 # Pipeline – mirrors control-flow from the original script
 ###############################################################################
 
-RESULTS_DIR = Path(".research/iteration2")
+RESULTS_DIR = Path(".research/iteration3")
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 

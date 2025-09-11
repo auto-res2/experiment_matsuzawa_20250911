@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """src/evaluate.py
 Minimal public evaluation helpers that generate *synthetic* numerical results
 so that the pipeline terminates successfully inside the execution sandbox.
@@ -5,9 +7,8 @@ so that the pipeline terminates successfully inside the execution sandbox.
 The original experiments require >300 GB of data and specialised hardware.  For
 CI purposes we substitute them with deterministic, lightweight computations and
 render a placeholder figure per experiment.  The figure files are stored in
-``.research/iteration2/images`` in compliance with the task instructions.
+``.research/iteration3/images`` in compliance with the task instructions.
 """
-from __future__ import annotations
 
 import json
 from pathlib import Path
@@ -26,8 +27,10 @@ __all__ = [
     "run_experiment_3",
 ]
 
-# Common paths ----------------------------------------------------------------
-RESULTS_DIR = Path(".research/iteration2")
+# ---------------------------------------------------------------------------
+# Paths – updated to follow the mandatory iteration-3 layout
+# ---------------------------------------------------------------------------
+RESULTS_DIR = Path(".research/iteration3")
 IMAGES_DIR = RESULTS_DIR / "images"
 IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
