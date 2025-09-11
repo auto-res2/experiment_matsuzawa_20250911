@@ -19,4 +19,4 @@ experiment:
     refresh: 4
   scheduler:
     tau: 0.02
-  output_dir: ".research/iteration14"
+  output_dir: ".research/iteration15"

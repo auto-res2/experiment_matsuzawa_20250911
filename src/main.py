@@ -7,7 +7,7 @@ Bug-fixes (iteration14)
       _parse() takes 0 positional arguments but 1 was given
    that occurred when `main(sys.argv[1:])` passed the CLI arguments.
 2. Delegates path handling to the updated training code which now obeys
-   the iteration14 directory policy.
+   the iteration15 directory policy.
 """
 from __future__ import annotations
 

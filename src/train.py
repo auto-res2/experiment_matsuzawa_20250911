@@ -4,15 +4,17 @@ This refactor removes every missing-file import error that blocked the
 previous CI run and makes the whole package *self-contained* so that a
 CPU-only runner can finish the smoke-test in <30 s.
 
-Key fixes (iteration14)
+Key fixes (iteration15)
 ----------------------
-1. CLI bug fixed: `_parse` now accepts an optional `argv` list to avoid
-   the TypeError encountered during the previous run.
-2. All hard-coded paths have been upgraded from **iteration13** →
-   **iteration14** to satisfy the mandatory directory convention.
-3. `output_dir` from the YAML config is now honoured so downstream code
-   can override the default location without touching the source.
-4. Doc-strings, comments and carbon-monitor paths updated accordingly.
+1. HutchFisher parameter mismatch fixed (top_k vs topk) so the dataclass
+   mapping via **kwargs works without raising TypeError.
+2. All persistence paths updated to comply with the *mandatory* directory
+   convention:
+      – Images         →  .research/iteration15/images/
+      – JSON results   →  .research/iteration15/
+3. _DummyUNet now counts forward calls (attr `_forward_counter`) so the
+   evaluation metric `unet_calls` reflects real activity.
+4. Minor clean-up: type hints & doc-strings touched where needed.
 """
 from __future__ import annotations
 
@@ -112,13 +114,14 @@ class HutchFisher(nn.Module):
 
     eig_vec: torch.Tensor  # help MyPy
 
-    def __init__(self, model: nn.Module, topk: int = 128, sketch: int = 2048, refresh: int = 256):
+    def __init__(self, model: nn.Module, *, top_k: int = 128, sketch: int = 2048, refresh: int = 256):
+        """Parameters now match `HutchConf` (top_k instead of topk)."""
         super().__init__()
         self.model = model
-        self.topk = topk
+        self.top_k = top_k
         self.sketch = sketch
         self.refresh = refresh
-        self.register_buffer("eig_vec", torch.randn(topk, self.numel()))
+        self.register_buffer("eig_vec", torch.randn(top_k, self.numel()))
         self.steps = 0
 
     def numel(self):
@@ -136,7 +139,7 @@ class HutchFisher(nn.Module):
         Q, _ = torch.linalg.qr(Y)
         B = Q.T @ torch.diag_embed(grads_flat) @ Q
         eigv, _ = torch.linalg.eigh(B)
-        top_ids = torch.argsort(eigv, descending=True)[: self.topk]
+        top_ids = torch.argsort(eigv, descending=True)[: self.top_k]
         self.eig_vec.copy_(Q[:, top_ids].T)
         return self.eig_vec
 
@@ -213,8 +216,10 @@ class _DummyUNet(nn.Module):
     def __init__(self):
         super().__init__()
         self.conv = nn.Conv2d(3, 3, kernel_size=3, padding=1)
+        self._forward_counter = 0
 
     def forward(self, x):  # noqa: D401 – simple surrogate loss
+        self._forward_counter += 1
         return self.conv(x).mean()
 
 
@@ -245,13 +250,18 @@ class RaptorDiffuser:
 # =========================================================================
 from .preprocess import ImageTokenDataset  # noqa: E402 – local import
 
+JSON_ROOT = Path(".research/iteration15")
+
 
 def fit(exp_conf: ExperimentConf, variant: str, seed: int):  # noqa: C901 – okay for single file
     """Fine-tune according to the experiment configuration."""
     torch.manual_seed(seed)
     random.seed(seed)
 
-    out_root = Path(exp_conf.output_dir)  # now driven by YAML
+    # ------------------------------------------------------------------
+    # Output directories (global + per-run)
+    # ------------------------------------------------------------------
+    out_root = JSON_ROOT  # hard-wired per mandatory policy
     out_dir = out_root / exp_conf.id / f"{variant}_seed{seed}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -299,15 +309,18 @@ def fit(exp_conf: ExperimentConf, variant: str, seed: int):  # noqa: C901 – ok
     metrics.update(energy)
 
     # write JSON result to the *mandatory* location
-    res_path = Path(exp_conf.output_dir) / f"{exp_conf.id}_{variant}_seed{seed}.json"
-    res_path.parent.mkdir(parents=True, exist_ok=True)
-    with res_path.open("w") as fp:
+    json_path = JSON_ROOT / f"{exp_conf.id}_{variant}_seed{seed}.json"
+    json_path.parent.mkdir(parents=True, exist_ok=True)
+    with json_path.open("w") as fp:
         json.dump(metrics, fp, indent=2)
 
     # also keep a copy inside the variant sub-folder for convenience
     with (out_dir / "result.json").open("w") as fp:
         json.dump(metrics, fp, indent=2)
 
+    # ------------------------------------------------------------------
+    # For automatic verification – print to stdout
+    # ------------------------------------------------------------------
     print(json.dumps(metrics, indent=2))
 
 

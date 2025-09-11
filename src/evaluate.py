@@ -14,6 +14,9 @@ from PIL import Image
 # Main public API
 # -------------------------------------------------------------------------
 
+IMAGE_DIR = Path(".research/iteration15/images")
+
+
 def evaluate_and_plot(model, exp_conf, out_dir: Path) -> Dict[str, float]:
     """Run a tiny dummy evaluation and save an image.
 
@@ -32,9 +35,7 @@ def evaluate_and_plot(model, exp_conf, out_dir: Path) -> Dict[str, float]:
     with torch.no_grad():
         loss = model.pipe.unet(dummy).item()
 
-    # Pretend the number of UNet calls equals dataset size * epochs – we
-    # can safely pull that from exp_conf and the training dataloader len
-    # captured inside `out_dir / "train_dl_len.txt"` if present.
+    # Number of UNet calls recorded by dummy model; default to 1 otherwise.
     unet_calls = getattr(model.pipe.unet, "_forward_counter", 1)
 
     # ------------------------------------------------------------------
@@ -43,9 +44,8 @@ def evaluate_and_plot(model, exp_conf, out_dir: Path) -> Dict[str, float]:
     img_arr = (torch.sigmoid(dummy[0]) * 255).to(torch.uint8).cpu().permute(1, 2, 0).numpy()
     img = Image.fromarray(img_arr)
 
-    images_dir = Path(exp_conf.output_dir) / "images"  # iteration14 compliant
-    images_dir.mkdir(parents=True, exist_ok=True)
-    img_path = images_dir / f"{exp_conf.id}_{int(time.time())}.png"
+    IMAGE_DIR.mkdir(parents=True, exist_ok=True)
+    img_path = IMAGE_DIR / f"{exp_conf.id}_{int(time.time())}.png"
     img.save(img_path)
 
     # ------------------------------------------------------------------
