@@ -11,8 +11,8 @@ experiment_1:
       repo: imdb               # public – replaces private Health-Fed
       split: train
     reddit_year:
-      repo: SocialGrep/one-year-of-tsla-on-reddit
-      split: null
+      repo: emotion            # lightweight, script-free replacement for Reddit-Year
+      split: train
     ogbn_products:
       repo: ag_news            # re-use small dataset to keep CI lightweight
       split: test
@@ -40,11 +40,12 @@ experiment_3:
   name: Privacy, Traffic-Analysis Resistance & Temporal Fairness
   datasets:
     reddit_year:
-      repo: SocialGrep/one-year-of-tsla-on-reddit
-      split: null
+      repo: emotion            # match the change above so script-free dataset is used
+      split: train
   tau: 30
   service_days: 180
   privacy_targets:
     epsilon_T: 2.0
     delta: 1e-5
   seeds: [7, 8, 9]
+
