@@ -1,5 +1,5 @@
 """src/main.py – entry-point:  `python -m src.main`
-Now points to iteration7 artefact directory and gracefully skips experiments
+Now points to iteration8 artefact directory and gracefully skips experiments
 that rely on the optional `conductor-ai` package when it is not installed.
 """
 from __future__ import annotations
@@ -22,7 +22,7 @@ _DEFAULT_YAML: Dict[str, Any] = {
     },
     "seeds": [11, 13, 17, 19, 23],
     "datasets": {
-        "wmt22_en_de": "https://huggingface.co/datasets/wmt22",
+        "wmt22_en_de": "https://huggingface.co/datasets/wmt",
         "cath_43": "https://huggingface.co/datasets/cctien/protein_backbone_cath_4.3",
         "humaneval": "https://huggingface.co/datasets/openai/openai_humaneval",
         "mt50k": "s3://conductor-public/mt50k_v1.csv",

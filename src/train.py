@@ -1,5 +1,5 @@
 """src/train.py
-Updated for iteration7 path requirements, robust model loading, and conditional
+Updated for iteration8 path requirements, robust model loading, and conditional
 execution when the optional `conductor` package is unavailable.
 """
 from __future__ import annotations
@@ -65,8 +65,8 @@ from pynvml import (  # noqa: E402 – external dep that may not exist on all ho
 # CONSTANTS & PATHS ------------------------------------------------------------
 # ---------------------------------------------------------------------------
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-# All JSON/image artefacts must live under “.research/iteration7/…”.
-ART_DIR = ROOT / ".research" / "iteration7"
+# All JSON/image artefacts must live under “.research/iteration8/…”.
+ART_DIR = ROOT / ".research" / "iteration8"
 IMG_DIR = ART_DIR / "images"
 ART_DIR.mkdir(parents=True, exist_ok=True)
 IMG_DIR.mkdir(parents=True, exist_ok=True)
@@ -138,7 +138,7 @@ def line_plot(
     title: str,
     filename: pathlib.Path,
 ):
-    """Guaranteed save under .research/iteration7/images."""
+    """Guaranteed save under .research/iteration8/images."""
     filename = IMG_DIR / filename.with_suffix("").name
     filename = filename.with_suffix(".pdf")
     filename.parent.mkdir(parents=True, exist_ok=True)
@@ -170,7 +170,7 @@ class Summary:
     timestamp: str
 
     def save(self, path: pathlib.Path):
-        """Store inside .research/iteration7."""
+        """Store inside .research/iteration8."""
         path = ART_DIR / path.name  # enforce location
         with open(path, "w") as f:
             json.dump(asdict(self), f, indent=2)
