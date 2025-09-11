@@ -1,8 +1,10 @@
 """
 src/evaluate.py
 ================
-Evaluation utilities, plotting helpers and GPU-power instrumentation that were
-previously embedded in the single-file experiment script.
+Evaluation utilities, plotting helpers and GPU-power instrumentation.
+The *only* change compared to the original file is that all image output
+is now redirected to the mandatory directory ``.research/iteration3/images``
+(see instructions).
 """
 from __future__ import annotations
 
@@ -17,13 +19,17 @@ from huggingface_hub import list_repo_files
 # Force head-less backend – plots are saved directly to PDF.
 matplotlib.use("Agg")
 
+# Pre-compute image / figure output directory (created lazily).
+_IMG_DIR = Path(".research/iteration3/images")
+_IMG_DIR.mkdir(parents=True, exist_ok=True)
+
 # ---------------------------------------------------------------------------
-# 1. Strict resource checker – ensure a model repository actually contains
-#    weight files before we attempt to download / instantiate it.
+# 1. Strict resource checker – ensure that a model repository actually
+#    contains weight files before we attempt to download / instantiate it.
 # ---------------------------------------------------------------------------
 
 def ensure_hf_model_exists(repo_id: str, revision: str | None = None) -> None:
-    """Abort execution if *any* of the requested model files are missing on the Hub."""
+    """Abort execution if *any* of the requested model files are missing."""
     try:
         files = list_repo_files(repo_id, revision=revision)
     except Exception as exc:  # pragma: no cover – network / Hub errors are fatal.
@@ -38,8 +44,8 @@ def ensure_hf_model_exists(repo_id: str, revision: str | None = None) -> None:
         )
 
 # ---------------------------------------------------------------------------
-# 2. GPU-power sampler – used to measure instantaneous energy draw during
-#    inference / training.  Falls back gracefully when NVML is unavailable.
+# 2. GPU-power sampler – used to measure instantaneous energy draw. Falls back
+#    gracefully when NVML is unavailable. *Unchanged* from the original code.
 # ---------------------------------------------------------------------------
 
 try:
@@ -56,18 +62,7 @@ except ModuleNotFoundError:  # pragma: no cover – CPU-only environments.
 
 
 def sample_gpu_power(interval_s: float, stop_event, device_idx: int = 0):
-    """Continuously sample GPU power usage (Watts) until *stop_event* is set.
-
-    Parameters
-    ----------
-    interval_s : float
-        Sampling interval in seconds.
-    stop_event : threading.Event | torch.cuda.Event | Any
-        Event-like object whose ``is_set()``/``query()`` method signals measurement
-        termination.
-    device_idx : int, default = 0
-        GPU index.
-    """
+    """Continuously sample GPU power usage (Watts) until *stop_event* is set."""
     if not _NVML_AVAILABLE:
         raise RuntimeError("pynvml is not installed – GPU power sampling is unavailable.")
 
@@ -91,7 +86,8 @@ def sample_gpu_power(interval_s: float, stop_event, device_idx: int = 0):
     return readings
 
 # ---------------------------------------------------------------------------
-# 3. Simple line-plot helper.
+# 3. Simple line-plot helper – *now* writes to the mandatory location under
+#    ``.research/iteration3/images``.
 # ---------------------------------------------------------------------------
 
 def save_line_plot(
@@ -102,7 +98,7 @@ def save_line_plot(
     title: str,
     filename: str,
 ) -> str:
-    """Save a labelled line plot as PDF and return the file path."""
+    """Save a labelled line plot as PDF and return the absolute file path."""
     plt.figure(figsize=(6, 4))
     plt.plot(xs, ys, marker="o", label=title)
 
@@ -115,8 +111,8 @@ def save_line_plot(
     plt.legend()
     plt.grid(True)
 
-    Path("figures").mkdir(exist_ok=True)
-    pdf_path = Path("figures") / filename
+    _IMG_DIR.mkdir(parents=True, exist_ok=True)
+    pdf_path = _IMG_DIR / filename
     plt.savefig(pdf_path, bbox_inches="tight", format="pdf")
     plt.close()
 

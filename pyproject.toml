@@ -10,12 +10,12 @@ readme = "README.md"
 requires-python = ">=3.9"
 
 # -----------------------------------------------------------------------------
-# Dependencies – keep the list minimal; add new entries if future fixes require
-# additional libraries.  Ensure absence of circular dependencies.
+# Dependencies – keep the list minimal but sufficient for the fixed pipeline.
 # -----------------------------------------------------------------------------
 dependencies = [
     "matplotlib>=3.8",
     "huggingface_hub>=0.20",
+    "datasets>=2.19",  # Needed for preprocess.load_data()
     "pynvml>=11.0",
 ]
 
