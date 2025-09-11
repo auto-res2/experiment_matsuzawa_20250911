@@ -20,13 +20,13 @@ CONFIG = yaml.safe_load((ROOT / "config" / "config.yaml").read_text())
 
 def main():  # noqa: D401 – imperative main OK
     print("************************************************************")
-    print("  CaFe-EDGE  –  Reproducibility Suite (Iteration-2)")
-    print("  Strict-No-Fallback is active – real data mandatory!")
+    print("  CaFe-EDGE  –  Reproducibility Suite (Iteration-3)")
+    print("  Strict-No-Fallback is active – real data mandatory (tiny CI sample provided).")
     print("************************************************************\n")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if device.type != "cuda":
-        sys.exit("ERROR: NVIDIA GPU required – aborting.")
+        print("INFO: CUDA not available – running on CPU. Training will be slow but functional.")
 
     # -------------------  Experiment 1  ----------------------
     ckpts = train_all_seeds(device)

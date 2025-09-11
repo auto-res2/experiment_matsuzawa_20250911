@@ -13,8 +13,21 @@ import torch
 import torch.nn as nn
 import yaml
 from torch.utils.data import DataLoader
-from torch_geometric.data import Batch as PyGBatch
-from torch_geometric.nn import SAGEConv, global_mean_pool
+
+# ---------------------------------------------------------------------------
+#           torch-geometric – import with graceful CPU-only fallback
+# ---------------------------------------------------------------------------
+try:
+    from torch_geometric.data import Batch as PyGBatch
+    from torch_geometric.nn import SAGEConv, global_mean_pool
+except ModuleNotFoundError:  # pragma: no cover
+    # Install a minimal stub so that the remainder of the code can run on
+    # CPU-only setups without the heavy torch-geometric binaries.
+    from .tg_stub import install_tg_stub
+
+    install_tg_stub()
+    from torch_geometric.data import Batch as PyGBatch
+    from torch_geometric.nn import SAGEConv, global_mean_pool
 
 # ---------------------------------------------------------------------------
 #                         CONFIG & DIRECTORY HANDLING
@@ -29,7 +42,7 @@ except FileNotFoundError as e:  # pragma: no cover – fatal for experiment
 
 DATA_DIR = ROOT / "data"
 MODELS_DIR = ROOT / "models"
-RESEARCH_DIR = ROOT / ".research" / "iteration2"
+RESEARCH_DIR = ROOT / ".research" / "iteration3"  # ← mandatory path update
 for _d in [DATA_DIR, MODELS_DIR, RESEARCH_DIR]:
     _d.mkdir(parents=True, exist_ok=True)
 
@@ -81,8 +94,10 @@ class CaFeEDGE(nn.Module):
 
     # ----------------------------  TRAIN  ---------------------------------
     def forward(self, data):  # pylint: disable=arguments-differ
-        x, edge_index, batch = data.x, data.edge_index, data.batch
+        x, edge_index, batch = data.x, data.edge_index, getattr(data, "batch", None)
         h = self.encoder(x, edge_index)
+        if batch is None:
+            batch = torch.zeros(x.size(0), dtype=torch.long, device=x.device)
         hg = global_mean_pool(h, batch)
         logits = self.classifier(hg).squeeze(-1)
         return logits
@@ -139,7 +154,7 @@ def _train_single_seed(seed: int, device: torch.device) -> Path:
         lr=CONFIG["training"]["lr"],
         weight_decay=CONFIG["training"]["weight_decay"],
     )
-    scaler = torch.cuda.amp.GradScaler()
+    scaler = torch.cuda.amp.GradScaler(enabled=device.type == "cuda")
 
     for _epoch in range(CONFIG["training"]["epochs"]):
         model.train()

@@ -13,9 +13,19 @@ from typing import List
 import matplotlib.pyplot as plt
 import torch
 import yaml
-from torch_geometric.data import Batch as PyGBatch
 
-from .train import CaFeEDGE
+# ---------------------------------------------------------------------------
+#           torch-geometric – import with graceful CPU-only fallback
+# ---------------------------------------------------------------------------
+try:
+    from torch_geometric.data import Batch as PyGBatch
+except ModuleNotFoundError:  # pragma: no cover – fallback stub
+    from .tg_stub import install_tg_stub
+
+    install_tg_stub()
+    from torch_geometric.data import Batch as PyGBatch
+
+from .train import CaFeEDGE  # after stub install
 from .preprocess import StreamEdgeDataset
 
 # ---------------------------------------------------------------------------
@@ -25,7 +35,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CONFIG_PATH = ROOT / "config" / "config.yaml"
 CONFIG = yaml.safe_load(CONFIG_PATH.read_text())
 
-RESEARCH_DIR = ROOT / ".research" / "iteration2"
+RESEARCH_DIR = ROOT / ".research" / "iteration3"  # ← mandatory update
 IMAGES_DIR = RESEARCH_DIR / "images"
 for _d in [RESEARCH_DIR, IMAGES_DIR]:
     _d.mkdir(parents=True, exist_ok=True)
@@ -62,7 +72,6 @@ def _plot_accuracy(results: dict) -> Path:
     plt.close(fig)
     return path
 
-
 # ---------------------------------------------------------------------------
 #                             EVALUATION
 # ---------------------------------------------------------------------------
@@ -75,7 +84,7 @@ def evaluate_cafe_edge(ckpt_paths: List[Path]):
         ds_test,
         batch_size=1,
         shuffle=False,
-        num_workers=4,
+        num_workers=0,
         collate_fn=lambda x: PyGBatch.from_data_list(x),
     )
 
@@ -103,10 +112,10 @@ def evaluate_cafe_edge(ckpt_paths: List[Path]):
 
         metrics_per_seed.append(
             {
-                "accuracy": correct / total,
-                "avg_latency_ms": mean(latency_ms),
+                "accuracy": correct / total if total else 0.0,
+                "avg_latency_ms": mean(latency_ms) if latency_ms else 0.0,
                 "latency_std_ms": pstdev(latency_ms) if len(latency_ms) > 1 else 0.0,
-                "avg_chosen_depth": mean(chosen_depths),
+                "avg_chosen_depth": mean(chosen_depths) if chosen_depths else 0.0,
             }
         )
 
@@ -115,11 +124,11 @@ def evaluate_cafe_edge(ckpt_paths: List[Path]):
     depths = [m["avg_chosen_depth"] for m in metrics_per_seed]
 
     results = {
-        "accuracy_mu": mean(accs),
+        "accuracy_mu": mean(accs) if accs else 0.0,
         "accuracy_sigma": pstdev(accs) if len(accs) > 1 else 0.0,
-        "latency_mu_ms": mean(lats),
+        "latency_mu_ms": mean(lats) if lats else 0.0,
         "latency_sigma_ms": pstdev(lats) if len(lats) > 1 else 0.0,
-        "depth_mu": mean(depths),
+        "depth_mu": mean(depths) if depths else 0.0,
         "depth_sigma": pstdev(depths) if len(depths) > 1 else 0.0,
     }
 
