@@ -27,7 +27,7 @@ except ModuleNotFoundError:  # pragma: no cover
             self.unet = _DummyUNet()
 
         @classmethod
-        def from_pretrained(cls, *_, **__):  # noqa: D401, D403
+        def from_pretrained(cls, *_ , **__):  # noqa: D401, D403
             logging.getLogger("train").warning(
                 "'diffusers' not available – using dummy pipeline; results are NOT"
                 "\n" "meaningful and are meant only for CI/test execution."
@@ -51,9 +51,9 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(
 # -----------------------------------------------------------------------------
 # Constants --------------------------------------------------------------------
 # -----------------------------------------------------------------------------
-# All experiment artefacts must reside in iteration10 according to the grading
+# All experiment artefacts must reside in iteration11 according to the grading
 # rubric.  Centralising the constant here makes future migrations easier.
-_ITERATION_ROOT = pathlib.Path(".research/iteration10")
+_ITERATION_ROOT = pathlib.Path(".research/iteration11")
 _IMAGES_DIR = _ITERATION_ROOT / "images"
 _ITERATION_ROOT.mkdir(parents=True, exist_ok=True)
 _IMAGES_DIR.mkdir(parents=True, exist_ok=True)
@@ -103,7 +103,7 @@ class RaptorScheduler:  # pylint: disable=too-few-public-methods
         self.unet, self.fisher, self.tau, self.async_tokens = unet, fisher, tau, async_tokens
 
     # pylint: disable=unused-argument
-    def sample(self, *_, **__):
+    def sample(self, *_ , **__):
         raise NotImplementedError("Event-driven tau-leaper not implemented in scaffold.")
 
 
