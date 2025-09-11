@@ -8,5 +8,5 @@ dependencies = [
   "datasets>=2.16.0",
   "huggingface_hub>=0.12.0",
   "pyyaml>=5.4",
-  "Pillow>=9.0.0",  # required for image decoding during dataset validation
+  "Pillow>=9.0.0"  # required for image decoding during dataset validation
 ]

@@ -16,13 +16,11 @@ from typing import Any, Dict
 # Constants – central place so the mandatory research paths are used consistently
 # -----------------------------------------------------------------------------
 # NOTE: All experiment artefacts for *this* iteration must live under
-# `.research/iteration3` according to the policy description.
-_JSON_ROOT = Path(".research/iteration3")
+# `.research/iteration4` according to the current policy description.
+_JSON_ROOT = Path(".research/iteration4")
 _JSON_ROOT.mkdir(parents=True, exist_ok=True)
 
-# A dedicated sub-folder for any images that future extensions may write.  Even
-# though the placeholder does not create figures yet, we prepare the directory
-# so that downstream tooling can rely on its presence.
+# A dedicated sub-folder for any images that future extensions may write.
 (_JSON_ROOT / "images").mkdir(parents=True, exist_ok=True)
 
 

@@ -8,9 +8,9 @@ from typing import Any, Dict, Optional
 
 import yaml  # lightweight and part of most ML base images
 
-# Early import of torch so that missing CUDA environments fail fast.  Even if
-# we do not actively use the module here, the original monolithic script had
-# the same behaviour.
+# Early import of torch so that missing CUDA environments fail fast.
+# Even if we do not actively use the module here, the original monolithic
+# script had the same behaviour.
 import torch  # noqa: F401 – intentional side-effect import
 
 from .preprocess import ResourceValidator
@@ -36,6 +36,7 @@ with _CONFIG_PATH.open("r", encoding="utf-8") as fh:
 
 def _authenticate() -> Optional[str]:
     """Return the token (may be None) so other modules can reuse it."""
+
     hf_token = os.getenv("HF_TOKEN")
     if hf_token:
         from huggingface_hub import login
@@ -55,14 +56,14 @@ def main() -> None:  # noqa: D401 – imperative style
     validator = ResourceValidator(hf_token)
 
     # --------------------------------------------------------------
-    # 1. Validate all datasets
+    # 1. Validate all datasets & models (fail-fast on first error)
+    # --------------------------------------------------------------
     try:
         for ds in CONFIG["resources"]["datasets"].values():
             print(f"Validating dataset: {ds} …", flush=True)
             validator.validate_dataset(ds)
             print("  ✓ accessible")
 
-        # 2. Validate all models
         for model in CONFIG["resources"]["models"].values():
             print(f"Validating model: {model} …", flush=True)
             validator.validate_model(model)
@@ -74,8 +75,18 @@ def main() -> None:  # noqa: D401 – imperative style
         sys.exit(1)
 
     # --------------------------------------------------------------
-    # 3. All resources are reachable – launch (placeholder) experiment
+    # 2. All resources are reachable – launch (placeholder) experiment
+    # --------------------------------------------------------------
     run_experiment_placeholders(CONFIG)
+
+    # --------------------------------------------------------------
+    # 3. Guard against PyGILState_Release finalisation bugs originating from
+    #    background threads of native libraries (e.g. pyarrow, aiohttp).
+    #    A hard exit circumvents interpreter shutdown edge-cases seen in CI.
+    # --------------------------------------------------------------
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os._exit(0)  # noqa: WPS437 – intentional hard exit as a stability measure
 
 
 if __name__ == "__main__":  # pragma: no cover
