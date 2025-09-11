@@ -6,11 +6,13 @@ build-backend = "setuptools.build_meta"
 name = "maestro-experiments"
 version = "0.1.0"
 
-# We intentionally pin *CPU* wheels so CI does not download massive CUDA binaries.
-# The lightweight demo implementation does not require GPU kernels.
+# We intentionally depend on the *default* PyPI wheels so that uv/pip can
+# resolve them without the need for an extra index.  The CPU-only variant
+# (`+cpu`) caused resolution failures on the CI runner because those wheels are
+# hosted on the PyTorch index rather than on PyPI.
 
 dependencies = [
-  "torch==2.2.2+cpu; platform_system!='Darwin' and platform_machine!='arm64'",
+  "torch==2.2.2",
   "torch_geometric==2.6.1",
   "torchdiffeq>=0.2.3",
   "flwr>=1.5.0",
