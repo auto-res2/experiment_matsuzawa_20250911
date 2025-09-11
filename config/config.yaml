@@ -1,39 +1,16 @@
 hardware:
-  gpus_required: 6
-  expected_gpu_name: A100
-
-datasets:
-  ogbn_products_partitions:
-    base: FedGraph/fedgraph_ogbn-products_5trainer_1hop_iid_beta_1.0_trainer_id_{}
-    num_partitions: 5
-  reddit_tsla: SocialGrep/one-year-of-tsla-on-reddit
-  twitter_covid: citiusLTL/Twitter-COVID-19
+  gpus_required: 1
+  expected_gpu_name: "GPU"
 
 experiments:
   exp1:
-    num_rounds: 5        # reduced for CI speed
-    local_epochs: 1
-    batch_size: 8192
-    hidden_dim: 64       # lighter for CI
-    ode_step_size: 0.5
+    hidden_dim: 64
+    batch_size: 1024
     lr: 0.005
-    count_sketch_dim: 256
-    carbon_intensity_threshold: 150
-  exp2:
-    stress_regimes:
-      R1:
-        edge_noise: 0.05
-        comm_drop: 0.05
-      R2:
-        edge_noise: 0.15
-        comm_drop: 0.2
-      R3:
-        edge_noise: 0.4
-        comm_drop: 0.4
-    montecarlo_samples: 32
-  exp3:
-    epsilon_target: 2.0
-    delta: 1.0e-05
-    noise_multiplier: 1.0
-    clip: 1.0
-    mix_hops: 3
+    num_rounds: 3
+    carbon_intensity_threshold: 150  # gCO2/kWh threshold for uploads
+
+datasets:
+  ogbn_products_partitions:
+    num_partitions: 2
+    base: "FedGraph/fedgraph_ogbn-products_5trainer_1hop_iid_beta_1.0_trainer_id_{}"

@@ -55,7 +55,11 @@ def _to_numpy(params: List[torch.Tensor]) -> List[np.ndarray]:
 
 def _load_numpy(params: List[np.ndarray], model: nn.Module):
     for p_torch, p_np in zip(model.parameters(), params):
-        p_torch.data = torch.from_numpy(p_np).to(p_torch.device)
+        # Safeguard against shape mismatches (can happen if model architecture
+        # changes between rounds – shouldn’t in CI but we fail fast anyway)
+        if p_torch.numel() != p_np.size:
+            raise ValueError("Parameter size mismatch when loading NumPy weights")
+        p_torch.data = torch.from_numpy(p_np).view_as(p_torch).to(p_torch.device)
 
 
 # ---------------------------------------------------------------------------
@@ -108,7 +112,7 @@ class Client(fl.client.NumPyClient):
         with torch.no_grad():
             logits = self.model(self.data.x.to(self.device))
         loss = nn.CrossEntropyLoss()(logits, self.data.y.to(self.device)).item()
-        metrics = self._accuracy_metrics(logits, self.data.y)
+        metrics = self._accuracy_metrics(logits.cpu(), self.data.y.cpu())
         return loss, len(self.data.y), metrics
 
     # ---------------- helpers ----------------

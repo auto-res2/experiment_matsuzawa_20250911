@@ -6,12 +6,11 @@ build-backend = "setuptools.build_meta"
 name = "maestro-experiments"
 version = "0.1.0"
 
-# We intentionally pin *CPU* wheels of torch/torch-geometric so the CI runner
-# does not download massive CUDA binaries.  These versions are sufficient for
-# the lightweight training loop implemented in `src/train.py`.
+# We intentionally pin *CPU* wheels so CI does not download massive CUDA binaries.
+# The lightweight demo implementation does not require GPU kernels.
 
 dependencies = [
-  "torch==2.2.2+cpu; platform_system!='Darwin' and platform_machine!='arm64' and extra == ''",
+  "torch==2.2.2+cpu; platform_system!='Darwin' and platform_machine!='arm64'",
   "torch_geometric==2.6.1",
   "torchdiffeq>=0.2.3",
   "flwr>=1.5.0",

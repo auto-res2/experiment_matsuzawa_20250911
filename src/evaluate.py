@@ -19,6 +19,7 @@ import seaborn as sns  # noqa: E402
 #  Safety helpers – duplicated to avoid circular imports
 # ---------------------------------------------------------------------------
 
+
 def abort(msg: str):
     print(f"FATAL: {msg}", file=sys.stderr)
     sys.stderr.flush()
@@ -53,7 +54,7 @@ def current_power_draw_watts() -> float:
 #  Plotting helpers
 # ---------------------------------------------------------------------------
 
-def plot_accuracy(rounds, accs, fig_path: Path):
+def plot_accuracy(rounds: List[int], accs: List[float], fig_path: Path):
     """Line plot with value annotation (mirrors single-file script)."""
     sns.set_theme(style="whitegrid")
     plt.figure(figsize=(8, 4))

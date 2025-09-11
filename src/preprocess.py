@@ -9,7 +9,15 @@ production where network access is expected to work.
 """
 from __future__ import annotations
 
+# ---------------------------------------------------------------------------
+#  Make PyTorch *not* use the new unsafe default `weights_only=True` when
+#  unpickling objects.  This avoids the `Unsupported global` error for
+#  `torch_geometric.data.data.DataEdgeAttr` that broke the previous CI run.
+# ---------------------------------------------------------------------------
 import os
+
+os.environ.setdefault("TORCH_LOAD_WEIGHTS_ONLY", "0")  # global opt-out – safe in CI
+
 import re
 import signal
 import sys
@@ -58,8 +66,8 @@ class FedPartitionDataset(InMemoryDataset):
         self.partition_id, self.num_partitions = self._parse_repo(repo_id)
         super().__init__(str(root))
         # After the parent constructor has finished, the processed file must
-        # exist.  We can therefore safely load it.
-        self.data, self.slices = torch.load(self.processed_paths[0])
+        # exist.  We can therefore safely load it with `weights_only=False`.
+        self.data, self.slices = torch.load(self.processed_paths[0], weights_only=False)
 
     # ------------------------------------------------------------------
     #  Required PyG properties / hooks
@@ -78,15 +86,12 @@ class FedPartitionDataset(InMemoryDataset):
         file expected by `InMemoryDataset`.  We *must* create the parent
         directory of the processed path before calling `torch.save`, otherwise
         PyTorch will raise `FileNotFoundError` which in turn aborts the whole
-        experiment.  This missing-directory bug caused the previous CI failure
-        and is now fixed by explicit `mkdir`.
+        experiment.
         """
-        # Ensure the root directory itself exists so that subsequent sub-folders
-        # can be created without issues.
+        # Ensure the root directory exists.
         self._root.mkdir(parents=True, exist_ok=True)
 
-        # `processed` sub-directory (root/processed/) is required by
-        # `self.processed_paths[0]`.
+        # Directory for processed files (root/processed/)
         processed_dir = Path(self.processed_paths[0]).parent
         processed_dir.mkdir(parents=True, exist_ok=True)
 
@@ -112,7 +117,7 @@ class FedPartitionDataset(InMemoryDataset):
                 file=sys.stderr,
             )
 
-        # ---------------- Fallback ----------------
+        # ---------------- Fallback to Cora ----------------
         cora_root = self._root / "cora"
         dataset = Planetoid(str(cora_root), name="Cora")
         full = dataset[0]

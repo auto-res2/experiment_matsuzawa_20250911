@@ -17,12 +17,12 @@ from .train import CarbonController, Client
 from .evaluate import current_power_draw_watts, plot_accuracy, save_json
 
 # ---------------------------------------------------------------------------
-#  Resolve project root and mandatory research folders (iteration-10 layout)
+#  Resolve project root and mandatory research folders (iteration-11 layout)
 # ---------------------------------------------------------------------------
 ROOT = Path(__file__).resolve().parent.parent
-RESEARCH_DIR = ROOT / ".research" / "iteration10"  # <-- UPDATED
+RESEARCH_DIR = ROOT / ".research" / "iteration11"  # UPDATED as per spec
 DATA_DIR = RESEARCH_DIR / "data"
-FIG_DIR = RESEARCH_DIR / "images"  # must equal .research/iteration10/images
+FIG_DIR = RESEARCH_DIR / "images"  # must equal .research/iteration11/images
 RES_DIR = RESEARCH_DIR              # JSON files are saved directly here
 CONFIG_DIR = ROOT / "config"
 
@@ -61,6 +61,22 @@ def ensure_gpu():
             file=os.sys.stderr,
         )
 
+# ---------------------------------------------------------------------------
+#  Custom strategy that stores the final global parameters so we can compute
+#  accuracy even if Flower’s metrics aggregation is disabled.
+# ---------------------------------------------------------------------------
+
+class FedAvgSave(fl.server.strategy.FedAvg):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.final_parameters: fl.common.parameters.Parameters | None = None
+
+    def aggregate_fit(self, rnd, results, failures):  # noqa: D401
+        aggregated = super().aggregate_fit(rnd, results, failures)
+        if aggregated is not None:
+            # `aggregated` is a tuple (Parameters, Dict[str, Scalar])
+            self.final_parameters = aggregated[0]
+        return aggregated
 
 # ---------------------------------------------------------------------------
 #  Experiment 1 – Federated Continuous-Time Training & Carbon Audit
@@ -94,7 +110,7 @@ def run_experiment_1() -> Dict:
         print(f"WARNING: CarbonController disabled – reason: {exc}", file=os.sys.stderr)
 
     # 3 / Flower strategy ----------------------------------------------------
-    strategy = fl.server.strategy.FedAvg()
+    strategy = FedAvgSave()
 
     # 4 / Simulation ---------------------------------------------------------
     clients = [lambda d=ds: Client(d, cfg_exp1) for ds in partitions]
@@ -111,19 +127,27 @@ def run_experiment_1() -> Dict:
     duration_secs = time.time() - start_time
 
     # 5 / Metrics ------------------------------------------------------------
+    # Prefer Flower’s aggregated metrics, but fall back to our own computation.
     acc_tuples: List[Tuple[int, float]] = []
     if hist.metrics_centralized.get("accuracy"):
         acc_tuples = cast(List[Tuple[int, float]], hist.metrics_centralized.get("accuracy"))
     elif hist.metrics_distributed.get("accuracy"):
         acc_tuples = cast(List[Tuple[int, float]], hist.metrics_distributed.get("accuracy"))
 
-    if not acc_tuples:
-        print("WARNING: No accuracy metrics returned by clients.", file=os.sys.stderr)
-        rounds: List[int] = []
-        accs: List[float] = []
-    else:
+    if acc_tuples:
         rounds, accs = zip(*acc_tuples)
         rounds, accs = list(rounds), list(accs)
+    else:
+        # ---------------- Manual accuracy computation ----------------
+        if strategy.final_parameters is None:
+            print("WARNING: No aggregated parameters – cannot compute accuracy.", file=os.sys.stderr)
+            rounds, accs = [], []
+        else:
+            reference_client = Client(partitions[0], cfg_exp1)
+            reference_client.set_parameters(strategy.final_parameters.tensors)
+            loss, _, metrics = reference_client.evaluate(strategy.final_parameters.tensors)
+            rounds, accs = [cfg_exp1["num_rounds"]], [metrics["accuracy"]]
+            print(f"Computed final accuracy manually: {accs[0]:.4f}")
 
     # 6 / Communication volume ----------------------------------------------
     reference_client = Client(partitions[0], cfg_exp1)
@@ -141,7 +165,7 @@ def run_experiment_1() -> Dict:
         "final_accuracy": float(accs[-1]) if accs else None,
         "best_accuracy": max(accs) if accs else None,
         "rounds": len(rounds),
-        "network_bytes": network_bytes,
+        "network_bytes": int(network_bytes),
         "wh_compute": wh_compute,
         "wh_network": wh_network,
     }
