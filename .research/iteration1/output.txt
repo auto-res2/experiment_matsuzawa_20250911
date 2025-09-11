@@ -1,0 +1,7 @@
+=== uv sync start Thu Sep 11 05:24:45 AM UTC 2025 ===
+=== uv install end Thu Sep 11 05:25:46 AM UTC 2025 ===
+=== experiment start Thu Sep 11 05:25:46 AM UTC 2025 ===
+Dataset archive not found locally – attempting download from
+  https://edgebench.org/download/edgebench-48-v1.2.tar
+
+(This may take a long time; the file is >300 GB.)
