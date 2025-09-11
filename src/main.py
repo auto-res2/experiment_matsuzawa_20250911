@@ -1,126 +1,94 @@
+"""src/main.py
+-------------------------------------------------------------------------
+Entry-point that orchestrates the preparation steps and then delegates to
+`src.train.run_full_training`.  Must be called as
+
+    python -m src.main
+"""
 from __future__ import annotations
 
-"""src/main.py
-Entry-point orchestrating the (now synthetic) HydraSketch-Φ experimental
-workflow.  In contrast to the original version we
-    • write all JSON outputs to ``.research/iteration3`` as mandated, and
-    • do *not* terminate when proprietary experiment functions are replaced –
-      they now return lightweight, deterministic results.
-"""
-
 import json
-import sys
-from dataclasses import asdict, dataclass
+import os
 from pathlib import Path
-from typing import Any, Dict
 
-import yaml
+from .preprocess import download_file, extract_tar
+from .train import ExperimentConfig, run_full_training
 
-from .evaluate import (
-    run_experiment_1,
-    run_experiment_2,
-    run_experiment_3,
-)
-from .preprocess import ensure_directories, download_dataset, extract_dataset
-
-###############################################################################
-# Configuration handling – serialised to config/config.yaml on first run
-###############################################################################
-
-CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
+# ---------------------------------------------------------------------
+# 0.  Paths & constants
+# ---------------------------------------------------------------------
+ROOT_DIR = Path(__file__).resolve().parent.parent
+CONFIG_DIR = ROOT_DIR / "config"
 CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-CONFIG_PATH = CONFIG_DIR / "config.yaml"
+DEFAULT_CONFIG_PATH = CONFIG_DIR / "config.yaml"
+
+# ---------------------------------------------------------------------
+# 1.  Hardware sanity check helpers
+# ---------------------------------------------------------------------
+_REQUIRED_ENV_VARS = [
+    "EDGE_HARDWARE_AVAILABLE",  # must be "1" when boards are connected
+]
 
 
-@dataclass
-class ExperimentConfig:
-    # Dataset --------------------------------------------------------------
-    dataset_name: str = "EdgeBench-48"
-    dataset_version: str = "v1.2"
-    dataset_url: str = "https://edgebench.org/download/edgebench-48-v1.2.tar"
-    dataset_archive_name: str = "edgebench-48-v1.2.tar"
-
-    # Models ---------------------------------------------------------------
-    vision_backbone: str = "microsoft/resnet-18"
-    radar_backbone: str = "timm/pointnetlite"
-    gas_backbone: str = "custom_gru_128"
-    ecg_backbone: str = "custom_resnet1d_10"
-
-    # Hyper-parameters -----------------------------------------------------
-    learning_rates: list[float] = (1e-3, 3e-4, 1e-4)
-    fractional_sde_alpha: list[float] = (0.25, 0.5, 0.75)
-    teleport_threshold: list[float] = (0.5, 1.0, 2.0)
-    latency_grid: list[str] = ("lambda1", "lambda2", "lambda3", "lambda4")
-
-    # Budgets --------------------------------------------------------------
-    ram_caps_kb: list[int] = (10, 50, 100)
-    latency_caps_ms: list[int] = (15, 30)
-
-    # Re-usable paths ------------------------------------------------------
-    data_root: Path = Path("data")
-    output_root: Path = Path("outputs")  # kept for compatibility; unused now
-    figure_root: Path = Path("figures")
-
-    # Convenience ----------------------------------------------------------
-
-    def as_yaml(self) -> str:
-        return yaml.dump(asdict(self), sort_keys=False)
+def _check_hardware_available() -> None:
+    for var in _REQUIRED_ENV_VARS:
+        if os.getenv(var, "0") != "1":
+            raise RuntimeError(
+                "Required mixed-signal hardware not detected.  Environment "
+                f"variable ‘{var}=1’ must be set when InP-PCM boards and GAP9 "
+                "SoCs are physically connected."
+            )
+    print("[INFO] Required edge hardware detected via environment flags.")
 
 
-def _load_or_create_cfg() -> ExperimentConfig:
-    if CONFIG_PATH.exists():
-        try:
-            cfg_dict = yaml.safe_load(CONFIG_PATH.read_text())
-            return ExperimentConfig(**cfg_dict)
-        except Exception as err:  # pragma: no cover – config corruption
-            raise RuntimeError(f"Failed to parse configuration: {err}") from err
+# ---------------------------------------------------------------------
+# 2.  Main launcher
+# ---------------------------------------------------------------------
+
+def main() -> None:  # noqa: D401
     # ------------------------------------------------------------------
-    cfg = ExperimentConfig()
-    CONFIG_PATH.write_text(cfg.as_yaml())
-    print(f"Configuration written to {CONFIG_PATH.resolve()}")
-    return cfg
+    # Load configuration (YAML → dataclass)
+    # ------------------------------------------------------------------
+    if not DEFAULT_CONFIG_PATH.exists():
+        raise RuntimeError(
+            f"Configuration file {DEFAULT_CONFIG_PATH} missing.  Please place your YAML there."
+        )
 
-###############################################################################
-# Pipeline – mirrors control-flow from the original script
-###############################################################################
+    cfg = ExperimentConfig.from_yaml(DEFAULT_CONFIG_PATH)
 
-RESULTS_DIR = Path(".research/iteration3")
-RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    # ------------------------------------------------------------------
+    # Hardware availability guard (STRICT NO-FALLBACK)
+    # ------------------------------------------------------------------
+    _check_hardware_available()
 
+    # ------------------------------------------------------------------
+    # Dataset acquisition
+    # ------------------------------------------------------------------
+    data_root = ROOT_DIR / "data"
+    data_root.mkdir(parents=True, exist_ok=True)
+    dataset_dir = data_root / f"{cfg.dataset.name.lower()}-{cfg.dataset.version}"
 
-def main() -> None:  # pragma: no cover – run via `python -m src.main`
-    cfg = _load_or_create_cfg()
-    ensure_directories(cfg)
+    if not dataset_dir.exists():
+        archive_path = data_root / "edgebench-48.tar.gz"
+        if not archive_path.exists():
+            download_file(cfg.dataset.url, archive_path, cfg.dataset.sha256)
+        extract_tar(archive_path, data_root)
 
-    # Dataset acquisition --------------------------------------------------
-    archive_path = download_dataset(cfg)
-    dataset_root = extract_dataset(cfg, archive_path)
+    # Final guard – still missing → abort.
+    if not dataset_dir.exists():
+        raise RuntimeError(
+            f"Dataset directory {dataset_dir} still missing after download attempt. "
+            "Execution cannot proceed without the real EdgeBench-48 dataset."
+        )
 
-    # Sequentially execute the three experiments --------------------------
-    experiments: list[tuple[str, Any]] = [
-        ("experiment1_results.json", run_experiment_1),
-        ("experiment2_results.json", run_experiment_2),
-        ("experiment3_results.json", run_experiment_3),
-    ]
-
-    for json_name, fn in experiments:
-        json_path = RESULTS_DIR / json_name
-        print("\n============================================================")
-        print(f"Running {fn.__name__} – results will be saved to {json_path}")
-        print("============================================================\n")
-        try:
-            results: Dict[str, Any] = fn(dataset_root)
-        except RuntimeError as err:
-            # Immediate termination if any experiment signals an unrecoverable
-            # error (should not happen in the synthetic public build).
-            sys.stderr.write(str(err) + "\n")
-            sys.exit(1)
-
-        json_path.write_text(json.dumps(results, indent=2))
-
-        # Echo JSON to stdout for verification ----------------------------
-        print(json.dumps(results, indent=2))
+    # ------------------------------------------------------------------
+    # Launch training & evaluation (will abort when hardware is absent)
+    # ------------------------------------------------------------------
+    run_full_training(cfg, dataset_dir)
 
 
-if __name__ == "__main__":
+# ---------------------------------------------------------------------
+# 3.  Module guard
+# ---------------------------------------------------------------------
+if __name__ == "__main__":  # pragma: no cover
     main()

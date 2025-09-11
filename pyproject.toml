@@ -1,16 +1,25 @@
 [project]
-name = "hydrasketch_phi"
+name = "hydrasketch_phi_experiment"
 version = "0.1.0"
-description = "HydraSketch-Φ experimental pipeline refactored into a multi-file package."
-dependencies = [
-    "pyyaml>=6.0",
-    "requests>=2.31.0",
-    "tqdm>=4.66.0",
-    "torch>=2.0.0",
-    "torchvision>=0.15.0",
-    "matplotlib>=3.8.0",
-]
+description = "Research code for HydraSketch-Φ continual-learning experiments"
+requires-python = ">=3.9"
 
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.optional-dependencies]
+# core runtime dependencies
+default = [
+    "torch>=1.9.0",
+    "requests>=2.25.0",
+    "tqdm>=4.60.0",
+    "PyYAML>=6.0",
+]
+
+# The spec requires an *array* not a mapping when placed at top-level, but
+# inside the optional-dependencies it is safe.  Down-stream tools will merge
+# them correctly.

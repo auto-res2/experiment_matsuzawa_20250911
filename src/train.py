@@ -1,59 +1,85 @@
 """src/train.py
-Model construction and training utilities for HydraSketch-Φ.
-For the open-source version we expose a **minimal, CPU-only** PyTorch model so
-that the public pipeline can execute end-to-end tests without accessing the
-proprietary mixed-signal kernels.  This **does not** reflect the real
-HydraSketch-Φ architecture, but it avoids a hard failure while still making it
-explicit that the heavy-weight layers are missing (see docstring below).
+-------------------------------------------------------------------------
+Training-related logic for the HydraSketch-Φ experiments.
+Because the real mixed-signal hardware and the 320 GB EdgeBench-48 dataset
+are unavailable in a generic execution environment, the full training
+routine intentionally aborts (STRICT NO-FALLBACK).  This module therefore
+only contains the configuration dataclasses and a placeholder
+`run_full_training` function which will be invoked from `src/main.py`.
 """
 from __future__ import annotations
 
-from typing import Any
+import json
+from dataclasses import dataclass, asdict
+from pathlib import Path
+from typing import List
 
-import torch
-import torch.nn as nn
+# ---------------------------------------------------------------------
+# 1.  Dataclass helpers
+# ---------------------------------------------------------------------
+try:
+    import yaml  # PyYAML is required to parse the config file
+except ImportError as e:  # pragma: no cover – fail fast if missing
+    raise RuntimeError(
+        "Required dependency ‘pyyaml’ missing – please install it in the execution environment."
+    ) from e
 
-__all__ = [
-    "build_model",
-]
+
+@dataclass
+class DatasetConfig:
+    name: str
+    version: str
+    url: str
+    sha256: str
 
 
-class _TinyBackbone(nn.Sequential):
-    """A *very* small CNN acting as stand-in for the vision backbone.
+@dataclass
+class ExperimentConfig:
+    name: str
+    seeds: List[int]
+    ram_caps_mb: List[float]
+    latency_caps_ms: List[int]
+    dataset: DatasetConfig
 
-    This model has ~11 k parameters and therefore instantiates instantly even
-    on constrained CI runners.  It is obviously **not** representative of the
-    true performance of HydraSketch-Φ – its sole purpose is to allow the test
-    harness to call ``build_model`` without triggering the STRICT NO-FALLBACK
-    runtime error that existed in the proprietary stub.
-    """
-
-    def __init__(self) -> None:
-        super().__init__(
-            nn.Conv2d(3, 8, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.AdaptiveAvgPool2d((1, 1)),
-            nn.Flatten(),
-            nn.Linear(8, 10),  # fake 10-class head
+    # yaml-reader helper (used from src/main.py)
+    @staticmethod
+    def from_yaml(path: Path) -> "ExperimentConfig":
+        with open(path, "r", encoding="utf-8") as f:
+            raw = yaml.safe_load(f)
+        ds = raw["experiment"]["dataset"]
+        dataset_cfg = DatasetConfig(**ds)
+        cfg = ExperimentConfig(
+            name=raw["experiment"]["name"],
+            seeds=raw["experiment"]["seeds"],
+            ram_caps_mb=raw["experiment"]["ram_caps_mb"],
+            latency_caps_ms=raw["experiment"]["latency_caps_ms"],
+            dataset=dataset_cfg,
         )
+        # Pretty-print for human verification
+        print("\nLoaded configuration:\n" + json.dumps(asdict(cfg), indent=2), flush=True)
+        return cfg
 
 
-# ---------------------------------------------------------------------------
-# Public helper – replaces the previous hard-error stub
-# ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# 2.  Full training pipeline placeholder
+# ---------------------------------------------------------------------
 
-def build_model(*args: Any, **kwargs: Any) -> nn.Module:  # pragma: no cover
-    """Return a **placeholder** model so that the open pipeline can run.
+def run_full_training(cfg: ExperimentConfig, data_root: Path) -> None:  # noqa: D401
+    """Launch the full HydraSketch-Φ training-and-evaluation pipeline.
 
-    Notes
-    -----
-    • The real HydraSketch-Φ model spans photonic-PCM layers and custom CUDA
-      operators which cannot be released yet.
-    • This function therefore returns a *tiny* CNN that is *only* meant to
-      satisfy importers during unit-tests / CI.
-    • **Do not** use the returned network to draw scientific conclusions – it
-      bears no relation to the accuracy, efficiency or privacy properties
-      reported in the paper.
+    The real implementation integrates:
+      • Fractional-SDE retention on mixed-signal CDSC & InP-PCM memory;
+      • Temperature-aware cell migration executed on 20× GAP-9 SoCs;
+      • Online latency control & energy / thermo logging.
+
+    All of those components *require* physical edge hardware plus the
+    320 GB EdgeBench-48 dataset.  In compliance with the project’s
+    STRICT NO-FALLBACK rule we abort when the necessary resources are
+    not present.
     """
-    torch.manual_seed(0)  # deterministic weights – aids reproducibility
-    return _TinyBackbone()
+    raise RuntimeError(
+        "Full-scale HydraSketch-Φ experiment requires physical edge hardware, "
+        "thermal chamber and the EdgeBench-48 dataset (~320 GB).  Execution is "
+        "aborted because the necessary resources are not present in the current "
+        "environment (STRICT NO-FALLBACK RULE)."
+    )
