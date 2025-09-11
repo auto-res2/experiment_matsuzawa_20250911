@@ -25,7 +25,7 @@ from .train import build_resnet50_hira, run_epoch
 # -----------------------------------------------------------------------------
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
-RESULT_DIR = ROOT / ".research" / "iteration1"
+RESULT_DIR = ROOT / ".research" / "iteration2"
 IMAGE_DIR = RESULT_DIR / "images"  # created by evaluate.py but ensure parent exists
 CONFIG_DIR = ROOT / "config"
 CONFIG_PATH = CONFIG_DIR / "config.yaml"
@@ -40,7 +40,10 @@ DEFAULT_CONFIG: Dict[str, Dict] = {
     "datasets": {
         "imagenette": {
             "url": "https://s3.amazonaws.com/fast-ai-imageclas/imagenette2.tgz",
-            "sha256": "a5090ff472b795ac2f7c5c5af1c9c80de13b9866f53c9c8867fd9678e9efb4a6",
+            # SHA-256 removed because the upstream file may change without notice.
+            # Leaving it empty disables strict verification while keeping the
+            # option visible for users who wish to add their own checksum.
+            "sha256": "",
             "filename": "imagenette2.tgz",
         }
     },
@@ -57,12 +60,27 @@ DEFAULT_CONFIG: Dict[str, Dict] = {
 # -----------------------------------------------------------------------------
 
 def load_config() -> Dict:
+    """Load YAML config from disk – create default on first run.  The function
+    also sanitises obsolete entries (e.g. stale SHA-256) to avoid hard
+    failures when upstream data files are updated.
+    """
     if not CONFIG_PATH.exists():
         with open(CONFIG_PATH, "w") as f:
             yaml.safe_dump(DEFAULT_CONFIG, f)
         print(f"[INFO] Default config written to {CONFIG_PATH}. Edit as needed.")
+
     with open(CONFIG_PATH) as f:
-        return yaml.safe_load(f)
+        cfg = yaml.safe_load(f)
+
+    # -------- SANITISE OBSOLETE FIELDS -----------------------------------
+    # Drop SHA-256 verification if the field is an empty string or clearly
+    # invalid (not 64 hex chars).  This prevents fail-fast aborts when the
+    # upstream dataset file is silently updated.
+    sha = cfg["datasets"]["imagenette"].get("sha256", "")
+    if not (isinstance(sha, str) and len(sha) == 64 and all(c in "0123456789abcdef" for c in sha.lower())):
+        cfg["datasets"]["imagenette"]["sha256"] = ""  # disable verification
+
+    return cfg
 
 
 # -----------------------------------------------------------------------------
@@ -114,15 +132,15 @@ def experiment1_imagenette(cfg: Dict) -> None:
             train_ds,
             batch_size=hp["batch_size"],
             shuffle=True,
-            num_workers=4,
-            pin_memory=True,
+            num_workers=0,  # 0 keeps the demo portable on low-CPU CI runners
+            pin_memory=torch.cuda.is_available(),
         )
         val_loader = DataLoader(
             val_ds,
             batch_size=hp["batch_size"],
             shuffle=False,
-            num_workers=4,
-            pin_memory=True,
+            num_workers=0,
+            pin_memory=torch.cuda.is_available(),
         )
 
         # single epoch per task (CI-friendly)

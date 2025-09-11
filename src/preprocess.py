@@ -71,8 +71,10 @@ def http_download(url: str, target: Path, expected_sha256: str | None = None) ->
     tmp.rename(target)
 
     # integrity check (optional)
-    if expected_sha256 and sha256sum(target) != expected_sha256:
-        raise DataUnavailableError(f"SHA-256 mismatch for {target}")
+    if expected_sha256:
+        actual = sha256sum(target)
+        if actual != expected_sha256:
+            raise DataUnavailableError(f"SHA-256 mismatch for {target}. Expected {expected_sha256}, got {actual}.")
 
 
 # -----------------------------------------------------------------------------
@@ -80,8 +82,9 @@ def http_download(url: str, target: Path, expected_sha256: str | None = None) ->
 # -----------------------------------------------------------------------------
 
 def _is_within_directory(directory: Path, target: Path) -> bool:  # noqa: D401
+    directory = directory.resolve()
     try:
-        target.relative_to(directory)
+        target.resolve().relative_to(directory)
         return True
     except ValueError:
         return False
@@ -90,7 +93,7 @@ def _is_within_directory(directory: Path, target: Path) -> bool:  # noqa: D401
 def _safe_extract(tar: tarfile.TarFile, path: Path) -> None:
     for member in tar.getmembers():
         member_path = path / member.name
-        if not _is_within_directory(path, member_path.resolve()):
+        if not _is_within_directory(path, member_path):
             raise DataUnavailableError("Blocked path traversal in tar file")
     tar.extractall(path)
 
@@ -108,6 +111,9 @@ def prepare_imagenette(root: Path, cfg: Dict[str, str]) -> None:
     tar_path = CACHE_DIR / cfg["filename"]
 
     if not (root / "train").exists():
-        http_download(cfg["url"], tar_path, cfg.get("sha256"))
+        # Determine whether we should enforce SHA-256 verification.
+        # If the provided value is an empty string or None, we skip verification.
+        sha_value = cfg.get("sha256") or None
+        http_download(cfg["url"], tar_path, sha_value)
         with tarfile.open(tar_path) as tar:
             _safe_extract(tar, root)

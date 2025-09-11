@@ -94,27 +94,33 @@ def run_epoch(
     *,
     device: str = "cuda",
 ) -> float:
-    """Run one full pass over *loader*.  If *optimizer* is ``None`` the model
-    is evaluated under ``torch.no_grad()``; otherwise standard training is
-    performed.
-    Returns the average accuracy over the epoch.
+    """Run one full pass over *loader*.
+
+    If *optimizer* is ``None`` the model is evaluated under ``torch.no_grad()``;
+    otherwise standard training is performed.  Returns the average accuracy
+    over the epoch.
     """
     is_train = optimizer is not None
     model.train(is_train)
 
-    total_correct, total_samples = 0.0, 0
-    for x, y in loader:
-        x = x.to(device, non_blocking=True)
-        y = y.to(device, non_blocking=True)
-        out = model(x)
-        loss = criterion(out, y)
+    total_correct: float = 0.0
+    total_samples: int = 0
 
-        if is_train:
-            optimizer.zero_grad(set_to_none=True)
-            loss.backward()
-            optimizer.step()
+    # set_grad_enabled is the recommended way to toggle grad globally
+    with torch.set_grad_enabled(is_train):
+        for x, y in loader:
+            x = x.to(device, non_blocking=True)
+            y = y.to(device, non_blocking=True)
 
-        total_correct += (out.argmax(1) == y).float().sum().item()
-        total_samples += y.size(0)
+            out = model(x)
+            loss = criterion(out, y)
+
+            if is_train:
+                optimizer.zero_grad(set_to_none=True)
+                loss.backward()
+                optimizer.step()
+
+            total_correct += (out.argmax(1) == y).float().sum().item()
+            total_samples += y.size(0)
 
     return 100.0 * total_correct / max(total_samples, 1)

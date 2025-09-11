@@ -1,7 +1,7 @@
 datasets:
   imagenette:
     url: https://s3.amazonaws.com/fast-ai-imageclas/imagenette2.tgz
-    sha256: a5090ff472b795ac2f7c5c5af1c9c80de13b9866f53c9c8867fd9678e9efb4a6
+    sha256: ""
     filename: imagenette2.tgz
 hyperparameters:
   lr: 0.0001
