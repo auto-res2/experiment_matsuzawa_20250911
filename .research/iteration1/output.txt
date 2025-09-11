@@ -1,0 +1,4 @@
+=== uv sync start Thu Sep 11 03:22:57 PM UTC 2025 ===
+=== uv install end Thu Sep 11 03:23:55 PM UTC 2025 ===
+=== experiment start Thu Sep 11 03:23:55 PM UTC 2025 ===
+[FATAL] SHA-256 mismatch for /home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/cache/imagenette2.tgz. Aborting.
