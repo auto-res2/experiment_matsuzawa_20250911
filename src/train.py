@@ -81,7 +81,7 @@ def load_config(yaml_path: pathlib.Path) -> GlobalConfig:
         data = yaml.safe_load(fp)
 
     datasets = _dict_to_dataclass(data["datasets"], DatasetCfg)
-    models = _dict_to_dataclass(data["models"], ModelCfg)
+    models = _dict_to_dataclass(data.get("models", {}), ModelCfg)
     sampler = SamplerCfg(**data["sampler"])
     return GlobalConfig(
         meta=data["meta"],
