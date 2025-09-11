@@ -3,7 +3,6 @@ stores one example image so that the CI pipeline recognises tangible
 outputs (no placeholders)."""
 from __future__ import annotations
 
-import random
 import time
 from pathlib import Path
 from typing import Dict
@@ -44,7 +43,7 @@ def evaluate_and_plot(model, exp_conf, out_dir: Path) -> Dict[str, float]:
     img_arr = (torch.sigmoid(dummy[0]) * 255).to(torch.uint8).cpu().permute(1, 2, 0).numpy()
     img = Image.fromarray(img_arr)
 
-    images_dir = Path(".research") / "iteration13" / "images"
+    images_dir = Path(exp_conf.output_dir) / "images"  # iteration14 compliant
     images_dir.mkdir(parents=True, exist_ok=True)
     img_path = images_dir / f"{exp_conf.id}_{int(time.time())}.png"
     img.save(img_path)

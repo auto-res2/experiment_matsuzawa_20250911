@@ -7,7 +7,6 @@ stub returns *random* tensors while honouring the same public interface.
 from __future__ import annotations
 
 import random
-from typing import Tuple
 
 import torch
 from torch.utils.data import Dataset

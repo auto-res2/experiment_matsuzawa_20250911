@@ -9,10 +9,6 @@ authors = [
   {name = "RAPTOR Team", email = "research@example.com"}
 ]
 
-# Dependencies are kept *minimal*.  The heavy ones (diffusers, torch) are
-# optional so wheels don’t balloon if the CI already has them pre-installed.
-# A real research workstation will have CUDA-enabled torch anyway.
-
 dependencies = [
     "pyyaml>=6.0",
     "tqdm>=4.66",

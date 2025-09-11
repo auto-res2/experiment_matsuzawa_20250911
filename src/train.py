@@ -4,22 +4,15 @@ This refactor removes every missing-file import error that blocked the
 previous CI run and makes the whole package *self-contained* so that a
 CPU-only runner can finish the smoke-test in <30 s.
 
-Key fixes
----------
-1. Added a minimal `project` table to **pyproject.toml** so `uv` /
-   `pip` no longer abort with “No project table found”.
-2. All formerly empty modules (evaluate.py, preprocess.py, main.py) are
-   now populated with *working* code.
-3. Result/artefact paths have been updated to **.research/iteration13/**
-   to follow the mandatory directory convention.
-4. `train.py` no longer hard-imports *diffusers* at module import time –
-   this triggered import errors on machines without the package.  We now
-   try to load the real Stable-Diffusion model *inside* the
-   `RaptorDiffuser` constructor and fall back to a tiny dummy
-   convolutional network if that fails.
-5. A bullet-proof fallback implementation of **HutchFisher**,
-   **AsyncScheduler**, and **ControlVariate** is kept so that unit tests
-   exercise real tensor maths but stay lightweight.
+Key fixes (iteration14)
+----------------------
+1. CLI bug fixed: `_parse` now accepts an optional `argv` list to avoid
+   the TypeError encountered during the previous run.
+2. All hard-coded paths have been upgraded from **iteration13** →
+   **iteration14** to satisfy the mandatory directory convention.
+3. `output_dir` from the YAML config is now honoured so downstream code
+   can override the default location without touching the source.
+4. Doc-strings, comments and carbon-monitor paths updated accordingly.
 """
 from __future__ import annotations
 
@@ -186,8 +179,8 @@ class CarbonMonitor:
             self._pynvml = pynvml
             self.handle = pynvml.nvmlDeviceGetHandleByIndex(0)
             self.enabled = True
-        except Exception:
-            self.enabled = False  # pragma: no cover
+        except Exception:  # pragma: no cover
+            self.enabled = False
         self.start_t = time.time()
         self.j_gpu = 0.0
         self.out_file = Path(out_file)
@@ -230,7 +223,7 @@ class RaptorDiffuser:
 
     def __init__(self, model_id: str, fisher_conf: HutchConf, sched_conf: SchedConf, control_var: bool = True):
         try:
-            from diffusers import DiffusionPipeline  # heavy import ‑ optional
+            from diffusers import DiffusionPipeline  # heavy import – optional
 
             self.pipe = DiffusionPipeline.from_pretrained(
                 model_id, torch_dtype=torch.float16, use_safetensors=True, variant="fp16"
@@ -257,7 +250,9 @@ def fit(exp_conf: ExperimentConf, variant: str, seed: int):  # noqa: C901 – ok
     """Fine-tune according to the experiment configuration."""
     torch.manual_seed(seed)
     random.seed(seed)
-    out_dir = Path(".research") / "iteration13" / exp_conf.id / f"{variant}_seed{seed}"
+
+    out_root = Path(exp_conf.output_dir)  # now driven by YAML
+    out_dir = out_root / exp_conf.id / f"{variant}_seed{seed}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     monitor = CarbonMonitor(out_dir / "energy.json")
@@ -298,13 +293,13 @@ def fit(exp_conf: ExperimentConf, variant: str, seed: int):  # noqa: C901 – ok
     energy = monitor.stop()
 
     # ------------------------------ eval ----------------------------------
-    from .evaluate import evaluate_and_plot  # local late import
+    from .evaluate import evaluate_and_plot  # noqa: E402 – local late import
 
     metrics = evaluate_and_plot(model, exp_conf, out_dir)
     metrics.update(energy)
 
     # write JSON result to the *mandatory* location
-    res_path = Path(".research") / "iteration13" / f"{exp_conf.id}_{variant}_seed{seed}.json"
+    res_path = Path(exp_conf.output_dir) / f"{exp_conf.id}_{variant}_seed{seed}.json"
     res_path.parent.mkdir(parents=True, exist_ok=True)
     with res_path.open("w") as fp:
         json.dump(metrics, fp, indent=2)
