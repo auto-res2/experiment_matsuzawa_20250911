@@ -1,0 +1,10 @@
+Using CPython 3.11.13
+Creating virtual environment at: .venv
+  × No solution found when resolving dependencies:
+  ╰─▶ Because conductor-ai was not found in the package registry and your
+      project depends on conductor-ai>=0.5.1, we can conclude that your
+      project's requirements are unsatisfiable.
+  × No solution found when resolving dependencies:
+  ╰─▶ Because conductor-ai was not found in the package registry and your
+      project depends on conductor-ai>=0.5.1, we can conclude that your
+      project's requirements are unsatisfiable.
