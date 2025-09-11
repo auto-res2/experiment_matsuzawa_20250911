@@ -1,0 +1,10 @@
+experiment1:
+  lr: 3e-4
+  batch_size: 16
+  epochs: 2
+experiment2:
+  sinkhorn_iter: 8
+  rho: 0.5
+experiment3:
+  diffusion_steps: 16
+  energy_budget_µJ: 20
