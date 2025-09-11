@@ -1,0 +1,9 @@
+=== uv sync start Thu Sep 11 07:24:26 AM UTC 2025 ===
+=== uv install end Thu Sep 11 07:25:29 AM UTC 2025 ===
+=== experiment start Thu Sep 11 07:25:29 AM UTC 2025 ===
+Validating dataset: ChristophSchuhmann/MS_COCO_2017_URL_TEXT …
+  ✓ accessible
+Validating dataset: redactable-llm/synth-text-recognition …
+
+ERROR: Dataset 'redactable-llm/synth-text-recognition' is not accessible.  Original error: To support decoding images, please install 'Pillow'.
+Programme terminated due to missing external resource.
