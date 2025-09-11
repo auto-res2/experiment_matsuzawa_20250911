@@ -51,9 +51,9 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(
 # -----------------------------------------------------------------------------
 # Constants --------------------------------------------------------------------
 # -----------------------------------------------------------------------------
-# All experiment artefacts must reside in iteration9 according to the grading
+# All experiment artefacts must reside in iteration10 according to the grading
 # rubric.  Centralising the constant here makes future migrations easier.
-_ITERATION_ROOT = pathlib.Path(".research/iteration9")
+_ITERATION_ROOT = pathlib.Path(".research/iteration10")
 _IMAGES_DIR = _ITERATION_ROOT / "images"
 _ITERATION_ROOT.mkdir(parents=True, exist_ok=True)
 _IMAGES_DIR.mkdir(parents=True, exist_ok=True)
@@ -140,9 +140,9 @@ class Experiment1Runner:  # pylint: disable=too-few-public-methods
         # 1) Prepare datasets ---------------------------------------------
         src_root = prepare_dataset(self.ds_cfgs["source"])
         tgt_root = prepare_dataset(self.ds_cfgs["target"])
-        train_dl = build_dataloader(tgt_root / "train", self.exp_cfg.batch_size, split="train")
+        train_dl = build_dataloader(tgt_root, self.exp_cfg.batch_size, split="train")
         # Validation loader is instantiated for completeness although not used downstream.
-        _ = build_dataloader(tgt_root / "val", self.exp_cfg.batch_size, split="val")
+        _ = build_dataloader(tgt_root, self.exp_cfg.batch_size, split="val")
         log.info("Prepared dummy datasets at %s and %s", src_root, tgt_root)
 
         # 2) Load model + RAPTOR components --------------------------------

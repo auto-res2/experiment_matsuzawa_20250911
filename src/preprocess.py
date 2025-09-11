@@ -6,7 +6,7 @@ layout.
 from __future__ import annotations
 
 import pathlib
-from typing import Literal, Tuple
+from typing import Literal
 
 import torch
 from torch.utils.data import DataLoader, TensorDataset
@@ -43,8 +43,12 @@ def prepare_dataset(cfg: DatasetCfg) -> pathlib.Path:  # noqa: D401
     return root
 
 
-def build_dataloader(root: pathlib.Path, batch_size: int, *, split: Literal["train", "val"]
-                    ) -> DataLoader:  # noqa: D401
+def build_dataloader(
+    root: pathlib.Path,
+    batch_size: int,
+    *,
+    split: Literal["train", "val"],
+) -> DataLoader:  # noqa: D401
     """Return a *torch.utils.data.DataLoader* for the synthetic data."""
 
     data_path = root / f"{split}/data.pt"
