@@ -1,1 +1,16 @@
-# Please list the required python packages.
+[project]
+name = "bloom-gnn-experiment"
+version = "0.1.0"
+requires-python = ">=3.10"
+
+# ---------------------------------------------------------------------------
+# Core & scientific Python stack + graph libraries
+# ---------------------------------------------------------------------------
+dependencies = [
+    "numpy>=1.21.0",
+    "torch>=1.12.0",
+    "torch_geometric>=2.1.0",
+    "ogb>=1.3.0",
+    "matplotlib>=3.5.0",
+    "PyYAML>=6.0",
+]
