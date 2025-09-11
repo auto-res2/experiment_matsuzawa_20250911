@@ -1,1 +1,18 @@
-# Please list the required python packages.
+[project]
+name = "certiflow-experiments"
+version = "0.1.0"
+requires-python = ">=3.9"
+
+dependencies = [
+  "torch>=1.9.0",
+  "datasets>=2.14.0",
+  "transformers>=4.30.0",
+  "matplotlib>=3.5.0",
+  "sacrebleu>=2.3.0",
+  "diffusers>=0.21.0",
+  "certiflow>=0.1.0",
+  "pyyaml>=6.0"
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]

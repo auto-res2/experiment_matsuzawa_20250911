@@ -1,0 +1,26 @@
+exp1:
+  dataset_url: https://huggingface.co/datasets/iwslt2017
+  dataset_cfg: de-en
+  gpt2_model: gpt2-medium
+  ppl_bins: [0, 20, 40, 60, 80]
+  batch_size: 32
+  max_steps: 50
+  repetitions: 5
+  sprt_confidence: 99.5
+  kappa_scale: 1.0
+exp2:
+  sd_checkpoint: runwayml/stable-diffusion-v1-5
+  prompt_dataset_url: https://huggingface.co/datasets/Yuanzhi/aesthetics_prompts_laion
+  num_prompts: 1000
+  rl_train_hours: 6
+  lambda: 0.3
+  mu: 0.1
+  batch_size: 4
+exp3:
+  mobile_mt_sentences: 5000
+  video_minutes: 10
+  grid_regions:
+    A100: US-CA
+    RTX4060: EU-DE
+    M2Pro: EU-DK
+    RISCV: OFFGRID
