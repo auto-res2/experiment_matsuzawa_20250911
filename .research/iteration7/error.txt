@@ -1,0 +1,15 @@
+Using CPython 3.11.13
+Creating virtual environment at: .venv
+Resolved 38 packages in 100ms
+   Building hydrasketch-phi-experiment @ file:///home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911
+      Built hydrasketch-phi-experiment @ file:///home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911
+Prepared 1 package in 1.32s
+Installed 8 packages in 192ms
+ + certifi==2025.8.3
+ + charset-normalizer==3.4.3
+ + hydrasketch-phi-experiment==0.1.1 (from file:///home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911)
+ + idna==3.10
+ + pyyaml==6.0.2
+ + requests==2.32.5
+ + tqdm==4.67.1
+ + urllib3==2.5.0
