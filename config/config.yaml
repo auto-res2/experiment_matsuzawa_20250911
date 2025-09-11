@@ -5,13 +5,13 @@ exp1:
   ppl_bins: [0, 20, 40, 60, 80]
   batch_size: 32
   max_steps: 50
-  repetitions: 5
+  repetitions: 2
   sprt_confidence: 99.5
   kappa_scale: 1.0
 exp2:
   sd_checkpoint: runwayml/stable-diffusion-v1-5
   prompt_dataset_url: https://huggingface.co/datasets/Yuanzhi/aesthetics_prompts_laion
-  num_prompts: 1000
+  num_prompts: 128
   rl_train_hours: 6
   lambda: 0.3
   mu: 0.1
