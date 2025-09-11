@@ -1,12 +1,12 @@
 """src/train.py
 ================
 Fixed issues:
-1. ZIPP & DERPP received a dict at construction time which was mistakenly
-   forwarded as the *n_features* argument of the parent `_BaseDummyModel`,
-   leading to a `TypeError` inside `torch.nn.Linear`.
-   → Provide explicit `__init__` methods that accept an (optional) cfg dict
-     and then call the super-constructor **without** passing it.
-2. Added minimal `.cfg` attribute to keep signature parity with `TACOCore`.
+1. TACOCore dataclass was hashable → PyTorch's `named_modules()` tried to add
+   the instance to a set, resulting in `TypeError: unhashable type: 'TACOCore'`.
+   → Set `eq=False` on the dataclass decorator so the default `__hash__` coming
+     from `object` is kept (and therefore hashable).
+2. No functional changes beyond that – unit-tests and downstream code remain
+   untouched.
 """
 from __future__ import annotations
 
@@ -73,7 +73,7 @@ class _BaseDummyModel(nn.Module):
 # -----------------------------------------------------------------------------
 # TACO – tracks a strict byte budget via _FixedByteBuffer
 # -----------------------------------------------------------------------------
-@dataclass
+@dataclass(eq=False)  # eq=False keeps the default object.__hash__ (hashable)
 class TACOCore(_BaseDummyModel):
     cfg: Dict = field(default_factory=dict)
 

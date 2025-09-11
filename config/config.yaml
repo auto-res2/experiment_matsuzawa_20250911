@@ -1,4 +1,4 @@
-results_dir: ".research/iteration9"
+results_dir: ".research/iteration10"
 seed: 42
 
 models:
@@ -7,5 +7,5 @@ models:
   zipp: {}
   derpp: {}
 
-# Note: Only the results directory has changed from iteration8→iteration9 to
-# comply with the mandatory path requirements.
+# Path moved to .research/iteration10 to satisfy mandatory directory policy.
+
