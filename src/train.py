@@ -1,14 +1,17 @@
 """src/train.py
 All experiment-specific logic (training / compilation / evaluation helpers) lives here.
 This file is a direct refactor of the original single-script experiment code – **no
-behavioural changes have been made**.
+behavioural changes have been made except for:
+  •   Adhering to the repository-wide path convention requested in the
+      remediation guidelines (JSON → .research/iteration6/, images →
+      .research/iteration6/images).
 """
 from __future__ import annotations
 
 import json, os, sys, time, random, pathlib
 from dataclasses import dataclass, asdict
 from datetime import datetime
-from typing import Dict, Any, List, Callable
+from typing import Dict, Any, List, Callable, cast
 
 import numpy as np
 import torch
@@ -17,9 +20,48 @@ import seaborn as sns
 from tqdm import tqdm
 from datasets import load_dataset
 from sacrebleu import corpus_bleu
-from conductor import AutoComposer, SyBayes, DOSD, LiCCA, CoFaD, HiRRB
-from conductor.metrics import tm_fid, pass_at_k, leqpc_auc
-from pynvml import (
+
+# ---------------------------------------------------------------------------
+# Optional (vendor) dependency – provide graceful fallback
+# ---------------------------------------------------------------------------
+try:
+    from conductor import AutoComposer, SyBayes, DOSD, LiCCA, CoFaD, HiRRB
+    from conductor.metrics import tm_fid, pass_at_k, leqpc_auc
+except ImportError:  # pragma: no cover – keep import-time overhead minimal
+
+    class _MissingConductorPackage(Exception):
+        """Raised when a required CONDUCTOR component is accessed without the
+        optional `conductor-ai` package being installed. We *fail fast* instead
+        of silently degrading functionality so that the user sees an immediate
+        and clear error message.
+        """
+
+    def _raise_missing(*_args: Any, **_kwargs: Any):
+        raise _MissingConductorPackage(
+            "The optional `conductor-ai` package is not installed. Install it via\n"
+            "    pip install conductor-ai>=0.5.1\n"
+            "or remove CONDUCTOR-specific functionality from the experiment run."
+        )
+
+    # Stubs that raise at *instantiation* time – keeps static analysis happy but
+    # guarantees a hard failure if the code path is executed at runtime.
+    class _ConductorStub:  # pylint: disable=too-few-public-methods
+        def __init__(self, *args: Any, **kwargs: Any):
+            _raise_missing()
+
+        # catch any attribute access on an already (not) constructed instance
+        def __getattr__(self, _name: str):
+            _raise_missing()
+
+        def __call__(self, *args: Any, **kwargs: Any):
+            _raise_missing()
+
+    # Cast to Any so that type checkers accept the assignment without ignores
+    AutoComposer = SyBayes = DOSD = LiCCA = CoFaD = HiRRB = cast(Any, _ConductorStub)
+    tm_fid = pass_at_k = leqpc_auc = cast(Any, _raise_missing)
+
+# ---------------------------------------------------------------------------
+from pynvml import (  # noqa: E402 – external dep that may not exist on all hosts
     nvmlInit, nvmlShutdown, nvmlDeviceGetHandleByIndex, nvmlDeviceGetPowerUsage,
 )
 
@@ -27,8 +69,11 @@ from pynvml import (
 # CONSTANTS & PATHS (loaded/overridden by src.main)
 # -----------------------------------------------------------------------------
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-ART_DIR = ROOT / ".research"
-ART_DIR.mkdir(exist_ok=True)
+# All JSON artefacts must live directly under “.research/iteration6/”
+ART_DIR = ROOT / ".research" / "iteration6"
+IMG_DIR = ART_DIR / "images"
+ART_DIR.mkdir(parents=True, exist_ok=True)
+IMG_DIR.mkdir(parents=True, exist_ok=True)
 
 # -----------------------------------------------------------------------------
 # BASIC UTILITIES
@@ -66,7 +111,7 @@ class PowerLogger:
         try:
             self.ts.append(time.time())
             self.p.append(nvmlDeviceGetPowerUsage(self.handle) / 1000.0)  # mW → W
-        except Exception:
+        except Exception:  # pragma: no cover
             pass  # ignore transient NVML failures
 
     def energy_j(self) -> float:
@@ -82,7 +127,7 @@ class PowerLogger:
         if self.active:
             try:
                 nvmlShutdown()
-            except Exception:
+            except Exception:  # pragma: no cover
                 pass
 
 # -----------------------------------------------------------------------------
@@ -97,6 +142,12 @@ def line_plot(
     title: str,
     filename: pathlib.Path,
 ):
+    """Thin wrapper around seaborn line-plot that guarantees the file is written
+    underneath the mandated .research/iteration6/images directory."""
+    filename = IMG_DIR / filename.with_suffix("").name  # enforce directory
+    filename = filename.with_suffix(".pdf")
+    filename.parent.mkdir(parents=True, exist_ok=True)
+
     plt.figure(figsize=(6, 4))
     sns.lineplot(x=x, y=y, marker="o")
     for xi, yi in zip(x, y):
@@ -107,8 +158,6 @@ def line_plot(
     plt.legend([title])
     plt.grid(True)
     plt.tight_layout()
-    filename = filename.with_suffix(".pdf")
-    filename.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(filename, bbox_inches="tight")
     plt.close()
 
@@ -126,6 +175,8 @@ class Summary:
     timestamp: str
 
     def save(self, path: pathlib.Path):
+        """All summaries must be stored directly inside .research/iteration6."""
+        path = ART_DIR / path.name  # enforce location
         with open(path, "w") as f:
             json.dump(asdict(self), f, indent=2)
 
@@ -244,14 +295,14 @@ def run_exp1(seed: int, default_yaml: Dict[str, Any]):
                 "energy_j": energy_j,
             }
             summ = Summary(1, seed, f"{task_name}-{cond_name}", primary, secondary, datetime.utcnow().isoformat())
-            summ_path = cond_dir / "summary.json"; summ.save(summ_path)
+            summ_path = exp_dir / f"summary_{task_name}_{cond_name}.json"; summ.save(summ_path)
 
-            # figure
-            fname = cond_dir / f"latency_distribution_{task_name}.pdf"
-            line_plot(list(range(len(latencies))), latencies, "sample_idx", "latency (ms)", f"Latency – {task_name} – {cond_name}", fname)
+            # figure (always in IMG_DIR)
+            fig_name = pathlib.Path(f"exp1_seed{seed}_{task_name}_{cond_name}_latency")
+            line_plot(list(range(len(latencies))), latencies, "sample_idx", "latency (ms)", f"Latency – {task_name} – {cond_name}", fig_name)
             print(f"\n===== EXP-1 {task_name}/{cond_name} =====")
             print(json.dumps(asdict(summ), indent=2))
-            print("Figures saved:", fname.name)
+            print("Figure saved:", fig_name.with_suffix('.pdf').name)
             summary_objects.append(summ)
 
     # LEQPC-AUC
@@ -299,11 +350,11 @@ def run_exp2(seed: int, default_yaml: Dict[str, Any]):
                 json.dump(metrics, f, indent=2)
 
             # plot error curve
-            fname = exp_dir / f"surrogate_error_{tag}.pdf"
-            line_plot(list(range(len(holdout))), metrics["abs_error"], "trace", "|ΔFLOPs|", f"SyBayes Error {tag}", fname)
+            fig_name = pathlib.Path(f"exp2_{tag}_surrogate_error")
+            line_plot(list(range(len(holdout))), metrics["abs_error"], "trace", "|ΔFLOPs|", f"SyBayes Error {tag}", fig_name)
             print(f"\n===== EXP-2  {tag} =====")
             print(json.dumps(metrics, indent=2))
-            print("Figure saved:", fname.name)
+            print("Figure saved:", fig_name.with_suffix('.pdf').name)
 
             # planner scalability
             planner = AutoComposer(model, sybayes=syb)
@@ -364,7 +415,7 @@ def run_exp3(seed: int, default_yaml: Dict[str, Any]):
             start = time.perf_counter()
             if hirrb is not None:
                 risk, bound = hirrb.estimate(src)
-                _ = risk < bound  # outcome used only for bookkeeping later
+                _ = risk < bound  # bookkeeping
             pred = compiled.generate(src)
             latency.append((time.perf_counter() - start) * 1000)
             preds.append(pred); refs.append(tgt); groups.append(gid)
@@ -387,10 +438,10 @@ def run_exp3(seed: int, default_yaml: Dict[str, Any]):
             "energy_j": energy,
         }
         summ = Summary(3, seed, cond, primary, secondary, datetime.utcnow().isoformat())
-        summ.save(cond_dir / "summary.json")
+        summ.save(cond_dir / f"summary_exp3_{cond}.json")
 
-        fname = cond_dir / f"catastrophe_rate_{cond}.pdf"
-        line_plot([0, 1], [primary["catastrophe_rate"], primary["leakage_auc"]], "metric", "value", f"Safety/Privacy {cond}", fname)
+        fig_name = pathlib.Path(f"exp3_{cond}_safety_privacy")
+        line_plot([0, 1], [primary["catastrophe_rate"], primary["leakage_auc"]], "metric", "value", f"Safety/Privacy {cond}", fig_name)
         print(f"\n===== EXP-3 {cond} =====")
         print(json.dumps(asdict(summ), indent=2))
-        print("Figure saved:", fname.name)
+        print("Figure saved:", fig_name.with_suffix('.pdf').name)
