@@ -1,5 +1,11 @@
 # src/main.py
-"""Main orchestration entry point – executed via `python -m src.main`."""
+"""Main orchestration entry point – executed via `python -m src.main`.
+
+This revision updates the research-artifact paths to comply with **iteration13**
+(as mandated by the autopruner spec) and therefore *must* be kept in sync with
+all helpers that write images/JSON.  The rest of the logic is unchanged except
+for the new path constants.
+"""
 from __future__ import annotations
 
 import json
@@ -17,13 +23,13 @@ from .train import CarbonController, Client
 from .evaluate import current_power_draw_watts, plot_accuracy, save_json
 
 # ---------------------------------------------------------------------------
-#  Resolve project root and mandatory research folders (iteration-12 layout)
+#  Resolve project root and mandatory research folders (iteration-13 layout)
 # ---------------------------------------------------------------------------
 ROOT = Path(__file__).resolve().parent.parent
-RESEARCH_DIR = ROOT / ".research" / "iteration12"  # UPDATED as per spec
+RESEARCH_DIR = ROOT / ".research" / "iteration13"  # UPDATED to iteration13
 DATA_DIR = RESEARCH_DIR / "data"
-FIG_DIR = RESEARCH_DIR / "images"  # must equal .research/iteration12/images
-RES_DIR = RESEARCH_DIR              # JSON files are saved directly here
+FIG_DIR = RESEARCH_DIR / "images"  # .research/iteration13/images
+RES_DIR = RESEARCH_DIR  # JSON files are saved directly here
 CONFIG_DIR = ROOT / "config"
 
 for _d in (DATA_DIR, FIG_DIR, RES_DIR, CONFIG_DIR):
@@ -61,9 +67,9 @@ def ensure_gpu():
             file=os.sys.stderr,
         )
 
+
 # ---------------------------------------------------------------------------
-#  Custom strategy that stores the final global parameters so we can compute
-#  accuracy even if Flower’s metrics aggregation is disabled.
+#  Custom FedAvg strategy that stores the final global parameters
 # ---------------------------------------------------------------------------
 
 class FedAvgSave(fl.server.strategy.FedAvg):
@@ -74,9 +80,9 @@ class FedAvgSave(fl.server.strategy.FedAvg):
     def aggregate_fit(self, rnd, results, failures):  # noqa: D401
         aggregated = super().aggregate_fit(rnd, results, failures)
         if aggregated is not None:
-            # `aggregated` is a tuple (Parameters, Dict[str, Scalar])
             self.final_parameters = aggregated[0]
         return aggregated
+
 
 # ---------------------------------------------------------------------------
 #  Experiment 1 – Federated Continuous-Time Training & Carbon Audit
@@ -127,7 +133,6 @@ def run_experiment_1() -> Dict:
     duration_secs = time.time() - start_time
 
     # 5 / Metrics ------------------------------------------------------------
-    # Prefer Flower’s aggregated metrics, but fall back to our own computation.
     acc_tuples: List[Tuple[int, float]] = []
     if hist.metrics_centralized.get("accuracy"):
         acc_tuples = cast(List[Tuple[int, float]], hist.metrics_centralized.get("accuracy"))
@@ -145,7 +150,7 @@ def run_experiment_1() -> Dict:
         else:
             reference_client = Client(partitions[0], cfg_exp1)
             reference_client.set_parameters(strategy.final_parameters.tensors)
-            loss, _, metrics = reference_client.evaluate(strategy.final_parameters.tensors)
+            _, _, metrics = reference_client.evaluate(strategy.final_parameters.tensors)
             rounds, accs = [cfg_exp1["num_rounds"]], [metrics["accuracy"]]
             print(f"Computed final accuracy manually: {accs[0]:.4f}")
 

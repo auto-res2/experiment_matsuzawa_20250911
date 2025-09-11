@@ -2,15 +2,16 @@ hardware:
   gpus_required: 1
   expected_gpu_name: "GPU"
 
+datasets:
+  ogbn_products_partitions:
+    # Number of partitions to simulate – keep tiny for CI.
+    num_partitions: 2
+    base: "FedGraph/fedgraph_ogbn-products_5trainer_1hop_iid_beta_1.0_trainer_id_{}"
+
 experiments:
   exp1:
     hidden_dim: 64
     batch_size: 1024
     lr: 0.005
-    num_rounds: 3
-    carbon_intensity_threshold: 150  # gCO2/kWh threshold for uploads
-
-datasets:
-  ogbn_products_partitions:
-    num_partitions: 2
-    base: "FedGraph/fedgraph_ogbn-products_5trainer_1hop_iid_beta_1.0_trainer_id_{}"
+    num_rounds: 2  # keep small for CI runtime
+    carbon_intensity_threshold: 300.0

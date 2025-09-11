@@ -6,10 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "maestro-experiments"
 version = "0.1.0"
 
-# We intentionally depend on the *default* PyPI wheels so that uv/pip can
-# resolve them without the need for an extra index.  The CPU-only variant
-# (`+cpu`) caused resolution failures on the CI runner because those wheels are
-# hosted on the PyTorch index rather than on PyPI.
+# Strict dependency versions to avoid NumPy 2.x incompatibilities.
 
 dependencies = [
   "torch==2.2.2",
@@ -17,10 +14,11 @@ dependencies = [
   "torchdiffeq>=0.2.3",
   "flwr>=1.5.0",
   "opacus>=1.5.0",
-  "matplotlib>=3.4.0",
-  "seaborn>=0.11.0",
-  "datasets>=2.18.0",
+  "matplotlib>=3.4.0,<3.11",  # matplotlib 3.11+ may require NumPy 2
+  "seaborn>=0.11.0,<0.14",
+  "datasets>=2.18.0,<3.0.0",
   "pyyaml>=6.0",
   "requests>=2.31.0",
-  "numpy>=1.24.0"
+  "numpy<2.0",            # hard upper-bound to keep compiled wheels compatible
+  "pandas<2.2",            # pandas 2.2+ requires NumPy 2.x
 ]
