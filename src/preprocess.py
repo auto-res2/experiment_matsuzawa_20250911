@@ -1,28 +1,69 @@
-"""Very small stand-in for the real MedMNIST+VQ-tokeniser pipeline.
-
-The genuine RAPTOR code retrains a VQGAN encoder and tokenises the whole
-image set.  We cannot ship that inside the six-file playground, so this
-stub returns *random* tensors while honouring the same public interface.
+"""
+preprocess.py – data-handling helpers (downloading, wrapping, transforms)
 """
 from __future__ import annotations
 
-import random
+import pathlib
+from typing import Any
 
 import torch
-from torch.utils.data import Dataset
+from torchvision import transforms
+
+try:
+    from datasets import load_dataset
+except ImportError as e:  # pragma: no cover
+    raise RuntimeError(
+        "The 'datasets' package is required.  Install via  `pip install datasets`"
+    ) from e
+
+__all__ = ["strict_download_dataset", "VisionWrapper"]
 
 
-class ImageTokenDataset(Dataset):
-    """Return random 64×64 RGB tensors – enough for unit tests."""
+# ---------------------------------------------------------------------------
+# ⚙️  Download helper                                                           
+# ---------------------------------------------------------------------------
 
-    def __init__(self, hf_name: str, split: str, vq_encoder):  # noqa: D401 – match caller signature
-        super().__init__()
-        random.seed(hash(hf_name + split) & 0xFFFF)
-        self.length = 64  # deterministic small dataset
+def strict_download_dataset(hf_id: str, **kwargs) -> Any:
+    """Download a HuggingFace dataset and *fail hard* on any error."""
+    try:
+        ds = load_dataset(hf_id, **kwargs)
+    except Exception as exc:  # pragma: no cover
+        raise RuntimeError(
+            f"❌  Dataset '{hf_id}' could not be downloaded – aborting run. {exc}"
+        ) from exc
+    return ds
+
+
+# ---------------------------------------------------------------------------
+# 🖼️  Vision wrapper for HF image datasets                                      
+# ---------------------------------------------------------------------------
+
+def _default_transform() -> transforms.Compose:
+    """Returns the exact sequence of transforms used in the original script."""
+    return transforms.Compose(
+        [
+            transforms.Resize(512),
+            transforms.CenterCrop(512),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize(0.5, 0.5),
+        ]
+    )
+
+
+class VisionWrapper(torch.utils.data.Dataset):
+    """Lightweight `torch.utils.data.Dataset` around HuggingFace vision splits."""
+
+    def __init__(self, hf_ds, *, transform: transforms.Compose | None = None):
+        self.ds = hf_ds
+        self.transform = transform if transform is not None else _default_transform()
 
     def __len__(self):
-        return self.length
+        return len(self.ds)
 
-    def __getitem__(self, idx) -> torch.Tensor:  # noqa: D401
-        g = torch.Generator().manual_seed(idx)
-        return torch.randn(3, 64, 64, generator=g)
+    def __getitem__(self, idx: int):
+        item = self.ds[idx]
+        img = item.get("image") or item.get("IMG")
+        if img is None:
+            raise KeyError("Dataset sample lacks 'image'/'IMG' key – cannot proceed.")
+        return self.transform(img)

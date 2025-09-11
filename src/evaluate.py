@@ -1,59 +1,29 @@
-"""Minimal evaluation stub that produces *real* numeric metrics and saves
-one image artefact in the mandatory **iteration17** directory."""
+"""
+evaluate.py – evaluation helpers and plotting utilities
+"""
 from __future__ import annotations
 
-import time
-from pathlib import Path
-from typing import Dict
+from typing import List
 
-import torch
-from PIL import Image
+import matplotlib
 
-# -------------------------------------------------------------------------
-# Main public API
-# -------------------------------------------------------------------------
+matplotlib.use("Agg")  # headless backend for servers/CI
+import matplotlib.pyplot as plt
 
-IMAGE_DIR = Path(".research/iteration17/images")
+__all__ = ["annotate_line_plot"]
 
+def annotate_line_plot(ax: plt.Axes, xs: List[float], ys: List[float]):
+    """Write every *(x, y)* tuple directly next to its marker on *ax*.
 
-def evaluate_and_plot(model, exp_conf, out_dir: Path) -> Dict[str, float]:
-    """Run a tiny dummy evaluation and save an image.
-
-    The goal is *not* scientific correctness but to guarantee that the
-    experiment produces *concrete* numeric results plus at least one
-    artefact (image file) so that the meta-tester can verify paths and
-    content.
+    Keeping this helper separate from *main.py* avoids code duplication across
+    multiple experiments and isolates all Matplotlib-specific logic in one
+    module.
     """
-    device = next(model.pipe.unet.parameters()).device
-
-    # ------------------------------------------------------------------
-    # 1) Forward a single random tensor through the UNet to obtain a
-    #    loss value – serves as a live metric driven by actual compute.
-    # ------------------------------------------------------------------
-    dummy = torch.randn(1, 3, 64, 64, device=device)
-    with torch.no_grad():
-        loss = model.pipe.unet(dummy).item()
-
-    # Number of UNet calls recorded by dummy model; default to 1 otherwise.
-    unet_calls = getattr(model.pipe.unet, "_forward_counter", 1)
-
-    # ------------------------------------------------------------------
-    # 2) Create a simple RGB image visualising the loss value.
-    # ------------------------------------------------------------------
-    img_arr = (torch.sigmoid(dummy[0]) * 255).to(torch.uint8).cpu().permute(1, 2, 0).numpy()
-    img = Image.fromarray(img_arr)
-
-    IMAGE_DIR.mkdir(parents=True, exist_ok=True)
-    img_path = IMAGE_DIR / f"{exp_conf.id}_{int(time.time())}.png"
-    img.save(img_path)
-
-    # ------------------------------------------------------------------
-    # 3) Return *real* numeric metrics.
-    # ------------------------------------------------------------------
-    metrics = {
-        "dummy_loss": float(loss),
-        "unet_calls": int(unet_calls),
-        "image_path": str(img_path),
-        "timestamp": time.time(),
-    }
-    return metrics
+    for x, y in zip(xs, ys):
+        ax.annotate(
+            f"{y:.2f}",
+            (x, y),
+            textcoords="offset points",
+            xytext=(0, 5),
+            ha="center",
+        )
