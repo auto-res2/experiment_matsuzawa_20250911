@@ -29,7 +29,8 @@ except ModuleNotFoundError:  # pragma: no cover
         @classmethod
         def from_pretrained(cls, *_, **__):  # noqa: D401, D403
             logging.getLogger("train").warning(
-                "'diffusers' not available – using dummy pipeline; results are NOT" "\n" "meaningful and are meant only for CI/test execution."
+                "'diffusers' not available – using dummy pipeline; results are NOT"
+                "\n" "meaningful and are meant only for CI/test execution."
             )
             return cls()
 
@@ -119,7 +120,7 @@ class Experiment1Runner:  # pylint: disable=too-few-public-methods
         # ------------------------------------------------------------------
         # Output paths conforming to the assignment specification ----------
         # ------------------------------------------------------------------
-        self.json_path = pathlib.Path(".research/iteration5") / f"{exp_cfg.id}_results.json"
+        self.json_path = pathlib.Path(".research/iteration6") / f"{exp_cfg.id}_results.json"
         self.json_path.parent.mkdir(parents=True, exist_ok=True)
 
     # ---------------------------------------------------------------------
