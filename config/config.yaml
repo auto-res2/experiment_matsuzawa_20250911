@@ -1,0 +1,22 @@
+experiment:
+  id: "exp_stub"
+  description: "Tiny smoke-test of the RAPTOR mini pipeline"
+  seeds: [0]
+  variants: ["v0"]
+  data:
+    target:
+      url: "albertvillanova/medmnist-v2"
+  model:
+    base: "stabilityai/stable-diffusion-xl-base-1.0"
+  training:
+    pretrain_steps: 0  # skipped in stub
+    finetune_epochs: 1
+    lr_pretrain: 3e-4
+    lr_finetune: 1e-4
+  hutch:
+    top_k: 8
+    sketch: 32
+    refresh: 4
+  scheduler:
+    tau: 0.02
+  output_dir: ".research/iteration13"

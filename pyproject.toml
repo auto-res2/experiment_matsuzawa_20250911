@@ -1,0 +1,26 @@
+[project]
+name = "raptor-mini"
+version = "0.1.0"
+description = "CI-friendly minimal reproduction of the RAPTOR experimental pipeline"
+requires-python = ">=3.9"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+  {name = "RAPTOR Team", email = "research@example.com"}
+]
+
+# Dependencies are kept *minimal*.  The heavy ones (diffusers, torch) are
+# optional so wheels don’t balloon if the CI already has them pre-installed.
+# A real research workstation will have CUDA-enabled torch anyway.
+
+dependencies = [
+    "pyyaml>=6.0",
+    "tqdm>=4.66",
+    "pillow>=10.0",
+    # optional heavy deps – mark with extras to avoid forced install on PyPI
+    "torch>=2.0; platform_machine!=''",
+    "diffusers>=0.25.0; platform_machine!=''",
+]
+
+[project.scripts]
+raptor-run = "src.main:main"
