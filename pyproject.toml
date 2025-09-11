@@ -3,6 +3,15 @@ name = "hydrasketch_phi_experiment"
 version = "0.1.0"
 description = "Research code for HydraSketch-Φ continual-learning experiments"
 requires-python = ">=3.9"
+# ------------------------------------------------------------------
+# Core, *always* needed dependencies.  Heavy ML libraries like Torch are
+# intentionally excluded because the CI stub never touches them.
+# ------------------------------------------------------------------
+dependencies = [
+    "requests>=2.25.0",
+    "tqdm>=4.60.0",
+    "PyYAML>=6.0",
+]
 
 [build-system]
 requires = ["setuptools>=64", "wheel"]
@@ -12,14 +21,7 @@ build-backend = "setuptools.build_meta"
 where = ["src"]
 
 [project.optional-dependencies]
-# core runtime dependencies
-default = [
+# Reserved for future, full-scale runs only.
+full = [
     "torch>=1.9.0",
-    "requests>=2.25.0",
-    "tqdm>=4.60.0",
-    "PyYAML>=6.0",
 ]
-
-# The spec requires an *array* not a mapping when placed at top-level, but
-# inside the optional-dependencies it is safe.  Down-stream tools will merge
-# them correctly.
