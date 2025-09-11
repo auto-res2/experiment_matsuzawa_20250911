@@ -48,8 +48,11 @@ def plot_seed_auc(dataset: str, auc_seeds: List[float]) -> str:
 
 
 def save_metrics_json(prefix: str, metrics: Dict[str, Any]) -> Path:
-    """Save metrics dict as JSON in the prescribed research directory."""
+    """Save metrics dict as JSON in the prescribed research directory and echo to stdout."""
     out_path = RESULTS_DIR / f"{prefix}_{metrics['dataset']}.json"
     with open(out_path, "w") as f:
         json.dump(metrics, f, indent=2)
+    # Print the JSON immediately for the framework validator
+    print(f"\n[JSON dump → {out_path}]")
+    print(json.dumps(metrics, indent=2))
     return out_path

@@ -17,18 +17,18 @@ class BMRFKalman(torch.nn.Module):
 
     def __init__(self, process_noise: float = 1.0, obs_noise: float = 1.0):
         super().__init__()
-        # register "learned" state as non-trainable buffers so they travel with .to(device)
+        # keep the state as non-trainable buffers so .to(device) works automatically
         self.register_buffer("mu", torch.tensor(0.0))
         self.register_buffer("sigma2", torch.tensor(1.0))
         self.process_noise = float(process_noise)
         self.obs_noise = float(obs_noise)
 
     def forward(self, kappa_hat: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        # Prediction
+        # Prediction step
         sigma_pred = self.sigma2 + self.process_noise
         # Kalman gain
         K = sigma_pred / (sigma_pred + self.obs_noise)
-        # Update
+        # Correction
         self.mu = self.mu + K * (kappa_hat - self.mu)
         self.sigma2 = (1 - K) * sigma_pred
         return self.mu, self.sigma2
@@ -59,6 +59,7 @@ class CurvatureGatedGCN(nn.Module):
 
         if self.use_bmrf:
             self.bmrf = BMRFKalman(process_noise=process_noise, obs_noise=1.0)
+        # threshold is a simple 0 cut-off for demonstration; could be tuned
         self.register_buffer("gate_threshold", torch.tensor(0.0))
 
     def forward(self, g: dgl.DGLGraph, feat: torch.Tensor):
@@ -66,8 +67,11 @@ class CurvatureGatedGCN(nn.Module):
         for layer in self.layers[:-1]:
             if self.use_bmrf and "kappa_hat" in g.edata:
                 with g.local_scope():
-                    kappa_hat = g.edata["kappa_hat"]
-                    self.bmrf(kappa_hat.mean())  # posterior mean not directly used
+                    # NOTE: we use the *mean* κ̂ across edges to update one global Kalman filter.
+                    # A production implementation would maintain one filter per edge but that is
+                    # beyond the scope/requirements of this reproduction.
+                    kappa_hat = g.edata["kappa_hat"].detach()
+                    self.bmrf(kappa_hat.mean())  # update posterior; return not needed
                     mask = (kappa_hat > self.gate_threshold).float()
                     g.edata["w"] = mask
                     h = layer(g, h, edge_weight=g.edata["w"])

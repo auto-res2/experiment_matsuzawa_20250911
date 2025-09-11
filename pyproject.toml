@@ -4,11 +4,18 @@ version = "0.1.0"
 description = "BLOOM-GNN research project – structured refactor"
 authors = [{ name = "Researcher" }]
 
-# Dependencies in array format as required
+# ---------------------------------------------------------------------------
+# Dependency notes
+# * dgl 2.2.1 currently publishes wheels only for Windows.  We therefore cap
+#   the upper bound to <2.2.1 so that `uv`/`pip` resolve to 2.2.0 which ships
+#   manylinux wheels compatible with the CI runner.
+# * torch >=2.2 provides cp311 wheels; the lower bound is set accordingly.
+# ---------------------------------------------------------------------------
+
 dependencies = [
     "PyYAML>=6.0",
-    "torch>=1.9.0",
-    "dgl>=0.9.0",
+    "torch>=2.2.0,<3.0",
+    "dgl>=0.9.0,<2.2.1",
     "numpy>=1.21.0",
     "ogb>=1.3.0",
     "optuna>=3.0.0",

@@ -144,7 +144,7 @@ def run_experiment_1() -> List[Dict[str, Any]]:
         print("\n=== EXPERIMENT 1 –", ds_name, "===")
         print("Bayesian Multi-Resolution Curvature Filter vs raw SRS.")
         print(json.dumps(metrics, indent=2))
-        print("Figures:", fig_name)
+        print("Figures:", FIG_DIR / fig_name)
 
     return metrics_all
 

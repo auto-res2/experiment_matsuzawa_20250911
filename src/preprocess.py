@@ -7,7 +7,7 @@ from pathlib import Path
 
 # -------------------- DIRECTORY CONSTANTS --------------------
 ROOT = Path(__file__).resolve().parent.parent
-RESEARCH_DIR = ROOT / ".research" / "iteration4"
+RESEARCH_DIR = ROOT / ".research" / "iteration5"  # UPDATED TO ITERATION-5
 DATA_DIR = ROOT / "data"
 RESULTS_DIR = RESEARCH_DIR  # JSON metrics live directly in the iteration folder
 FIG_DIR = RESEARCH_DIR / "images"
