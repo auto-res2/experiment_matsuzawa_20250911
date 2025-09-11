@@ -1,0 +1,296 @@
+Using CPython 3.11.13
+Creating virtual environment at: .venv
+warning: No `requires-python` value found in the workspace. Defaulting to `>=3.11`.
+Resolved 92 packages in 666ms
+   Building maestro-experiments @ file:///home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911
+Downloading kiwisolver (1.4MiB)
+Downloading sympy (6.0MiB)
+Downloading pycryptodome (2.2MiB)
+Downloading nvidia-cusolver-cu12 (118.4MiB)
+Downloading nvidia-cuda-nvrtc-cu12 (22.6MiB)
+Downloading cryptography (4.0MiB)
+Downloading numpy (17.4MiB)
+Downloading pandas (11.7MiB)
+Downloading pygments (1.2MiB)
+Downloading aiohttp (1.7MiB)
+Downloading nvidia-nvjitlink-cu12 (37.9MiB)
+Downloading torch (720.6MiB)
+Downloading nvidia-cudnn-cu12 (697.8MiB)
+Downloading nvidia-nccl-cu12 (158.3MiB)
+Downloading scipy (33.7MiB)
+Downloading fonttools (4.7MiB)
+Downloading nvidia-cusparse-cu12 (186.9MiB)
+Downloading networkx (1.9MiB)
+Downloading nvidia-cublas-cu12 (391.6MiB)
+Downloading nvidia-cuda-cupti-cu12 (13.5MiB)
+Downloading nvidia-cufft-cu12 (116.0MiB)
+Downloading triton (160.1MiB)
+Downloading ray (66.8MiB)
+Downloading torch-geometric (1.1MiB)
+Downloading matplotlib (8.3MiB)
+Downloading nvidia-curand-cu12 (53.9MiB)
+Downloading hf-xet (3.0MiB)
+Downloading grpcio (5.9MiB)
+Downloading pillow (6.3MiB)
+Downloading pyarrow (40.8MiB)
+ Downloading kiwisolver
+ Downloading aiohttp
+ Downloading pygments
+ Downloading pycryptodome
+ Downloading hf-xet
+ Downloading networkx
+ Downloading torch-geometric
+ Downloading cryptography
+      Built maestro-experiments @ file:///home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911
+ Downloading fonttools
+ Downloading grpcio
+ Downloading pillow
+ Downloading matplotlib
+ Downloading nvidia-cuda-cupti-cu12
+ Downloading sympy
+ Downloading numpy
+ Downloading nvidia-cuda-nvrtc-cu12
+ Downloading nvidia-nvjitlink-cu12
+ Downloading scipy
+ Downloading pandas
+ Downloading nvidia-curand-cu12
+ Downloading pyarrow
+ Downloading nvidia-cusolver-cu12
+ Downloading nvidia-cufft-cu12
+ Downloading nvidia-nccl-cu12
+ Downloading triton
+ Downloading nvidia-cusparse-cu12
+ Downloading nvidia-cublas-cu12
+ Downloading nvidia-cudnn-cu12
+ Downloading ray
+ Downloading torch
+Prepared 91 packages in 59.21s
+Installed 91 packages in 4.49s
+ + aiohappyeyeballs==2.6.1
+ + aiohttp==3.12.15
+ + aiosignal==1.4.0
+ + attrs==25.3.0
+ + certifi==2025.8.3
+ + cffi==2.0.0
+ + charset-normalizer==3.4.3
+ + click==8.1.8
+ + contourpy==1.3.3
+ + cryptography==44.0.3
+ + cycler==0.12.1
+ + datasets==2.21.0
+ + dill==0.3.8
+ + filelock==3.19.1
+ + flwr==1.21.0
+ + fonttools==4.59.2
+ + frozenlist==1.7.0
+ + fsspec==2024.6.1
+ + grpcio==1.74.0
+ + grpcio-health-checking==1.62.3
+ + hf-xet==1.1.9
+ + huggingface-hub==0.34.4
+ + idna==3.10
+ + iterators==0.0.2
+ + jinja2==3.1.6
+ + jsonschema==4.25.1
+ + jsonschema-specifications==2025.9.1
+ + kiwisolver==1.4.9
+ + maestro-experiments==0.1.0 (from file:///home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911)
+ + markdown-it-py==4.0.0
+ + markupsafe==3.0.2
+ + matplotlib==3.10.6
+ + mdurl==0.1.2
+ + mpmath==1.3.0
+ + msgpack==1.1.1
+ + multidict==6.6.4
+ + multiprocess==0.70.16
+ + networkx==3.5
+ + numpy==1.26.4
+ + nvidia-cublas-cu12==12.1.3.1
+ + nvidia-cuda-cupti-cu12==12.1.105
+ + nvidia-cuda-nvrtc-cu12==12.1.105
+ + nvidia-cuda-runtime-cu12==12.1.105
+ + nvidia-cudnn-cu12==8.9.2.26
+ + nvidia-cufft-cu12==11.0.2.54
+ + nvidia-curand-cu12==10.3.2.106
+ + nvidia-cusolver-cu12==11.4.5.107
+ + nvidia-cusparse-cu12==12.1.0.106
+ + nvidia-nccl-cu12==2.19.3
+ + nvidia-nvjitlink-cu12==12.9.86
+ + nvidia-nvtx-cu12==12.1.105
+ + opacus==1.5.4
+ + opt-einsum==3.4.0
+ + packaging==25.0
+ + pandas==2.1.4
+ + pathspec==0.12.1
+ + pillow==11.3.0
+ + propcache==0.3.2
+ + protobuf==4.25.8
+ + psutil==7.0.0
+ + pyarrow==21.0.0
+ + pycparser==2.23
+ + pycryptodome==3.23.0
+ + pygments==2.19.2
+ + pyparsing==3.2.3
+ + python-dateutil==2.9.0.post0
+ + pytz==2025.2
+ + pyyaml==6.0.2
+ + ray==2.49.1
+ + referencing==0.36.2
+ + requests==2.32.5
+ + rich==13.9.4
+ + rpds-py==0.27.1
+ + scipy==1.16.1
+ + seaborn==0.13.2
+ + shellingham==1.5.4
+ + six==1.17.0
+ + sympy==1.14.0
+ + tomli==2.2.1
+ + tomli-w==1.2.0
+ + torch==2.2.2
+ + torch-geometric==2.6.1
+ + torchdiffeq==0.2.5
+ + tqdm==4.67.1
+ + triton==2.2.0
+ + typer==0.12.5
+ + typing-extensions==4.15.0
+ + tzdata==2025.2
+ + urllib3==2.5.0
+ + xxhash==3.5.0
+ + yarl==1.20.1
+warning: No `requires-python` value found in the workspace. Defaulting to `>=3.11`.
+WARNING: Expected GPU ‘GPU’, got ‘NVIDIA A100-SXM4-80GB’.
+WARNING: Could not load 'FedGraph/fedgraph_ogbn-products_5trainer_1hop_iid_beta_1.0_trainer_id_0' from HuggingFace (reason: No (supported) data files found in FedGraph/fedgraph_ogbn-products_5trainer_1hop_iid_beta_1.0_trainer_id_0).
+Downloading https://github.com/kimiyoung/planetoid/raw/master/data/ind.cora.x
+Downloading https://github.com/kimiyoung/planetoid/raw/master/data/ind.cora.tx
+Downloading https://github.com/kimiyoung/planetoid/raw/master/data/ind.cora.allx
+Downloading https://github.com/kimiyoung/planetoid/raw/master/data/ind.cora.y
+Downloading https://github.com/kimiyoung/planetoid/raw/master/data/ind.cora.ty
+Downloading https://github.com/kimiyoung/planetoid/raw/master/data/ind.cora.ally
+Downloading https://github.com/kimiyoung/planetoid/raw/master/data/ind.cora.graph
+Downloading https://github.com/kimiyoung/planetoid/raw/master/data/ind.cora.test.index
+Processing...
+Done!
+WARNING: Could not load 'FedGraph/fedgraph_ogbn-products_5trainer_1hop_iid_beta_1.0_trainer_id_1' from HuggingFace (reason: No (supported) data files found in FedGraph/fedgraph_ogbn-products_5trainer_1hop_iid_beta_1.0_trainer_id_1).
+Downloading https://github.com/kimiyoung/planetoid/raw/master/data/ind.cora.x
+Downloading https://github.com/kimiyoung/planetoid/raw/master/data/ind.cora.tx
+Downloading https://github.com/kimiyoung/planetoid/raw/master/data/ind.cora.allx
+Downloading https://github.com/kimiyoung/planetoid/raw/master/data/ind.cora.y
+Downloading https://github.com/kimiyoung/planetoid/raw/master/data/ind.cora.ty
+Downloading https://github.com/kimiyoung/planetoid/raw/master/data/ind.cora.ally
+Downloading https://github.com/kimiyoung/planetoid/raw/master/data/ind.cora.graph
+Downloading https://github.com/kimiyoung/planetoid/raw/master/data/ind.cora.test.index
+Processing...
+Done!
+[93mWARNING [0m:   DEPRECATED FEATURE: flwr.simulation.start_simulation() is deprecated.
+	Instead, use the `flwr run` CLI command to start a local simulation in your Flower app, as shown for example below:
+
+		$ flwr new  # Create a new Flower app from a template
+
+		$ flwr run  # Run the Flower app in Simulation Mode
+
+	Using `start_simulation()` is deprecated.
+
+            This is a deprecated feature. It will be removed
+            entirely in future versions of Flower.
+        
+[92mINFO [0m:      Starting Flower simulation, config: num_rounds=2, no round_timeout
+2025-09-11 10:15:20,959	INFO worker.py:1951 -- Started a local Ray instance.
+2025-09-11 10:15:21,527	INFO packaging.py:588 -- Creating a file package for local module '/home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911'.
+2025-09-11 10:15:21,859	WARNING packaging.py:430 -- File /home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/.research/iteration13/data/ogbn_products_p1/cora/Cora/processed/data.pt is very large (14.99MiB). Consider adding this file to the 'excludes' list to skip uploading it: `ray.init(..., runtime_env={'excludes': ['/home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/.research/iteration13/data/ogbn_products_p1/cora/Cora/processed/data.pt']})`
+2025-09-11 10:15:21,918	WARNING packaging.py:430 -- File /home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/.research/iteration13/data/ogbn_products_p0/cora/Cora/processed/data.pt is very large (14.99MiB). Consider adding this file to the 'excludes' list to skip uploading it: `ray.init(..., runtime_env={'excludes': ['/home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/.research/iteration13/data/ogbn_products_p0/cora/Cora/processed/data.pt']})`
+2025-09-11 10:15:21,977	WARNING packaging.py:430 -- File /home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/.research/iteration14/data/ogbn_products_p1/cora/Cora/processed/data.pt is very large (14.99MiB). Consider adding this file to the 'excludes' list to skip uploading it: `ray.init(..., runtime_env={'excludes': ['/home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/.research/iteration14/data/ogbn_products_p1/cora/Cora/processed/data.pt']})`
+2025-09-11 10:15:22,036	WARNING packaging.py:430 -- File /home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/.research/iteration14/data/ogbn_products_p0/cora/Cora/processed/data.pt is very large (14.99MiB). Consider adding this file to the 'excludes' list to skip uploading it: `ray.init(..., runtime_env={'excludes': ['/home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/.research/iteration14/data/ogbn_products_p0/cora/Cora/processed/data.pt']})`
+2025-09-11 10:15:22,120	WARNING packaging.py:430 -- File /home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/.research/iteration10/data/ogbn_products_p0/cora/Cora/processed/data.pt is very large (15.00MiB). Consider adding this file to the 'excludes' list to skip uploading it: `ray.init(..., runtime_env={'excludes': ['/home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/.research/iteration10/data/ogbn_products_p0/cora/Cora/processed/data.pt']})`
+2025-09-11 10:15:22,181	WARNING packaging.py:430 -- File /home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/.research/iteration9/data/ogbn_products_p0/cora/Cora/processed/data.pt is very large (15.00MiB). Consider adding this file to the 'excludes' list to skip uploading it: `ray.init(..., runtime_env={'excludes': ['/home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/.research/iteration9/data/ogbn_products_p0/cora/Cora/processed/data.pt']})`
+2025-09-11 10:15:22,322	INFO packaging.py:380 -- Pushing file package 'gcs://_ray_pkg_532ded31b4d7e9bd.zip' (119.43MiB) to Ray cluster...
+2025-09-11 10:15:22,940	INFO packaging.py:393 -- Successfully pushed file package 'gcs://_ray_pkg_532ded31b4d7e9bd.zip'.
+[92mINFO [0m:      Flower VCE: Ray initialized with resources: {'accelerator_type:A100': 1.0, 'node:__internal_head__': 1.0, 'node:172.30.35.33': 1.0, 'CPU': 128.0, 'memory': 1180004687872.0, 'object_store_memory': 200000000000.0, 'GPU': 8.0}
+[92mINFO [0m:      Optimize your simulation with Flower VCE: https://flower.ai/docs/framework/how-to-run-simulations.html
+/home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/src/main.py:125: UserWarning: No `num_cpus` specified in `client_resources`. Using `num_cpus=1` for each client.
+  hist = fl.simulation.start_simulation(
+[92mINFO [0m:      Flower VCE: Resources for each Virtual Client: {'num_gpus': 1, 'num_cpus': 1}
+[92mINFO [0m:      Flower VCE: Creating VirtualClientEngineActorPool with 8 actors
+[92mINFO [0m:      [INIT]
+[92mINFO [0m:      Requesting initial parameters from one random client
+[33m(raylet)[0m warning: `VIRTUAL_ENV=/home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead
+[33m(raylet)[0m Using CPython 3.11.13
+[33m(raylet)[0m Creating virtual environment at: .venv
+[33m(raylet)[0m warning: No `requires-python` value found in the workspace. Defaulting to `>=3.11`.
+[33m(raylet)[0m    Building maestro-experiments @ file:///tmp/ray/session_2025-09-11_10-15-18_985981_210704/runtime_resources/working_dir_files/_ray_pkg_532ded31b4d7e9bd
+[33m(raylet)[0m       Built maestro-experiments @ file:///tmp/ray/session_2025-09-11_10-15-18_985981_210704/runtime_resources/working_dir_files/_ray_pkg_532ded31b4d7e9bd
+[33m(raylet)[0m warning: Failed to hardlink files; falling back to full copy. This may lead to degraded performance.
+[33m(raylet)[0m          If the cache and target directories are on different filesystems, hardlinking may not be supported.
+[33m(raylet)[0m          If this is intentional, set `export UV_LINK_MODE=copy` or use `--link-mode=copy` to suppress this warning.
+[33m(raylet)[0m Installed 91 packages in 14.01s
+[33m(raylet)[0m warning: `VIRTUAL_ENV=/home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead[32m [repeated 7x across cluster] (Ray deduplicates logs by default. Set RAY_DEDUP_LOGS=0 to disable log deduplication, or see https://docs.ray.io/en/master/ray-observability/user-guides/configure-logging.html#log-deduplication for more options.)[0m
+[33m(raylet)[0m warning: No `requires-python` value found in the workspace. Defaulting to `>=3.11`.[32m [repeated 2x across cluster][0m
+[36m(ClientAppActor pid=219387)[0m [93mWARNING [0m:   DEPRECATED FEATURE: `client_fn` now expects a signature `def client_fn(context: Context)`.The provided `client_fn` has signature: {'cid': <Parameter "cid">}. You can import the `Context` like this: `from flwr.common import Context`
+[36m(ClientAppActor pid=219387)[0m 
+[36m(ClientAppActor pid=219387)[0m             This is a deprecated feature. It will be removed
+[36m(ClientAppActor pid=219387)[0m             entirely in future versions of Flower.
+[36m(ClientAppActor pid=219387)[0m         
+[33m(raylet)[0m warning: No `requires-python` value found in the workspace. Defaulting to `>=3.11`.[32m [repeated 5x across cluster][0m
+[92mINFO [0m:      Received initial parameters from one random client
+[92mINFO [0m:      Starting evaluation of initial global parameters
+[92mINFO [0m:      Evaluation returned no results (`None`)
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 1]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[36m(ClientAppActor pid=219387)[0m [93mWARNING [0m:   Deprecation Warning: The `client_fn` function must return an instance of `Client`, but an instance of `NumpyClient` was returned. Please use `NumPyClient.to_client()` method to convert it to `Client`.
+[36m(ClientAppActor pid=219387)[0m [93mWARNING [0m:   DEPRECATED FEATURE: `client_fn` now expects a signature `def client_fn(context: Context)`.The provided `client_fn` has signature: {'cid': <Parameter "cid">}. You can import the `Context` like this: `from flwr.common import Context`
+[36m(ClientAppActor pid=219387)[0m 
+[36m(ClientAppActor pid=219387)[0m             This is a deprecated feature. It will be removed
+[36m(ClientAppActor pid=219387)[0m             entirely in future versions of Flower.
+[36m(ClientAppActor pid=219387)[0m         
+[36m(ClientAppActor pid=219387)[0m [93mWARNING [0m:   Deprecation Warning: The `client_fn` function must return an instance of `Client`, but an instance of `NumpyClient` was returned. Please use `NumPyClient.to_client()` method to convert it to `Client`.
+[36m(ClientAppActor pid=219389)[0m 
+[36m(ClientAppActor pid=219389)[0m         
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[93mWARNING [0m:   No fit_metrics_aggregation_fn provided
+[92mINFO [0m:      configure_evaluate: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_evaluate: received 2 results and 0 failures
+[93mWARNING [0m:   No evaluate_metrics_aggregation_fn provided
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 2]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[92mINFO [0m:      configure_evaluate: strategy sampled 2 clients (out of 2)
+[36m(ClientAppActor pid=219387)[0m 
+[36m(ClientAppActor pid=219387)[0m         
+[36m(ClientAppActor pid=219387)[0m 
+[36m(ClientAppActor pid=219387)[0m         
+[36m(ClientAppActor pid=219387)[0m 
+[36m(ClientAppActor pid=219387)[0m         
+[36m(ClientAppActor pid=219389)[0m 
+[36m(ClientAppActor pid=219389)[0m         
+[36m(ClientAppActor pid=219389)[0m 
+[36m(ClientAppActor pid=219389)[0m         
+[36m(ClientAppActor pid=219389)[0m 
+[36m(ClientAppActor pid=219389)[0m         
+[92mINFO [0m:      aggregate_evaluate: received 2 results and 0 failures
+[92mINFO [0m:      
+[92mINFO [0m:      [SUMMARY]
+[92mINFO [0m:      Run finished 2 round(s) in 4.07s
+[92mINFO [0m:      	History (loss, distributed):
+[92mINFO [0m:      		round 1: 1.8826727271080017
+[92mINFO [0m:      		round 2: 1.8060885071754456
+[92mINFO [0m:      
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/src/main.py", line 204, in <module>
+    main()
+  File "/home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/src/main.py", line 200, in main
+    run_experiment_1()
+  File "/home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/src/main.py", line 151, in run_experiment_1
+    reference_client.set_parameters(strategy.final_parameters.tensors)
+  File "/home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/src/train.py", line 101, in set_parameters
+    _load_numpy(parameters, self.model)
+  File "/home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/src/train.py", line 60, in _load_numpy
+    if p_torch.numel() != p_np.size:
+                          ^^^^^^^^^
+AttributeError: 'bytes' object has no attribute 'size'
+[36m(ClientAppActor pid=219389)[0m [93mWARNING [0m:   DEPRECATED FEATURE: `client_fn` now expects a signature `def client_fn(context: Context)`.The provided `client_fn` has signature: {'cid': <Parameter "cid">}. You can import the `Context` like this: `from flwr.common import Context`[32m [repeated 7x across cluster][0m
+[36m(ClientAppActor pid=219389)[0m             This is a deprecated feature. It will be removed[32m [repeated 7x across cluster][0m
+[36m(ClientAppActor pid=219389)[0m             entirely in future versions of Flower.[32m [repeated 7x across cluster][0m
+[36m(ClientAppActor pid=219389)[0m [93mWARNING [0m:   Deprecation Warning: The `client_fn` function must return an instance of `Client`, but an instance of `NumpyClient` was returned. Please use `NumPyClient.to_client()` method to convert it to `Client`.[32m [repeated 7x across cluster][0m
