@@ -1,0 +1,6 @@
+=== uv sync start Thu Sep 11 09:02:32 AM UTC 2025 ===
+=== uv install end Thu Sep 11 09:03:02 AM UTC 2025 ===
+=== experiment start Thu Sep 11 09:03:02 AM UTC 2025 ===
+
+🧪  Running Experiment 1 – End-to-End Federated Dynamic Training Benchmark
+
