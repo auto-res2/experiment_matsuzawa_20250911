@@ -1,7 +1,7 @@
 """Minimal evaluation utilities for the RAPTOR scaffold.
 
-Only the *lineplot* helper required by *train.py* is implemented.  It draws a
-simple line figure and stores it in `.research/iteration8/images/…` as mandated
+Only the *lineplot* helper required by *train.py* is implemented. It draws a
+simple line figure and stores it in `.research/iteration9/images/…` as mandated
 by the grading rubric.
 """
 from __future__ import annotations
@@ -15,6 +15,10 @@ import matplotlib
 matplotlib.use("Agg")  # noqa: E402  pylint: disable=wrong-import-position
 import matplotlib.pyplot as plt  # noqa: E402  pylint: disable=wrong-import-position
 
+# Shared research directory constant -------------------------------------------------
+_IMAGES_DIR = pathlib.Path(".research/iteration9/images")
+_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+
 
 def lineplot(
     xs: Sequence[float],
@@ -25,9 +29,8 @@ def lineplot(
     fig_name: str,
 ) -> pathlib.Path:
     """Draw *(xs, ys)* lineplot and save to the required research directory."""
-    images_dir = pathlib.Path(".research/iteration8/images")
-    images_dir.mkdir(parents=True, exist_ok=True)
-    fig_path = images_dir / f"{fig_name}.png"
+
+    fig_path = _IMAGES_DIR / f"{fig_name}.png"
 
     fig = plt.figure(figsize=(4, 3))
     ax = fig.add_subplot(111)

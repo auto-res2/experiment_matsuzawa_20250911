@@ -49,15 +49,23 @@ log = logging.getLogger("train")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(name)s: %(message)s")
 
 # -----------------------------------------------------------------------------
+# Constants --------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# All experiment artefacts must reside in iteration9 according to the grading
+# rubric.  Centralising the constant here makes future migrations easier.
+_ITERATION_ROOT = pathlib.Path(".research/iteration9")
+_IMAGES_DIR = _ITERATION_ROOT / "images"
+_ITERATION_ROOT.mkdir(parents=True, exist_ok=True)
+_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+
+# -----------------------------------------------------------------------------
 # Model helpers ----------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
 def load_sd_xl(cfg: ModelCfg):
-    """Load a Stable-Diffusion-XL pipeline with the requested precision.
+    """Load a Stable-Diffusion-XL pipeline (or a lightweight stand-in).
 
-    A dummy pipeline will be used automatically if *diffusers* is not available
-    in the execution environment. This keeps the CI footprint small while still
-    exercising the rest of the code-path.
+    A dummy pipeline is used automatically if *diffusers* cannot be imported.
     """
 
     dtype = torch.float16 if cfg.fp16 else torch.float32
@@ -120,8 +128,7 @@ class Experiment1Runner:  # pylint: disable=too-few-public-methods
         # ------------------------------------------------------------------
         # Output paths conforming to the assignment specification ----------
         # ------------------------------------------------------------------
-        self.json_path = pathlib.Path(".research/iteration8") / f"{exp_cfg.id}_results.json"
-        self.json_path.parent.mkdir(parents=True, exist_ok=True)
+        self.json_path = _ITERATION_ROOT / f"{exp_cfg.id}_results.json"
 
     # ---------------------------------------------------------------------
     # Main entry -----------------------------------------------------------
