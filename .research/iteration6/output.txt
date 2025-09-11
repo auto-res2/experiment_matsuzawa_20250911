@@ -1,0 +1,30 @@
+=== uv sync start Thu Sep 11 09:17:01 AM UTC 2025 ===
+=== uv install end Thu Sep 11 09:17:06 AM UTC 2025 ===
+=== experiment start Thu Sep 11 09:17:06 AM UTC 2025 ===
+
+🧪  Running Experiment 1 – End-to-End Federated Dynamic Training Benchmark
+
+{
+  "financial_fed": {
+    "accuracy": 0.0317,
+    "bytes": 31726663,
+    "co2": 0.015863
+  },
+  "health_fed": {
+    "accuracy": 0.1332,
+    "bytes": 133214575,
+    "co2": 0.066607
+  },
+  "reddit_year": {
+    "accuracy": 0.0022,
+    "bytes": 2180274,
+    "co2": 0.00109
+  },
+  "ogbn_products": {
+    "accuracy": 0.0317,
+    "bytes": 31726663,
+    "co2": 0.015863
+  }
+}
+Figures written to /home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/.research/iteration6/images
+=== experiment end Thu Sep 11 09:17:55 AM UTC 2025 ===

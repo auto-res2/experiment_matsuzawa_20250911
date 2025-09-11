@@ -1,0 +1,22 @@
+{
+  "financial_fed": {
+    "accuracy": 0.0317,
+    "bytes": 31726663,
+    "co2": 0.015863
+  },
+  "health_fed": {
+    "accuracy": 0.1332,
+    "bytes": 133214575,
+    "co2": 0.066607
+  },
+  "reddit_year": {
+    "accuracy": 0.0022,
+    "bytes": 2180274,
+    "co2": 0.00109
+  },
+  "ogbn_products": {
+    "accuracy": 0.0317,
+    "bytes": 31726663,
+    "co2": 0.015863
+  }
+}
