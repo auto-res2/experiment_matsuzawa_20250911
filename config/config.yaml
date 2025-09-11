@@ -1,0 +1,35 @@
+dataset_name: EdgeBench-48
+dataset_version: v1.2
+dataset_url: https://edgebench.org/download/edgebench-48-v1.2.tar
+dataset_archive_name: edgebench-48-v1.2.tar
+vision_backbone: microsoft/resnet-18
+radar_backbone: timm/pointnetlite
+gas_backbone: custom_gru_128
+ecg_backbone: custom_resnet1d_10
+learning_rates:
+- 0.001
+- 0.0003
+- 0.0001
+fractional_sde_alpha:
+- 0.25
+- 0.5
+- 0.75
+teleport_threshold:
+- 0.5
+- 1.0
+- 2.0
+latency_grid:
+- lambda1
+- lambda2
+- lambda3
+- lambda4
+ram_caps_kb:
+- 10
+- 50
+- 100
+latency_caps_ms:
+- 15
+- 30
+data_root: data
+output_root: outputs
+figure_root: figures

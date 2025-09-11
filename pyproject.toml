@@ -1,1 +1,15 @@
-# Please list the required python packages.
+[project]
+name = "hydrasketch_phi"
+version = "0.1.0"
+description = "HydraSketch-Φ experimental pipeline refactored into a multi-file package."
+dependencies = [
+    "pyyaml>=6.0",
+    "requests>=2.31.0",
+    "tqdm>=4.66.0",
+    "torch>=1.9.0",
+    "torchvision>=0.10.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
