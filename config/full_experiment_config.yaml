@@ -1,0 +1,18 @@
+# Full-scale configuration mirroring the original monolithic script
+
+datasets:
+  use_ogbn_papers100m: true
+  use_macaron_social: false
+  use_eu_reg_credit: false
+  use_ego_nets: false
+  use_fedgraph: false
+
+hyper:
+  lr: 1e-3
+  Q_kappa: 1e-3
+
+exp1:
+  total_batches: 5000
+
+exp2:
+  delta: 0.05

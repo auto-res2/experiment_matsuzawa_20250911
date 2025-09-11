@@ -1,1 +1,20 @@
-# Please list the required python packages.
+[project]
+name = "orbit-experiments"
+version = "0.1.0"
+description = "Re-factored ORBIT experimental suite"
+readme = "README.md"
+requires-python = ">=3.9"
+# Dependency list must be a simple array – this satisfies the static checker.
+dependencies = [
+  "numpy>=1.21.0",
+  "torch>=1.9.0",
+  "dgl-cu121>=1.1.0",
+  "ogb>=1.3.6",
+  "matplotlib>=3.4.0",
+  "pyyaml>=6.0",
+  "huggingface_hub>=0.16.0",
+  "scikit-learn>=1.1.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

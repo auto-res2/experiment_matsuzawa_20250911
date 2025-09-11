@@ -1,0 +1,18 @@
+# Small-scale configuration for quick CI validation
+
+datasets:
+  use_ogbn_papers100m: false   # skip heavy download for smoke test
+  use_macaron_social: false
+  use_eu_reg_credit: false
+  use_ego_nets: false
+  use_fedgraph: false
+
+hyper:
+  lr: 1e-3
+  Q_kappa: 1e-3
+
+exp1:
+  total_batches: 2   # drastically reduced – ≈ a few seconds
+
+exp2:
+  delta: 0.05
