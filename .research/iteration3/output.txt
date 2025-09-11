@@ -1,0 +1,37 @@
+=== uv sync start Thu Sep 11 03:42:50 PM UTC 2025 ===
+=== uv install end Thu Sep 11 03:42:55 PM UTC 2025 ===
+=== experiment start Thu Sep 11 03:42:55 PM UTC 2025 ===
+Downloading: "https://download.pytorch.org/models/resnet50-0676ba61.pth" to /home/toma/.cache/torch/hub/checkpoints/resnet50-0676ba61.pth
+[Task 01] TrainAcc=23.88  ValAcc=14.58
+[Task 02] TrainAcc=20.32  ValAcc=21.99
+[Task 03] TrainAcc=12.56  ValAcc=12.37
+[Task 04] TrainAcc=12.00  ValAcc=12.77
+[Task 05] TrainAcc=9.32  ValAcc=11.68
+[Task 06] TrainAcc=8.16  ValAcc=8.66
+[Task 07] TrainAcc=8.55  ValAcc=8.01
+[Task 08] TrainAcc=7.66  ValAcc=7.02
+[Task 09] TrainAcc=7.68  ValAcc=7.41
+[Task 10] TrainAcc=8.14  ValAcc=10.04
+
+=== Experiment 1 – Imagenette Continual-Learning ===
+{
+  "experiment": "Experiment 1 \u2013 Vision-Discriminative (Imagenette demo)",
+  "datetime": "2025-09-11T15:51:41.942203",
+  "tasks": 10,
+  "accuracy_per_task": [
+    14.583333333333334,
+    21.98952879581152,
+    12.371134020618557,
+    12.76595744680851,
+    11.67728237791932,
+    8.657243816254416,
+    8.006042296072508,
+    7.0198675496688745,
+    7.411764705882353,
+    10.042283298097251
+  ],
+  "final_accuracy": 10.042283298097251,
+  "figure": "accuracy_harp_raft_imagenette.pdf"
+}
+Figure saved: accuracy_harp_raft_imagenette.pdf
+=== experiment end Thu Sep 11 03:51:44 PM UTC 2025 ===
