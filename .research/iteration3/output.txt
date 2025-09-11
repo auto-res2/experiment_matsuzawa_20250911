@@ -1,0 +1,25 @@
+=== uv sync start Thu Sep 11 05:01:21 PM UTC 2025 ===
+=== uv install end Thu Sep 11 05:02:24 PM UTC 2025 ===
+=== experiment start Thu Sep 11 05:02:24 PM UTC 2025 ===
+
+================ SMOKE_TEST ================
+
+========================================================
+EXPERIMENT 1 – Benchmark v. SOTA Samplers
+========================================================
+
+
+Experiment description:
+  exp1_smoke – see YAML configuration for full details.
+
+Experimental numerical data:
+{
+  "placeholder": true,
+  "runtime_s": 0.0,
+  "note": "Numerical solver not included in public refactor \u2013 no real metrics."
+}
+
+Figures saved:
+  .research/iteration3/images/exp1_smoke.pdf
+
+=== experiment end Thu Sep 11 05:02:35 PM UTC 2025 ===
