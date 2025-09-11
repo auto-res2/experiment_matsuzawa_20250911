@@ -35,7 +35,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CONFIG_PATH = ROOT / "config" / "config.yaml"
 CONFIG = yaml.safe_load(CONFIG_PATH.read_text())
 
-RESEARCH_DIR = ROOT / ".research" / "iteration3"  # ← mandatory update
+RESEARCH_DIR = ROOT / ".research" / "iteration4"  # updated path
 IMAGES_DIR = RESEARCH_DIR / "images"
 for _d in [RESEARCH_DIR, IMAGES_DIR]:
     _d.mkdir(parents=True, exist_ok=True)

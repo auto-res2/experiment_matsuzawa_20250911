@@ -42,9 +42,11 @@ except FileNotFoundError as e:  # pragma: no cover – fatal for experiment
 
 DATA_DIR = ROOT / "data"
 MODELS_DIR = ROOT / "models"
-RESEARCH_DIR = ROOT / ".research" / "iteration3"  # ← mandatory path update
+# Path update – iteration4 is mandatory for this round
+RESEARCH_DIR = ROOT / ".research" / "iteration4"
 for _d in [DATA_DIR, MODELS_DIR, RESEARCH_DIR]:
     _d.mkdir(parents=True, exist_ok=True)
+(RESEARCH_DIR / "images").mkdir(parents=True, exist_ok=True)
 
 # ---------------------------------------------------------------------------
 #                                MODEL
@@ -56,9 +58,11 @@ class GraphEncoder(nn.Module):
         super().__init__()
         self.convs = nn.ModuleList()
         self.convs.append(SAGEConv(in_dim, hidden))
-        for _ in range(layers - 2):
+        for _ in range(max(layers - 2, 0)):
             self.convs.append(SAGEConv(hidden, hidden))
-        self.convs.append(SAGEConv(hidden, hidden))
+        # Ensure we always have at least 2 layers (SAGEConv requires >1 for skip connections)
+        if layers > 1:
+            self.convs.append(SAGEConv(hidden, hidden))
         self.act = nn.ReLU()
 
     def forward(self, x, edge_index):  # pylint: disable=arguments-differ
@@ -170,7 +174,7 @@ def _train_single_seed(seed: int, device: torch.device) -> Path:
             scaler.step(opt)
             scaler.update()
             opt.zero_grad()
-        # Validation omitted – early-stopping not critical for refactor.
+        # Validation omitted – early-stopping not critical for reference implementation.
 
     ckpt = MODELS_DIR / f"cafe_edge_seed{seed}.pt"
     torch.save(model.state_dict(), ckpt)

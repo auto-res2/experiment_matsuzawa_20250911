@@ -1,17 +1,36 @@
 [project]
 name = "cafe_edge_repro"
 version = "0.1.0"
+
+# ----------------------------------------------------------------------------
+# Dependency policy
+# ----------------------------------------------------------------------------
+# 1. NumPy is pinned to the latest 1.x series because many binary wheels in the
+#    PyData ecosystem (and, critically, PyTorch < 2.3) are still built against
+#    the NumPy 1.x C-ABI.  NumPy 2.x causes import-time failures for those
+#    wheels, so we *must* stay below 2.0 until the entire stack has migrated.
+# 2. All other packages follow the lowest-compatible-latest strategy unless a
+#    strict pin is required for deterministic results.
+# ----------------------------------------------------------------------------
+
 dependencies = [
-  # Pinned to <2.3 to avoid the new NVIDIA meta-package dependencies that break
-  # CPU-only CI runners.
-  "torch>=1.12.0,<2.3",
-  # torch-geometric wheels for pure-python environments are optional; a stub is
-  # injected at runtime if the import fails, so we keep it optional here.
+  # PyTorch – CPU-only wheel keeps the CI image lightweight (<200 MB download).
+  "torch==2.2.2",
+
+  # torch-geometric is optional.  If the wheel cannot be resolved for the
+  # current platform, the runtime stub in `src/tg_stub.py` seamlessly takes
+  # over so that the rest of the code remains importable.
   "torch-geometric>=2.2.0,<2.6.0",
-  "numpy>=1.21.0",
+
+  # **Critical ABI pin** – stay on NumPy 1.x.
+  "numpy>=1.22.0,<2.0.0",
+
+  # Data / plotting stack
   "pandas>=1.3.0",
   "pyarrow>=6.0.0",
   "matplotlib>=3.4.0",
+
+  # Misc utilities
   "requests>=2.26.0",
   "PyYAML>=6.0"
 ]

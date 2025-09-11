@@ -69,7 +69,7 @@ def _download_with_sha256(url: str, dest: Path, expected: str):
     except requests.RequestException as e:  # pragma: no cover
         sys.exit(f"ERROR: network failure downloading dataset → {e}")
     if resp.status_code != 200:
-        print("WARNING: remote dataset unavailable (HTTP {resp.status_code}). "
+        print(f"WARNING: remote dataset unavailable (HTTP {resp.status_code}). "
               "Falling back to tiny built-in sample for CI.")
         _create_tiny_dataset()
         return
