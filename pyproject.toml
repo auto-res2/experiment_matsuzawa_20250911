@@ -1,1 +1,19 @@
-# Please list the required python packages.
+[project]
+name = "harp_raft_cl"
+version = "0.1.0"
+description = "HARP-RAFT continual-learning experimental suite"
+authors = ["ML Researcher <research@example.com>"]
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+
+# Explicit, ordered dependency list (array format is mandatory)
+dependencies = [
+  "torch>=1.9.0",
+  "torchvision>=0.10.0",
+  "requests>=2.25.0",
+  "tqdm>=4.62.0",
+  "pyyaml>=5.4.0",
+  "matplotlib>=3.4.0",
+  "seaborn>=0.11.0"
+]
