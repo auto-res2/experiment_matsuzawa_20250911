@@ -1,36 +1,36 @@
+# src/main.py
+"""Main orchestration entry point – executed via `python -m src.main`."""
 from __future__ import annotations
-
-"""Main orchestration entry point – called via  `python -m src.main`."""
 
 import json
 import os
 import time
 from pathlib import Path
-from typing import Dict, List, Tuple, cast  # Added cast for safe typing
+from typing import Dict, List, Tuple, cast
 
 import flwr as fl
 import torch
-import yaml  # PyYAML – required dependency
+import yaml
 
 from .preprocess import FedPartitionDataset, abort
 from .train import CarbonController, Client
 from .evaluate import current_power_draw_watts, plot_accuracy, save_json
 
 # ---------------------------------------------------------------------------
-#  Resolve project root and important folders (iteration-8 layout)
+#  Resolve project root and mandatory research folders (iteration-9 layout)
 # ---------------------------------------------------------------------------
 ROOT = Path(__file__).resolve().parent.parent
-RESEARCH_DIR = ROOT / ".research" / "iteration8"
+RESEARCH_DIR = ROOT / ".research" / "iteration9"
 DATA_DIR = RESEARCH_DIR / "data"
-FIG_DIR = RESEARCH_DIR / "images"
-RES_DIR = RESEARCH_DIR
+FIG_DIR = RESEARCH_DIR / "images"  # must equal .research/iteration9/images
+RES_DIR = RESEARCH_DIR              # JSON files are saved directly here
 CONFIG_DIR = ROOT / "config"
 
 for _d in (DATA_DIR, FIG_DIR, RES_DIR, CONFIG_DIR):
     _d.mkdir(parents=True, exist_ok=True)
 
 # ---------------------------------------------------------------------------
-#  Load YAML configuration (must exist – no fallback)
+#  Load YAML configuration (mandatory – fail fast if missing)
 # ---------------------------------------------------------------------------
 CFG_FILE = CONFIG_DIR / "config.yaml"
 if not CFG_FILE.exists():
@@ -40,7 +40,7 @@ with open(CFG_FILE, "r", encoding="utf-8") as _fp:
     CONFIG: Dict = yaml.safe_load(_fp)
 
 # ---------------------------------------------------------------------------
-#  Hardware sanity checks – in CI we allow CPU-only execution with a warning.
+#  Hardware sanity checks – CI may run on CPU-only runners.
 # ---------------------------------------------------------------------------
 
 def ensure_gpu():
@@ -63,19 +63,18 @@ def ensure_gpu():
 
 
 # ---------------------------------------------------------------------------
-#  Experiment 1 implementation (other experiments omitted for brevity)
+#  Experiment 1 – Federated Continuous-Time Training & Carbon Audit
 # ---------------------------------------------------------------------------
 
 def run_experiment_1() -> Dict:
-    desc = (
+    print(
         "Experiment 1 – Federated Continuous-Time Training & Carbon Audit\n"
         "Goal: Evaluate MAESTRO’s end-to-end benefits (accuracy, comms, latency, carbon)"
     )
-    print(desc)
 
     cfg_exp1 = CONFIG["experiments"]["exp1"]
 
-    # 1. Dataset partitions -------------------------------------------------
+    # 1 / Dataset partitions -------------------------------------------------
     partitions: List[FedPartitionDataset] = []
     part_cfg = CONFIG["datasets"]["ogbn_products_partitions"]
     for pid in range(part_cfg["num_partitions"]):
@@ -87,19 +86,18 @@ def run_experiment_1() -> Dict:
         except Exception as exc:  # noqa: BLE001
             abort(f"Failed to load dataset partition {repo}: {exc}")
 
-    # 2. Carbon controller --------------------------------------------------
+    # 2 / Carbon controller --------------------------------------------------
     carbon_ctl: CarbonController | None = None
     try:
         carbon_ctl = CarbonController(threshold=cfg_exp1["carbon_intensity_threshold"])
     except Exception as exc:  # noqa: BLE001
         print(f"WARNING: CarbonController disabled – reason: {exc}", file=os.sys.stderr)
 
-    # 3. Flower server strategy --------------------------------------------
+    # 3 / Flower strategy ----------------------------------------------------
     strategy = fl.server.strategy.FedAvg()
 
-    # 4. Start simulation ---------------------------------------------------
+    # 4 / Simulation ---------------------------------------------------------
     clients = [lambda d=ds: Client(d, cfg_exp1) for ds in partitions]
-
     client_resources = {"num_gpus": 1} if torch.cuda.is_available() else {"num_cpus": 1}
 
     start_time = time.time()
@@ -112,9 +110,12 @@ def run_experiment_1() -> Dict:
     )
     duration_secs = time.time() - start_time
 
-    # 5. Collect metrics ----------------------------------------------------
-    acc_tuples_raw = hist.metrics_centralized.get("accuracy", [])
-    acc_tuples: List[Tuple[int, float]] = cast(List[Tuple[int, float]], acc_tuples_raw)
+    # 5 / Metrics ------------------------------------------------------------
+    acc_tuples: List[Tuple[int, float]] = []
+    if hist.metrics_centralized.get("accuracy"):
+        acc_tuples = cast(List[Tuple[int, float]], hist.metrics_centralized.get("accuracy"))
+    elif hist.metrics_distributed.get("accuracy"):
+        acc_tuples = cast(List[Tuple[int, float]], hist.metrics_distributed.get("accuracy"))
 
     if not acc_tuples:
         print("WARNING: No accuracy metrics returned by clients.", file=os.sys.stderr)
@@ -122,21 +123,19 @@ def run_experiment_1() -> Dict:
         accs: List[float] = []
     else:
         rounds, accs = zip(*acc_tuples)
-        rounds = list(rounds)
-        accs = list(accs)
+        rounds, accs = list(rounds), list(accs)
 
-    # Communication volume approximation -----------------------------------
-    model_size_bytes = sum(
-        p.numel() * p.element_size() for p in Client(partitions[0], cfg_exp1).model.parameters()
-    )
+    # 6 / Communication volume ----------------------------------------------
+    reference_client = Client(partitions[0], cfg_exp1)
+    model_size = sum(p.numel() * p.element_size() for p in reference_client.model.parameters())
     total_uploads = cfg_exp1["num_rounds"] * len(clients)
-    network_bytes: int = model_size_bytes * total_uploads
+    network_bytes = model_size * total_uploads
 
-    # 6. Energy usage -------------------------------------------------------
-    watts: float = current_power_draw_watts()
-    hours: float = duration_secs / 3600.0
-    wh_compute: float = watts * hours
-    wh_network: float = (network_bytes * 0.06e-6) / 3600.0  # µJ → Wh then hours normalise
+    # 7 / Energy usage -------------------------------------------------------
+    watts = current_power_draw_watts()
+    hours = duration_secs / 3600.0
+    wh_compute = watts * hours
+    wh_network = (network_bytes * 0.06e-6) / 3600.0  # µJ → Wh / h normalisation
 
     results = {
         "final_accuracy": float(accs[-1]) if accs else None,
@@ -147,12 +146,12 @@ def run_experiment_1() -> Dict:
         "wh_network": wh_network,
     }
 
-    # 7. Plotting -----------------------------------------------------------
+    # 8 / Plot ---------------------------------------------------------------
     if rounds:
         fig_name = plot_accuracy(rounds, accs, FIG_DIR / "accuracy_maestro.pdf")
-        print("Figures produced:", fig_name)
+        print("Figure saved:", fig_name)
 
-    # 8. Persist ------------------------------------------------------------
+    # 9 / Persist ------------------------------------------------------------
     res_file = RES_DIR / "exp1_results.json"
     save_json(res_file, results)
 
@@ -160,12 +159,12 @@ def run_experiment_1() -> Dict:
         carbon_ctl.shutdown()
 
     print("Results written to", res_file)
-    print(json.dumps(results, indent=2))
+    print(json.dumps(results, indent=2))  # mandatory stdout dump
     return results
 
 
 # ---------------------------------------------------------------------------
-#  Entrypoint
+#  Entry-point
 # ---------------------------------------------------------------------------
 
 def main():  # noqa: D401
