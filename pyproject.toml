@@ -9,6 +9,7 @@ dependencies = [
     "numpy>=1.21",
     "torch>=1.13",
     "matplotlib>=3.6",
+    "pyyaml>=6.0",
 ]
 
 [build-system]
