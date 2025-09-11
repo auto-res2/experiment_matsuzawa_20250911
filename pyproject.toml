@@ -13,6 +13,7 @@ dependencies = [
   "torch_geometric==2.6.1",
   "torchdiffeq>=0.2.3",
   "flwr>=1.5.0",
+  "ray>=2.9.0",                # Added for flwr.simulation support
   "opacus>=1.5.0",
   "matplotlib>=3.4.0,<3.11",  # matplotlib 3.11+ may require NumPy 2
   "seaborn>=0.11.0,<0.14",
