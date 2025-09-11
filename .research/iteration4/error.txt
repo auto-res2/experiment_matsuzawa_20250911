@@ -1,0 +1,25 @@
+Using CPython 3.11.13
+Creating virtual environment at: .venv
+Resolved 80 packages in 186ms
+   Building taco-edge-learning @ file:///home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911
+Downloading transformers (11.1MiB)
+Downloading tokenizers (3.2MiB)
+ Downloading tokenizers
+      Built taco-edge-learning @ file:///home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911
+ Downloading transformers
+Prepared 7 packages in 2.42s
+error: Failed to install: transformers-4.56.1-py3-none-any.whl (transformers==4.56.1)
+  Caused by: Failed to move data files
+  Caused by: IO error for operation on /home/toma/.cache/uv/archive-v0/wrrR-Ns5nd100V4S7kUOf/transformers/models/phi3: No such file or directory (os error 2)
+  Caused by: No such file or directory (os error 2)
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/src/main.py", line 18, in <module>
+    from .preprocess import download_all, get_logger
+  File "/home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/src/preprocess.py", line 18, in <module>
+    from .train import get_logger  # shared helper
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/src/train.py", line 16, in <module>
+    from transformers import (
+ImportError: cannot import name 'AutoModelForImageClassification' from 'transformers' (unknown location)
