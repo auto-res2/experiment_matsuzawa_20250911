@@ -1,0 +1,25 @@
+=== uv sync start Thu Sep 11 03:43:24 PM UTC 2025 ===
+=== uv install end Thu Sep 11 03:43:29 PM UTC 2025 ===
+=== experiment start Thu Sep 11 03:43:29 PM UTC 2025 ===
+[Data] Falling back to synthetic dataset: OGB is not installed.  Please install 'ogb' to continue.
+
+========== EXPERIMENT 1 – Tensor-Spectrum Generalisation ==========
+Tensor-Spectrum Generalisation (minimal smoke-test)
+{
+  "val_hit@1": 0.2055,
+  "test_hit@1": 0.2105,
+  "epochs": 5
+}
+Figure saved: .research/iteration2/images/accuracy_exp1.pdf
+[Exp-2] ABORTED: HyperStream-Bench dataset not accessible – cannot run Experiment 2.
+[Exp-3] ABORTED: HyperStream-Bench dataset not accessible – cannot run Experiment 3.
+
+================ OVERALL SUMMARY =================
+{
+  "experiment_1": {
+    "val_hit@1": 0.2055,
+    "test_hit@1": 0.2105,
+    "epochs": 5
+  }
+}
+=== experiment end Thu Sep 11 03:43:45 PM UTC 2025 ===
