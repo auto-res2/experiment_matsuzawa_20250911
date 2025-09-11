@@ -1,0 +1,34 @@
+# Full-scale configuration matching paper settings
+
+global:
+  seed_list: [11, 29, 73]
+  num_gpus: 8
+  device_world_size: 1000
+  figure_dir: ".research/iteration1/images"
+  result_dir: ".research/iteration1"
+
+datasets:
+  tiny_imagenet:
+    hf_repo: "slegroux/tiny-imagenet-200-clean"
+    img_size: 64
+    num_tasks: 20
+    classes_per_task: 10
+
+models:
+  backbone:
+    name: "mobilenet_v2"
+    width_mult: 0.5
+    pretrained: false
+  memory:
+    hermes:
+      num_keys: 32768
+      dim: 128
+    holozip: {num_keys: 32768}
+    grail:   {num_keys: 32768}
+
+train:
+  batch_size: 32
+  epochs_local: 1
+  rounds: 50
+  lr: 0.02
+  lr_decay: 0.98
