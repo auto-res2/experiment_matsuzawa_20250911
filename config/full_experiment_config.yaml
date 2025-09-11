@@ -1,0 +1,58 @@
+# Full-scale configuration (identical to original script)
+meta:
+  author: "Adaptive Probability-Flow Experiments"
+  framework: "PyTorch"
+  deterministic: true
+  seed_list: [0, 1, 2, 3, 4]
+
+hardware:
+  gpu_type: "NVIDIA A100"
+  num_gpus: 8
+  vram_per_gpu_gb: 80
+  ram_gb: 2048
+
+datasets:
+  cifar10:
+    hf_id: "uoft-cs/cifar10"
+    split_train: "train"
+    split_test: "test"
+    transform: "cifar10_vqgan_encode"
+  text8:
+    hf_id: "afmck/text8"
+    split_train: "train"
+    split_test: "test"
+  c4:
+    hf_id: "allenai/c4"
+    config: "en.noblocklist"
+    split_train: "train"
+    split_test: "validation"
+
+models:
+  vqgan_cifar10_teacher:
+    url: "https://huggingface.co/apf-teacher/vqgan-cifar10/resolve/main/teacher.pt"
+    local_name: "vqgan_cifar10_teacher.pt"
+  transformer_text8_teacher:
+    url: "https://huggingface.co/apf-teacher/transformer-text8/resolve/main/teacher.pt"
+    local_name: "transformer_text8_teacher.pt"
+  transformer_c4_teacher:
+    url: "https://huggingface.co/apf-teacher/transformer-c4/resolve/main/teacher.pt"
+    local_name: "transformer_c4_teacher.pt"
+  student_g_phi:
+    url: "https://huggingface.co/apf-student/g_phi/resolve/main/student.pt"
+    local_name: "student_g_phi.pt"
+
+sampler:
+  epsilon_list: [1e-3, 3e-3, 1e-2]
+  kappa_list: [0.8, 1.0, 1.2]
+  tau0_list: [1.0, 0.7]
+  gamma_list: [0.5, 1.0, 2.0]
+  steps_distilled: [4, 8, 16]
+  steps_nodistill: [12, 20]
+
+experiments:
+  - id: "exp1_benchmark"
+    description: "End-to-End Benchmark v. SOTA Samplers"
+  - id: "exp2_ablation"
+    description: "Ablation & Token-Freezing Dynamics"
+  - id: "exp3_distill_generalisation"
+    description: "Robustness & Generalisation of One-Shot Distillation"

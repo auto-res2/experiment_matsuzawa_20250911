@@ -1,0 +1,40 @@
+# Lightweight configuration for CI / smoke-tests
+meta:
+  author: "Adaptive Probability-Flow Experiments"
+  framework: "PyTorch"
+  deterministic: true
+  seed_list: [0]
+
+hardware:
+  gpu_type: "CPU"
+  num_gpus: 0
+  vram_per_gpu_gb: 0
+  ram_gb: 4
+
+datasets:
+  cifar10:
+    hf_id: "uoft-cs/cifar10"
+    split_train: "train[:1%]"
+    split_test: "test[:1%]"
+    transform: "cifar10_vqgan_encode"
+  text8:
+    hf_id: "afmck/text8"
+    split_train: "train[:1%]"
+    split_test: "test[:1%]"
+
+models:
+  vqgan_cifar10_teacher:
+    url: "https://example.com/does-not-exist/teacher.pt"
+    local_name: "dummy.pt"
+
+sampler:
+  epsilon_list: [1e-3]
+  kappa_list: [1.0]
+  tau0_list: [1.0]
+  gamma_list: [1.0]
+  steps_distilled: [4]
+  steps_nodistill: [12]
+
+experiments:
+  - id: "smoke"
+    description: "Quick CI run to verify import graph and file I/O"
