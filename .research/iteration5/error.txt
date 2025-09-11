@@ -1,0 +1,135 @@
+Using CPython 3.11.13
+Creating virtual environment at: .venv
+Resolved 80 packages in 594ms
+   Building taco-edge-learning @ file:///home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911
+Downloading setuptools (1.1MiB)
+Downloading networkx (1.9MiB)
+Downloading torch (846.9MiB)
+Downloading kiwisolver (1.4MiB)
+Downloading pyarrow (40.8MiB)
+Downloading triton (148.3MiB)
+Downloading nvidia-cusparselt-cu12 (273.9MiB)
+Downloading hf-xet (3.0MiB)
+Downloading sympy (6.0MiB)
+Downloading pandas (11.8MiB)
+Downloading nvidia-cufile-cu12 (1.1MiB)
+Downloading nvidia-cublas-cu12 (566.8MiB)
+Downloading aiohttp (1.7MiB)
+Downloading transformers (8.4MiB)
+Downloading tokenizers (3.4MiB)
+Downloading nvidia-cusolver-cu12 (255.1MiB)
+Downloading nvidia-nvjitlink-cu12 (37.4MiB)
+Downloading fonttools (4.7MiB)
+Downloading nvidia-cudnn-cu12 (674.0MiB)
+Downloading nvidia-cusparse-cu12 (274.9MiB)
+Downloading numpy (16.2MiB)
+Downloading nvidia-cuda-nvrtc-cu12 (84.0MiB)
+Downloading nvidia-cuda-cupti-cu12 (9.8MiB)
+Downloading nvidia-curand-cu12 (60.7MiB)
+Downloading matplotlib (8.3MiB)
+Downloading nvidia-nccl-cu12 (307.4MiB)
+Downloading nvidia-cufft-cu12 (184.2MiB)
+Downloading pillow (6.3MiB)
+ Downloading nvidia-cufile-cu12
+ Downloading kiwisolver
+ Downloading aiohttp
+ Downloading hf-xet
+ Downloading tokenizers
+ Downloading setuptools
+ Downloading networkx
+ Downloading fonttools
+      Built taco-edge-learning @ file:///home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911
+ Downloading pillow
+ Downloading matplotlib
+ Downloading sympy
+ Downloading nvidia-cuda-cupti-cu12
+ Downloading transformers
+ Downloading numpy
+ Downloading nvidia-nvjitlink-cu12
+ Downloading pandas
+ Downloading nvidia-curand-cu12
+ Downloading pyarrow
+ Downloading nvidia-cuda-nvrtc-cu12
+ Downloading triton
+ Downloading nvidia-cufft-cu12
+ Downloading nvidia-cusolver-cu12
+ Downloading nvidia-cusparse-cu12
+ Downloading nvidia-cusparselt-cu12
+ Downloading nvidia-nccl-cu12
+ Downloading nvidia-cublas-cu12
+ Downloading nvidia-cudnn-cu12
+ Downloading torch
+Prepared 67 packages in 1m 03s
+Installed 67 packages in 4.84s
+ + aiohappyeyeballs==2.6.1
+ + aiohttp==3.12.15
+ + aiosignal==1.4.0
+ + attrs==25.3.0
+ + certifi==2025.8.3
+ + charset-normalizer==3.4.3
+ + contourpy==1.3.3
+ + cycler==0.12.1
+ + datasets==3.6.0
+ + dill==0.3.8
+ + filelock==3.19.1
+ + fonttools==4.59.2
+ + frozenlist==1.7.0
+ + fsspec==2025.3.0
+ + hf-xet==1.1.9
+ + huggingface-hub==0.34.4
+ + idna==3.10
+ + jinja2==3.1.6
+ + kiwisolver==1.4.9
+ + markupsafe==3.0.2
+ + matplotlib==3.10.6
+ + mpmath==1.3.0
+ + multidict==6.6.4
+ + multiprocess==0.70.16
+ + networkx==3.5
+ + numpy==2.3.3
+ + nvidia-cublas-cu12==12.8.4.1
+ + nvidia-cuda-cupti-cu12==12.8.90
+ + nvidia-cuda-nvrtc-cu12==12.8.93
+ + nvidia-cuda-runtime-cu12==12.8.90
+ + nvidia-cudnn-cu12==9.10.2.21
+ + nvidia-cufft-cu12==11.3.3.83
+ + nvidia-cufile-cu12==1.13.1.3
+ + nvidia-curand-cu12==10.3.9.90
+ + nvidia-cusolver-cu12==11.7.3.90
+ + nvidia-cusparse-cu12==12.5.8.93
+ + nvidia-cusparselt-cu12==0.7.1
+ + nvidia-nccl-cu12==2.27.3
+ + nvidia-nvjitlink-cu12==12.8.93
+ + nvidia-nvtx-cu12==12.8.90
+ + packaging==25.0
+ + pandas==2.3.2
+ + pillow==11.3.0
+ + propcache==0.3.2
+ + pyarrow==21.0.0
+ + pyparsing==3.2.3
+ + python-dateutil==2.9.0.post0
+ + pytz==2025.2
+ + pyyaml==6.0.2
+ + regex==2025.9.1
+ + requests==2.32.5
+ + safetensors==0.6.2
+ + seaborn==0.13.2
+ + setuptools==80.9.0
+ + six==1.17.0
+ + sympy==1.14.0
+ + taco-edge-learning==0.1.0 (from file:///home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911)
+ + tokenizers==0.15.2
+ + torch==2.8.0
+ + tqdm==4.67.1
+ + transformers==4.39.3
+ + triton==3.4.0
+ + typing-extensions==4.15.0
+ + tzdata==2025.2
+ + urllib3==2.5.0
+ + xxhash==3.5.0
+ + yarl==1.20.1
+The cache for model files in Transformers v4.22.0 has been updated. Migrating your old cache. This is a one-time only operation. You can interrupt this and resume the migration later on by calling `transformers.utils.move_cache()`.
+0it [00:00, ?it/s]0it [00:00, ?it/s]
+Skipping gated dataset 'imagenet-1k' because $HF_TOKEN is not set.
+Skipping gated dataset 'ego4d' because $HF_TOKEN is not set.
+Failed to download wikipedia: BuilderConfig '20231101.en' not found. Available: ['20220301.aa', '20220301.ab', '20220301.ace', '20220301.ady', '20220301.af', '20220301.ak', '20220301.als', '20220301.am', '20220301.an', '20220301.ang', '20220301.ar', '20220301.arc', '20220301.arz', '20220301.as', '20220301.ast', '20220301.atj', '20220301.av', '20220301.ay', '20220301.az', '20220301.azb', '20220301.ba', '20220301.bar', '20220301.bat-smg', '20220301.bcl', '20220301.be', '20220301.be-x-old', '20220301.bg', '20220301.bh', '20220301.bi', '20220301.bjn', '20220301.bm', '20220301.bn', '20220301.bo', '20220301.bpy', '20220301.br', '20220301.bs', '20220301.bug', '20220301.bxr', '20220301.ca', '20220301.cbk-zam', '20220301.cdo', '20220301.ce', '20220301.ceb', '20220301.ch', '20220301.cho', '20220301.chr', '20220301.chy', '20220301.ckb', '20220301.co', '20220301.cr', '20220301.crh', '20220301.cs', '20220301.csb', '20220301.cu', '20220301.cv', '20220301.cy', '20220301.da', '20220301.de', '20220301.din', '20220301.diq', '20220301.dsb', '20220301.dty', '20220301.dv', '20220301.dz', '20220301.ee', '20220301.el', '20220301.eml', '20220301.en', '20220301.eo', '20220301.es', '20220301.et', '20220301.eu', '20220301.ext', '20220301.fa', '20220301.ff', '20220301.fi', '20220301.fiu-vro', '20220301.fj', '20220301.fo', '20220301.fr', '20220301.frp', '20220301.frr', '20220301.fur', '20220301.fy', '20220301.ga', '20220301.gag', '20220301.gan', '20220301.gd', '20220301.gl', '20220301.glk', '20220301.gn', '20220301.gom', '20220301.gor', '20220301.got', '20220301.gu', '20220301.gv', '20220301.ha', '20220301.hak', '20220301.haw', '20220301.he', '20220301.hi', '20220301.hif', '20220301.ho', '20220301.hr', '20220301.hsb', '20220301.ht', '20220301.hu', '20220301.hy', '20220301.ia', '20220301.id', '20220301.ie', '20220301.ig', '20220301.ii', '20220301.ik', '20220301.ilo', '20220301.inh', '20220301.io', '20220301.is', '20220301.it', '20220301.iu', '20220301.ja', '20220301.jam', '20220301.jbo', '20220301.jv', '20220301.ka', '20220301.kaa', '20220301.kab', '20220301.kbd', '20220301.kbp', '20220301.kg', '20220301.ki', '20220301.kj', '20220301.kk', '20220301.kl', '20220301.km', '20220301.kn', '20220301.ko', '20220301.koi', '20220301.krc', '20220301.ks', '20220301.ksh', '20220301.ku', '20220301.kv', '20220301.kw', '20220301.ky', '20220301.la', '20220301.lad', '20220301.lb', '20220301.lbe', '20220301.lez', '20220301.lfn', '20220301.lg', '20220301.li', '20220301.lij', '20220301.lmo', '20220301.ln', '20220301.lo', '20220301.lrc', '20220301.lt', '20220301.ltg', '20220301.lv', '20220301.mai', '20220301.map-bms', '20220301.mdf', '20220301.mg', '20220301.mh', '20220301.mhr', '20220301.mi', '20220301.min', '20220301.mk', '20220301.ml', '20220301.mn', '20220301.mr', '20220301.mrj', '20220301.ms', '20220301.mt', '20220301.mus', '20220301.mwl', '20220301.my', '20220301.myv', '20220301.mzn', '20220301.na', '20220301.nah', '20220301.nap', '20220301.nds', '20220301.nds-nl', '20220301.ne', '20220301.new', '20220301.ng', '20220301.nl', '20220301.nn', '20220301.no', '20220301.nov', '20220301.nrm', '20220301.nso', '20220301.nv', '20220301.ny', '20220301.oc', '20220301.olo', '20220301.om', '20220301.or', '20220301.os', '20220301.pa', '20220301.pag', '20220301.pam', '20220301.pap', '20220301.pcd', '20220301.pdc', '20220301.pfl', '20220301.pi', '20220301.pih', '20220301.pl', '20220301.pms', '20220301.pnb', '20220301.pnt', '20220301.ps', '20220301.pt', '20220301.qu', '20220301.rm', '20220301.rmy', '20220301.rn', '20220301.ro', '20220301.roa-rup', '20220301.roa-tara', '20220301.ru', '20220301.rue', '20220301.rw', '20220301.sa', '20220301.sah', '20220301.sat', '20220301.sc', '20220301.scn', '20220301.sco', '20220301.sd', '20220301.se', '20220301.sg', '20220301.sh', '20220301.si', '20220301.simple', '20220301.sk', '20220301.sl', '20220301.sm', '20220301.sn', '20220301.so', '20220301.sq', '20220301.sr', '20220301.srn', '20220301.ss', '20220301.st', '20220301.stq', '20220301.su', '20220301.sv', '20220301.sw', '20220301.szl', '20220301.ta', '20220301.tcy', '20220301.te', '20220301.tet', '20220301.tg', '20220301.th', '20220301.ti', '20220301.tk', '20220301.tl', '20220301.tn', '20220301.to', '20220301.tpi', '20220301.tr', '20220301.ts', '20220301.tt', '20220301.tum', '20220301.tw', '20220301.ty', '20220301.tyv', '20220301.udm', '20220301.ug', '20220301.uk', '20220301.ur', '20220301.uz', '20220301.ve', '20220301.vec', '20220301.vep', '20220301.vi', '20220301.vls', '20220301.vo', '20220301.wa', '20220301.war', '20220301.wo', '20220301.wuu', '20220301.xal', '20220301.xh', '20220301.xmf', '20220301.yi', '20220301.yo', '20220301.za', '20220301.zea', '20220301.zh', '20220301.zh-classical', '20220301.zh-min-nan', '20220301.zh-yue', '20220301.zu']
