@@ -1,0 +1,40 @@
+{
+  "experiment": "exp1",
+  "accuracy": {
+    "taco": 1.0,
+    "zipp": 1.0,
+    "derpp": 1.0
+  },
+  "accuracy_curve": {
+    "taco": {
+      "ts": [
+        0,
+        30
+      ],
+      "values": [
+        1.0,
+        1.0
+      ]
+    },
+    "zipp": {
+      "ts": [
+        0,
+        30
+      ],
+      "values": [
+        1.0,
+        1.0
+      ]
+    },
+    "derpp": {
+      "ts": [
+        0,
+        30
+      ],
+      "values": [
+        1.0,
+        1.0
+      ]
+    }
+  }
+}

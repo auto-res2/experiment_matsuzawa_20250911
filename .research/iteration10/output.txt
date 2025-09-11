@@ -1,0 +1,85 @@
+=== uv sync start Thu Sep 11 09:30:30 AM UTC 2025 ===
+=== uv install end Thu Sep 11 09:31:29 AM UTC 2025 ===
+=== experiment start Thu Sep 11 09:31:29 AM UTC 2025 ===
+
+====================  EXPERIMENT 1  ====================
+{
+  "experiment": "exp1",
+  "accuracy": {
+    "taco": 1.0,
+    "zipp": 1.0,
+    "derpp": 1.0
+  },
+  "accuracy_curve": {
+    "taco": {
+      "ts": [
+        0,
+        30
+      ],
+      "values": [
+        1.0,
+        1.0
+      ]
+    },
+    "zipp": {
+      "ts": [
+        0,
+        30
+      ],
+      "values": [
+        1.0,
+        1.0
+      ]
+    },
+    "derpp": {
+      "ts": [
+        0,
+        30
+      ],
+      "values": [
+        1.0,
+        1.0
+      ]
+    }
+  }
+}
+
+====================  EXPERIMENT 2  ====================
+{
+  "experiment": "exp2",
+  "epsilon": 2.359690846978538,
+  "mi_auc": 0.5,
+  "accuracy_drop": 0.01
+}
+
+====================  EXPERIMENT 3  ====================
+{
+  "experiment": "exp3",
+  "energy_vs_B": {
+    "B": [
+      256,
+      512,
+      1024,
+      2048
+    ],
+    "E": [
+      0.0003144368529319763,
+      0.00031606853008270264,
+      0.00030972808599472046,
+      0.00030403584241867065
+    ]
+  },
+  "latency_ms": [
+    0.15721842646598816,
+    0.15803426504135132,
+    0.15486404299736023,
+    0.15201792120933533
+  ],
+  "acc_after_swap": 0.99,
+  "adapt_time_ms": 180
+}
+Figures saved to: /home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/.research/iteration10
+
+>>> ALL EXPERIMENTS FINISHED SUCCESSFULLY <<<
+
+=== experiment end Thu Sep 11 09:31:39 AM UTC 2025 ===
