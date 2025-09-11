@@ -1,0 +1,12 @@
+# config/config.yaml
+# ------------------
+# Centralised run-time configuration consumed by src.main
+
+results_dir: ".research/iteration8"  # JSON outputs + images/ will live here
+seed: 42
+
+models:
+  taco:
+    memory_budget: 512
+  zipp: {}
+  derpp: {}
