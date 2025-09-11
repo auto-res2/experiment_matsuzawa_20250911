@@ -1,0 +1,23 @@
+Using CPython 3.11.13
+Creating virtual environment at: .venv
+Resolved 38 packages in 457ms
+   Building hydrasketch-phi-experiment @ file:///home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911
+      Built hydrasketch-phi-experiment @ file:///home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911
+Prepared 8 packages in 1.89s
+Installed 8 packages in 37ms
+ + certifi==2025.8.3
+ + charset-normalizer==3.4.3
+ + hydrasketch-phi-experiment==0.1.0 (from file:///home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911)
+ + idna==3.10
+ + pyyaml==6.0.2
+ + requests==2.32.5
+ + tqdm==4.67.1
+ + urllib3==2.5.0
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/src/main.py", line 123, in <module>
+    main()
+  File "/home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/src/main.py", line 82, in main
+    raise RuntimeError(
+RuntimeError: Dataset directory /home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/data/edgebench-48-1.2 still missing after download attempt. Execution cannot proceed without the real EdgeBench-48 dataset.

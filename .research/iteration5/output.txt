@@ -1,0 +1,30 @@
+=== uv sync start Thu Sep 11 05:47:30 AM UTC 2025 ===
+=== uv install end Thu Sep 11 05:47:33 AM UTC 2025 ===
+=== experiment start Thu Sep 11 05:47:33 AM UTC 2025 ===
+
+Loaded configuration:
+{
+  "name": "edgebench48_hydrasketch_phi_fullstack",
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "ram_caps_mb": [
+    0.01,
+    0.05,
+    0.1
+  ],
+  "latency_caps_ms": [
+    15,
+    30
+  ],
+  "dataset": {
+    "name": "EdgeBench-48",
+    "version": 1.2,
+    "url": "https://edgebench.org/releases/edgebench-48-v1.2.tar.gz",
+    "sha256": "72e734b5d25d97ab90b8efea9f86f64e8f9d41d0a2c5d4e91cfa8b29e83d77b8"
+  }
+}
+[INFO] download_file() skipped in CI environment.
+[INFO] extract_tar() skipped in CI environment.
