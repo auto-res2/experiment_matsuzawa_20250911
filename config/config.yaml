@@ -1,42 +1,26 @@
-# ======================================================================
-#  Experiment-1  – Full-Stack Continual-Learning Benchmark on EdgeBench-48
-# ======================================================================
-experiment:
-  name: edgebench48_hydrasketch_phi_fullstack
-  seeds: [0, 1, 2]
-  ram_caps_mb: [0.01, 0.05, 0.1]
-  latency_caps_ms: [15, 30]
-  hardware:
-    host_gpu: "8×A100-80 GB"
-    edge_soc: "20×GAP9"
-    inp_pcm_boards: 6
-    cds_array: true
-  thermal_profile: {cycle_hours: 4, temps: [20, 40, 70]}
-  dataset:
-    name: EdgeBench-48
-    version: 1.2
-    url: "https://edgebench.org/releases/edgebench-48-v1.2.tar.gz"
-    sha256: "72e734b5d25d97ab90b8efea9f86f64e8f9d41d0a2c5d4e91cfa8b29e83d77b8"
-  models:
-    vision_backbone: microsoft/resnet-18
-    radar_backbone: pointnet-lite-64
-    gas_backbone: gru-128
-    ecg_backbone: resnet1d-10
-    fusion_head: mlp-512-256-35
-  replay_methods:
-    - hydrasketch_phi
-    - hydrasketch_phi_no_rsc
-    - hydrasketch_phi_no_tempmig
-    - hydrasketch_phi_no_latency
-    - hydrasketch_phi_digital_only
-    - hydrasketch_phi_no_photonic_anchor
-    - hydrasketch_omega
-    - usr
-    - sparcl
-    - fromp
-    - ucb
-    - aqm
-  optimisation:
-    lr_grid: [1e-3, 3e-4, 1e-4]
-    alpha_grid: [0.25, 0.5, 0.75]
-    teleport_bits: [0.5, 1.0, 2.0]
+# Default configuration for HydraSketch-Φ experiments
+
+dataset_url: https://edgebench.org/datasets/edgebench-48-v1.2.tar
+dataset_archive: data/edgebench-48-v1.2.tar
+dataset_root: data/edgebench-48
+
+vision_backbone: microsoft/resnet-18
+radar_backbone: pointnet
+gas_radiation_backbone: gru128
+ecg_backbone: resnet1d-10
+
+lr: 0.0003
+weight_decay: 0.0001
+batch_size: 128
+epochs: 300
+
+alpha: 0.5
+teleport_delta_bits: 1.0
+latency_deadline_ms: 30
+ram_cap_mb: 0.05
+
+num_workers: 8
+seeds:
+  - 0
+  - 1
+  - 2

@@ -1,27 +1,22 @@
 [project]
-name = "hydrasketch_phi_experiment"
-version = "0.1.1"
-description = "Research code for HydraSketch-Φ continual-learning experiments (CI edition)"
-requires-python = ">=3.9"
-# ------------------------------------------------------------------
-# Core dependencies – heavy ML libs intentionally excluded so that the
-# analytical CI path remains lightweight.
-# ------------------------------------------------------------------
+name = "hydrasketch_phi"
+version = "0.1.0"
+description = "Refactored HydraSketch-Φ continual-learning research suite"
 dependencies = [
+    "numpy>=1.21.0",
+    "torch>=1.9.0",
+    "torchvision>=0.10.0",
+    "matplotlib>=3.4.0",
+    "seaborn>=0.11.0",
+    "PyYAML>=5.4.0",
+    "pandas>=1.3.0",
+    "scipy>=1.7.0",
+    "scikit-learn>=0.24.0",
     "requests>=2.25.0",
     "tqdm>=4.60.0",
-    "PyYAML>=6.0",
+    "transformers>=4.30.0",
 ]
 
 [build-system]
-requires = ["setuptools>=64", "wheel"]
+requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
-
-[tool.setuptools.packages.find]
-where = ["src"]
-
-[project.optional-dependencies]
-# Reserved for full-scale hardware runs.
-full = [
-    "torch>=1.9.0",
-]

@@ -1,103 +1,153 @@
-"""src/preprocess.py
--------------------------------------------------------------------------
-Dataset acquisition and preprocessing utilities.  Handles secure download
-with SHA-256 verification and extraction of the EdgeBench-48 archive.
-
-In a CI environment we **do not** download the 320 GB real dataset.  When
-`SKIP_DATA_DOWNLOAD=1` is set (the default), the helper functions become
-no-ops so that the pipeline terminates quickly.
-"""
+# src/preprocess.py
+# -------------------------------------------------------------
+# Data acquisition, hardware checks and dataset stubs.
+# -------------------------------------------------------------
 from __future__ import annotations
 
-import hashlib
 import os
+import sys
 import tarfile
+from dataclasses import dataclass, asdict
 from pathlib import Path
-from typing import Final
+from typing import List
 
-try:
-    import requests  # external HTTP client
-except ImportError as e:  # pragma: no cover – fail fast if missing
-    raise RuntimeError(
-        "Required dependency ‘requests’ missing – please install it in the execution environment."
-    ) from e
+import yaml
+from tqdm import tqdm
 
-try:
-    from tqdm import tqdm  # progress bar
-except ImportError as e:  # pragma: no cover
-    raise RuntimeError(
-        "Required dependency ‘tqdm’ missing – please install it in the execution environment."
-    ) from e
+# ---------------------------
+# CONSTANTS & DIRECTORIES
+# ---------------------------
+ROOT_DIR = Path(__file__).resolve().parent.parent
+CONFIG_PATH = ROOT_DIR / "config" / "config.yaml"
+DATA_DIR = ROOT_DIR / "data"
+RAW_DATA_ARCHIVE = DATA_DIR / "edgebench-48-v1.2.tar"
+EDGE_BENCH_URL = "https://edgebench.org/datasets/edgebench-48-v1.2.tar"
 
-__all__: Final[list[str]] = [
-    "download_file",
-    "extract_tar",
-]
+# Make sure base directories exist so that CI does not fail on missing dirs.
+for _p in (DATA_DIR,):
+    _p.mkdir(parents=True, exist_ok=True)
 
 
-# ---------------------------------------------------------------------
-# Helper flags – CI always sets SKIP_DATA_DOWNLOAD=1
-# ---------------------------------------------------------------------
-_SKIP = os.getenv("SKIP_DATA_DOWNLOAD", "1") == "1"
+# ------------------------------------------------------------
+# HELPER: Abort with descriptive message (NO FALLBACK)
+# ------------------------------------------------------------
+
+def abort(msg: str) -> None:  # noqa: D401 – imperative style
+    """Terminate execution immediately with a spec-compliant message."""
+    print(f"ERROR: {msg}", file=sys.stderr)
+    sys.exit(1)
 
 
-def download_file(url: str, dest: Path, expected_sha256: str, chunk_size: int = 1 << 20) -> None:  # noqa: D401
-    """Download *url* to *dest* verifying the SHA-256 digest.
+# ------------------------------------------------------------
+# DATACLASS: YAML-serialisable configuration
+# ------------------------------------------------------------
 
-    When `_SKIP` is *True* the function returns immediately so that no
-    network traffic is generated inside the sandbox.
-    """
 
-    if _SKIP:
-        print("[INFO] download_file() skipped in CI environment.", flush=True)
+@dataclass
+class ExperimentConfig:
+    # Dataset
+    dataset_url: str = EDGE_BENCH_URL
+    dataset_archive: str = str(RAW_DATA_ARCHIVE)
+    dataset_root: str = str(DATA_DIR / "edgebench-48")
+
+    # Models
+    vision_backbone: str = "microsoft/resnet-18"
+    radar_backbone: str = "pointnet"
+    gas_radiation_backbone: str = "gru128"
+    ecg_backbone: str = "resnet1d-10"
+
+    # Hyper-parameters
+    lr: float = 3e-4
+    weight_decay: float = 1e-4
+    batch_size: int = 128
+    epochs: int = 300
+
+    # Retention / policy parameters
+    alpha: float = 0.5
+    teleport_delta_bits: float = 1.0
+    latency_deadline_ms: int = 30
+    ram_cap_mb: float = 0.05
+
+    # Misc
+    num_workers: int = 8
+    seeds: List[int] = (0, 1, 2)
+
+
+# Persist default YAML so users can edit externally.
+CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+if not CONFIG_PATH.exists():
+    with CONFIG_PATH.open("w", encoding="utf-8") as fh:
+        yaml.safe_dump(asdict(ExperimentConfig()), fh, sort_keys=False)
+
+
+# ------------------------------------------------------------
+# HARDWARE CHECKS
+# ------------------------------------------------------------
+
+def check_hardware_available() -> None:
+    """Verify that EDGE_HARDWARE_AVAILABLE=1 is set."""
+    if os.environ.get("EDGE_HARDWARE_AVAILABLE", "0") != "1":
+        abort("Mixed-signal edge hardware not detected – set EDGE_HARDWARE_AVAILABLE=1 once hardware is attached.")
+
+
+# ------------------------------------------------------------
+# DATA ACQUISITION
+# ------------------------------------------------------------
+
+def download_edgebench(cfg: ExperimentConfig) -> None:
+    """Download & extract EdgeBench-48 if absent."""
+
+    import requests  # local import avoids mandatory dep in dry runs
+
+    archive_path = Path(cfg.dataset_archive)
+    dataset_root = Path(cfg.dataset_root)
+
+    if dataset_root.exists() and any(dataset_root.iterdir()):
+        print("EdgeBench-48 already present – skipping download.")
         return
 
-    print(f"[INFO] Downloading dataset from {url} …", flush=True)
-    try:
-        with requests.get(url, stream=True, timeout=30) as r:
-            r.raise_for_status()
-            total = int(r.headers.get("content-length", 0))
-            with tqdm(total=total, unit="B", unit_scale=True, desc="EdgeBench-48") as pbar:
-                with open(dest, "wb") as f:
-                    for chunk in r.iter_content(chunk_size=chunk_size):
-                        if chunk:
-                            f.write(chunk)
+    if not archive_path.exists():
+        print("Downloading EdgeBench-48 (≈320 GB)…")
+        try:
+            with requests.get(cfg.dataset_url, stream=True, timeout=30) as r:
+                if r.status_code != 200:
+                    abort(f"Failed to download EdgeBench-48 (HTTP {r.status_code}).")
+                total = int(r.headers.get("content-length", 0))
+                chunk_sz = 1 << 20  # 1 MiB
+                with open(archive_path, "wb") as fh, tqdm(total=total, unit="B", unit_scale=True) as pbar:
+                    for chunk in r.iter_content(chunk_size=chunk_sz):
+                        if chunk:  # filter keep-alive
+                            fh.write(chunk)
                             pbar.update(len(chunk))
-    except requests.RequestException as e:  # pragma: no cover – network/downlink issues
-        raise RuntimeError("Dataset download failed – network unavailable or URL invalid.") from e
+        except Exception as e:  # noqa: BLE001
+            abort(f"Download failed: {e}")
 
-    # ---------------- SHA-256 verification --------------------------
-    sha = hashlib.sha256()
-    with open(dest, "rb") as f:
-        for blk in iter(lambda: f.read(1 << 20), b""):
-            sha.update(blk)
-    digest = sha.hexdigest().lower()
-    if digest != expected_sha256.lower():
-        dest.unlink(missing_ok=True)
-        raise RuntimeError(
-            "SHA-256 mismatch for dataset download.\n"
-            f"Expected: {expected_sha256}\nActual:   {digest}\n"
-            "Download aborted – integrity compromised."
-        )
-    print("[INFO] Dataset archive downloaded & verified.")
-
-
-def extract_tar(archive: Path, target_dir: Path) -> None:  # noqa: D401
-    """Extract *.tar.gz* archive to *target_dir* with basic error handling.
-
-    In CI mode (`_SKIP` == True) this is a no-op.
-    """
-
-    if _SKIP:
-        print("[INFO] extract_tar() skipped in CI environment.", flush=True)
-        return
-
-    print(f"[INFO] Extracting {archive} to {target_dir} …", flush=True)
+    # Extract
+    print("Extracting EdgeBench-48…")
     try:
-        with tarfile.open(archive, "r:gz") as tar:
-            tar.extractall(path=target_dir)
-    except (tarfile.TarError, EOFError) as e:  # pragma: no cover – corrupt file or disk full
-        raise RuntimeError(
-            "Failed to extract EdgeBench-48 archive – file corrupted or insufficient disk space."
-        ) from e
-    print("[INFO] Extraction complete.")
+        with tarfile.open(archive_path, "r") as tar:
+            tar.extractall(path=DATA_DIR)
+    except tarfile.TarError as e:
+        abort(f"Extraction failed: {e}")
+
+    if not dataset_root.exists():
+        abort("Extraction finished but dataset root missing – archive corrupted?")
+
+
+# ------------------------------------------------------------
+# DATASET PLACEHOLDER (Strict NO-FALLBACK)
+# ------------------------------------------------------------
+from torch.utils.data import Dataset  # local import to keep heavy deps optional
+
+
+class EdgeBenchPlaceholder(Dataset):
+    """Stub that aborts – loading dummy data is forbidden."""
+
+    def __init__(self, *_args, **_kwargs):
+        abort("EdgeBench-48 parser not implemented – real dataset required.")
+
+    def __len__(self) -> int:  # pragma: no cover – never executed
+        return 0
+
+    def __getitem__(self, _idx):  # pragma: no cover – never executed
+        return {}
