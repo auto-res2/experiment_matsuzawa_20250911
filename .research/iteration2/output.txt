@@ -1,0 +1,7 @@
+=== uv sync start Thu Sep 11 08:46:02 AM UTC 2025 ===
+=== uv install end Thu Sep 11 08:46:31 AM UTC 2025 ===
+=== experiment start Thu Sep 11 08:46:32 AM UTC 2025 ===
+[2025-09-11 08:46:46][INFO] ========== Experiment Launcher ==========
+[2025-09-11 08:46:47][INFO] Loaded config.yaml (version=1)
+[2025-09-11 08:46:47][INFO] Step 1/3: Downloading datasets …
+[2025-09-11 08:46:48][ERROR] Dataset ego4d could not be accessed. Per STRICT NO-FALLBACK RULE execution terminates.
