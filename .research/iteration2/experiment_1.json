@@ -1,0 +1,22 @@
+{
+  "financial_fed": {
+    "accuracy": null,
+    "bytes": null,
+    "co2": null
+  },
+  "health_fed": {
+    "accuracy": null,
+    "bytes": null,
+    "co2": null
+  },
+  "reddit_year": {
+    "accuracy": null,
+    "bytes": null,
+    "co2": null
+  },
+  "ogbn_products": {
+    "accuracy": null,
+    "bytes": null,
+    "co2": null
+  }
+}
