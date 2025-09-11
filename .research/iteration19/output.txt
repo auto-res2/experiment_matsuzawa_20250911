@@ -1,0 +1,8 @@
+=== uv sync start Thu Sep 11 10:37:19 AM UTC 2025 ===
+=== uv install end Thu Sep 11 10:38:20 AM UTC 2025 ===
+=== experiment start Thu Sep 11 10:38:20 AM UTC 2025 ===
+
+=== EXPERIMENT 1 – ADAPTIVITY & VARIANCE (VISION) ===
+This experiment fine-tunes a diffusion model from a source image dataset → MedMNIST and measures CLIP-FID, UNet calls and compute/energy.
+Downloading source dataset (public subset)…
+Downloading target dataset (MedMNIST)…
