@@ -1,0 +1,20 @@
+project:
+  name: ORBITAL_FullStack_2025
+hardware:
+  gpu_type: NVIDIA_A100
+  gpu_count: 8
+  ram_gb: 2048
+resources:
+  datasets:
+    c_mscoco_2017_url_text: ChristophSchuhmann/MS_COCO_2017_URL_TEXT
+    synth_text_recognition: redactable-llm/synth-text-recognition
+  models:
+    sd3_medium: stabilityai/stable-diffusion-3-medium
+    clip_vitl14: openai/clip-vit-large-patch14
+experiments:
+  - id: EXP1_joint_schedule_mask
+    description: Joint Schedule–Mask Search on Real & Adversarial Workloads
+  - id: EXP2_task_calibrated_pac
+    description: Task-Calibrated PAC Certificates
+  - id: EXP3_fleet_level_coordination
+    description: Fleet-Level Carbon & Thermal Coordination
