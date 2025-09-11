@@ -1,0 +1,112 @@
+Using CPython 3.11.13
+Creating virtual environment at: .venv
+warning: No `requires-python` value found in the workspace. Defaulting to `>=3.11`.
+Resolved 60 packages in 391ms
+Downloading nvidia-cuda-cupti-cu12 (13.5MiB)
+Downloading kiwisolver (1.4MiB)
+Downloading numpy (17.4MiB)
+Downloading scipy (33.7MiB)
+Downloading pillow (6.3MiB)
+Downloading pyarrow (40.8MiB)
+Downloading fonttools (4.7MiB)
+Downloading aiohttp (1.7MiB)
+Downloading nvidia-cublas-cu12 (391.6MiB)
+Downloading pandas (11.8MiB)
+Downloading matplotlib (8.3MiB)
+Downloading nvidia-cufft-cu12 (116.0MiB)
+Downloading nvidia-nccl-cu12 (158.3MiB)
+Downloading nvidia-nvjitlink-cu12 (37.9MiB)
+Downloading nvidia-curand-cu12 (53.9MiB)
+Downloading torch (720.6MiB)
+Downloading sympy (6.0MiB)
+Downloading nvidia-cusparse-cu12 (186.9MiB)
+Downloading triton (160.1MiB)
+Downloading scikit-learn (9.3MiB)
+Downloading nvidia-cudnn-cu12 (697.8MiB)
+Downloading nvidia-cusolver-cu12 (118.4MiB)
+Downloading torch-geometric (1.0MiB)
+Downloading networkx (1.9MiB)
+Downloading nvidia-cuda-nvrtc-cu12 (22.6MiB)
+ Downloading kiwisolver
+ Downloading aiohttp
+ Downloading networkx
+ Downloading torch-geometric
+ Downloading fonttools
+ Downloading pillow
+ Downloading matplotlib
+ Downloading scikit-learn
+ Downloading nvidia-cuda-cupti-cu12
+ Downloading sympy
+ Downloading numpy
+ Downloading nvidia-cuda-nvrtc-cu12
+ Downloading nvidia-nvjitlink-cu12
+ Downloading scipy
+ Downloading nvidia-curand-cu12
+ Downloading pandas
+ Downloading pyarrow
+ Downloading nvidia-cufft-cu12
+ Downloading nvidia-cusolver-cu12
+ Downloading nvidia-nccl-cu12
+ Downloading triton
+ Downloading nvidia-cusparse-cu12
+ Downloading nvidia-cublas-cu12
+  × Failed to download `torch==2.2.2`
+  ├─▶ Failed to extract archive: torch-2.2.2-cp311-cp311-manylinux1_x86_64.whl
+  ├─▶ I/O operation failed during extraction
+  ╰─▶ failed to create file
+      `/home/toma/.cache/uv/.tmpl8fQR9/torch/lib/libtorch_cpu.so`: No such
+      file or directory (os error 2)
+  help: `torch` (v2.2.2) was included because `cafe-edge-repro` (v0.1.0)
+        depends on `torch`
+warning: No `requires-python` value found in the workspace. Defaulting to `>=3.11`.
+Downloading nvidia-cublas-cu12 (391.6MiB)
+Downloading nvidia-cusolver-cu12 (118.4MiB)
+Downloading aiohttp (1.7MiB)
+Downloading torch (720.6MiB)
+Downloading pillow (6.3MiB)
+Downloading scikit-learn (9.3MiB)
+Downloading pandas (11.8MiB)
+Downloading nvidia-nccl-cu12 (158.3MiB)
+Downloading triton (160.1MiB)
+Downloading scipy (33.7MiB)
+Downloading kiwisolver (1.4MiB)
+Downloading pyarrow (40.8MiB)
+Downloading nvidia-cuda-nvrtc-cu12 (22.6MiB)
+Downloading fonttools (4.7MiB)
+Downloading matplotlib (8.3MiB)
+Downloading nvidia-curand-cu12 (53.9MiB)
+Downloading nvidia-cudnn-cu12 (697.8MiB)
+Downloading numpy (17.4MiB)
+Downloading nvidia-cusparse-cu12 (186.9MiB)
+Downloading networkx (1.9MiB)
+Downloading torch-geometric (1.0MiB)
+Downloading nvidia-cuda-cupti-cu12 (13.5MiB)
+Downloading sympy (6.0MiB)
+Downloading nvidia-nvjitlink-cu12 (37.9MiB)
+Downloading nvidia-cufft-cu12 (116.0MiB)
+ Downloading kiwisolver
+ Downloading aiohttp
+ Downloading networkx
+ Downloading torch-geometric
+ Downloading fonttools
+ Downloading pillow
+ Downloading matplotlib
+ Downloading scikit-learn
+ Downloading nvidia-cuda-cupti-cu12
+ Downloading sympy
+ Downloading numpy
+ Downloading nvidia-cuda-nvrtc-cu12
+ Downloading nvidia-nvjitlink-cu12
+ Downloading scipy
+ Downloading nvidia-curand-cu12
+ Downloading pandas
+ Downloading pyarrow
+ Downloading nvidia-cufft-cu12
+ Downloading nvidia-cusolver-cu12
+ Downloading nvidia-nccl-cu12
+ Downloading triton
+ Downloading nvidia-cusparse-cu12
+ Downloading nvidia-cublas-cu12
+ Downloading nvidia-cudnn-cu12
+ Downloading torch
+Installed 58 packages in 4.73s

@@ -1,0 +1,8 @@
+{
+  "accuracy_mu": 0.0,
+  "accuracy_sigma": 0.0,
+  "latency_mu_ms": 12.310504913330078,
+  "latency_sigma_ms": 22.164960948107453,
+  "depth_mu": 2.8,
+  "depth_sigma": 0.4
+}
