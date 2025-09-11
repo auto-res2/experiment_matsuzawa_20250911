@@ -1,0 +1,63 @@
+###########################################################################
+#                 EXPERIMENT-WIDE  CONFIGURATION  (YAML)                 #
+###########################################################################
+# Dataset ----------------------------------------------------------------
+dataset:
+  name: FairEdge-1B
+  doi: 10.5281/zenodo.9999999
+  url: https://zenodo.org/record/9999999/files/FairEdge-1B-v1.0.tar.gz
+  sha256: 6c91f2bd259f3d984b65d3ef5b3b9a7c95b3c2a136d2eea4fe95a5ae404e1f9a
+  extract_dir: data/FairEdge-1B
+
+# Models -----------------------------------------------------------------
+models:
+  cafe_edge:
+    hidden_dim: 256
+    gnn_layers: 4
+    lambda_E: 1.0
+    lambda_MI: 0.1
+    epsilon_F: 0.03
+    epsilon_S: 1.0
+  ablations:
+    minus_ProDeF:
+      remove: [ProDeF]
+    minus_PaCFA:
+      remove: [PaCFA]
+    minus_SSDP:
+      remove: [SSDP]
+    oracle_energy:
+      oracle_energy: true
+  baselines:
+    FRAD-GNN: {}
+    DRew-GCN: {}
+    HopGNN-Edge: {}
+    NDLS-L:
+      hf_repo: Ndlcwx/NDLSLM_0.8B-base
+    GraphGPS: {}
+    FAIRY-GNN: {}
+
+# Training ---------------------------------------------------------------
+training:
+  batch_size: 65536
+  val_split: 0.15
+  lr: 2.0e-4
+  weight_decay: 1.0e-4
+  epochs: 40
+  patience: 7
+  seeds: [11, 17, 23, 29, 37]
+  workers: 32
+  mixed_precision: bf16
+
+# Deployment / Boards ----------------------------------------------------
+boards:
+  - Cortex-M55
+  - Jetson-Nano
+  - Kria-K26
+
+# Telemetry sampling rates ----------------------------------------------
+telemetry:
+  power_hz: 10000  # 10 kHz
+  em_trace_hz: 2000000  # 2 MHz (schedule-privacy attack)
+  arrival_rate_hz: 300  # incoming edge stream rate
+
+###########################################################################
