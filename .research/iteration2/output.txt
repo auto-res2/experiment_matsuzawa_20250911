@@ -1,0 +1,7 @@
+=== uv sync start Thu Sep 11 07:28:06 AM UTC 2025 ===
+=== uv install end Thu Sep 11 07:29:15 AM UTC 2025 ===
+=== experiment start Thu Sep 11 07:29:15 AM UTC 2025 ===
+
+=== Experiment 1 – Component-level Compression & Reliability ===
+
+FATAL: experiment pipeline aborted. Reason:
