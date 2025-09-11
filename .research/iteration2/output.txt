@@ -1,0 +1,10 @@
+=== uv sync start Thu Sep 11 05:27:44 AM UTC 2025 ===
+=== experiment start Thu Sep 11 05:28:19 AM UTC 2025 ===
+************************************************************
+  CaFe-EDGE  –  Reproducibility Suite (Iteration-2)
+  Strict-No-Fallback is active – real data mandatory!
+************************************************************
+
+
+===== Training CaFe-EDGE  (seed=11) =====
+→ Downloading https://zenodo.org/record/9999999/files/FairEdge-1B-v1.0.tar.gz → /home/toma/t-80-8-b-01/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/data/FairEdge-1B-v1.0.tar.gz

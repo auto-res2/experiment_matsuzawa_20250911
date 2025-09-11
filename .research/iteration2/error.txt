@@ -1,0 +1,75 @@
+Using CPython 3.11.13
+Creating virtual environment at: .venv
+warning: No `requires-python` value found in the workspace. Defaulting to `>=3.11`.
+Resolved 59 packages in 383ms
+Downloading setuptools (1.1MiB)
+Downloading sympy (6.0MiB)
+Downloading nvidia-cusparse-cu12 (274.9MiB)
+Downloading torch (846.9MiB)
+Downloading matplotlib (8.3MiB)
+Downloading nvidia-nccl-cu12 (307.4MiB)
+Downloading nvidia-cusparselt-cu12 (273.9MiB)
+Downloading nvidia-cublas-cu12 (566.8MiB)
+Downloading torch-geometric (1.1MiB)
+Downloading nvidia-cusolver-cu12 (255.1MiB)
+Downloading nvidia-cufft-cu12 (184.2MiB)
+Downloading numpy (16.2MiB)
+Downloading nvidia-cuda-cupti-cu12 (9.8MiB)
+Downloading kiwisolver (1.4MiB)
+Downloading nvidia-cudnn-cu12 (674.0MiB)
+Downloading aiohttp (1.7MiB)
+Downloading nvidia-cufile-cu12 (1.1MiB)
+Downloading nvidia-nvjitlink-cu12 (37.4MiB)
+Downloading nvidia-curand-cu12 (60.7MiB)
+Downloading pyarrow (40.8MiB)
+Downloading networkx (1.9MiB)
+Downloading triton (148.3MiB)
+Downloading fonttools (4.7MiB)
+Downloading nvidia-cuda-nvrtc-cu12 (84.0MiB)
+Downloading pandas (11.8MiB)
+Downloading pillow (6.3MiB)
+ Downloading nvidia-cufile-cu12
+ Downloading kiwisolver
+ Downloading aiohttp
+ Downloading setuptools
+ Downloading networkx
+ Downloading torch-geometric
+ Downloading fonttools
+ Downloading pillow
+ Downloading matplotlib
+ Downloading nvidia-cuda-cupti-cu12
+ Downloading sympy
+ Downloading numpy
+ Downloading nvidia-nvjitlink-cu12
+ Downloading pandas
+ Downloading nvidia-curand-cu12
+ Downloading pyarrow
+ Downloading nvidia-cuda-nvrtc-cu12
+ Downloading triton
+ Downloading nvidia-cufft-cu12
+ Downloading nvidia-cusolver-cu12
+  × Failed to download `nvidia-cusparselt-cu12==0.7.1`
+  ├─▶ Failed to extract archive:
+  │   nvidia_cusparselt_cu12-0.7.1-py3-none-manylinux2014_x86_64.whl
+  ├─▶ I/O operation failed during extraction
+  ╰─▶ failed to query metadata of file
+      `/home/toma/.cache/uv/.tmpDYlquH/nvidia/cusparselt/lib/libcusparseLt.so.0`:
+      No such file or directory (os error 2)
+  help: `nvidia-cusparselt-cu12` (v0.7.1) was included because
+        `cafe-edge-repro` (v0.1.0) depends on `torch` (v2.8.0) which depends
+        on `nvidia-cusparselt-cu12`
+warning: No `requires-python` value found in the workspace. Defaulting to `>=3.11`.
+Downloading nvidia-nccl-cu12 (307.4MiB)
+Downloading nvidia-cublas-cu12 (566.8MiB)
+Downloading nvidia-cusparse-cu12 (274.9MiB)
+Downloading torch (846.9MiB)
+Downloading nvidia-cusparselt-cu12 (273.9MiB)
+Downloading nvidia-cudnn-cu12 (674.0MiB)
+ Downloading nvidia-cusparse-cu12
+ Downloading nvidia-cusparselt-cu12
+ Downloading nvidia-nccl-cu12
+ Downloading nvidia-cublas-cu12
+ Downloading nvidia-cudnn-cu12
+ Downloading torch
+Installed 57 packages in 4.17s
+ERROR: HTTP 404 while fetching dataset – abort.
