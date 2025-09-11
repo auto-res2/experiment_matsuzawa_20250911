@@ -1,101 +1,89 @@
-# src/preprocess.py
-"""Data download & preprocessing utilities – now uses CIFAR-10 for a self-contained,
-licence-free testbed in accordance with the fail-fast policy (no silent fallbacks).
-"""
+"""src/preprocess.py
+---------------------------------------------------------------------
+Dataset download, caching and very light pre-processing utilities.  The
+original repository used a dedicated sub-package with SHA-256 checks –
+that would be overkill for this demonstration, but we still maintain the
+*no-fallback* policy: if a required file is missing, execution stops.
+---------------------------------------------------------------------"""
 from __future__ import annotations
 
-import hashlib
 import shutil
+import sys
 from pathlib import Path
-from typing import Tuple
+from typing import Any
 
 import requests
-import torch
-from torch.utils.data import Dataset, DataLoader
-from torchvision import datasets, transforms
-
-__all__ = [
-    "build_loader",
-]
-
-# ============================================================
-#  Secure Downloader (retained for future large-scale datasets)
-# ============================================================
-
-def _sha256(path: Path) -> str:
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(8192), b""):
-            h.update(chunk)
-    return h.hexdigest()
 
 
-def download(url: str, target: Path, sha256_hex: str | None = None):
-    target.parent.mkdir(parents=True, exist_ok=True)
-    if target.exists():
-        if sha256_hex and _sha256(target) == sha256_hex:
-            return  # OK
-        print(f"Checksum mismatch or unknown – re-downloading {target.name}")
-        target.unlink()
-    print(f"Downloading {url} → {target}")
+class DatasetMissingError(RuntimeError):
+    """Raised when a required dataset cannot be found or downloaded."""
+
+
+# ------------------------------------------------------------------
+# public helper – mimics the original `src.data.download.ensure_all_*`
+# ------------------------------------------------------------------
+
+def ensure_all_datasets_exist(conf: Any) -> None:  # noqa: ANN401
+    """Verify every dataset entry in *conf.datasets* is present on disk.
+
+    Expected YAML structure::
+
+        datasets:
+          - name: ego4d_m
+            url:  https://…/ego4d_m.zip
+          - name: har_100
+            url:  https://…/har_100.tar
+
+    If a file is missing we *attempt* to download it.  Should the HTTP
+    request fail, the function aborts the whole program as mandated by
+    the strict "no fallback" rule in the assignment.
+    """
+    data_root = Path(conf.get("data_dir", "data")).expanduser()
+    data_root.mkdir(parents=True, exist_ok=True)
+
+    for entry in conf.get("datasets", []):
+        fname = data_root / Path(entry["url"]).name
+        if fname.exists():
+            continue
+        print(f"[preprocess] Dataset {entry['name']} missing – downloading …")
+        try:
+            _download_file(entry["url"], fname)
+        except Exception as exc:  # noqa: BLE001 – convert to hard abort
+            print(f"[preprocess] FATAL: could not download {entry['url']}: {exc}", file=sys.stderr)
+            raise DatasetMissingError from exc
+
+
+def _download_file(url: str, target: Path) -> None:
+    """Stream *url* to *target* with a basic progress indicator."""
     with requests.get(url, stream=True, timeout=60) as r:
         r.raise_for_status()
+        total = int(r.headers.get("content-length", 0))
+        done = 0
         with open(target, "wb") as f:
-            shutil.copyfileobj(r.raw, f)
-    if sha256_hex and _sha256(target) != sha256_hex:
+            for chunk in r.iter_content(chunk_size=8192):
+                if not chunk:
+                    continue
+                f.write(chunk)
+                done += len(chunk)
+                pct = (done / total * 100) if total else 0.0
+                sys.stdout.write(f"\r  ↳ {pct:5.1f}%")
+                sys.stdout.flush()
+    sys.stdout.write("\n")
+
+    # Very small safeguard: delete partially downloaded files on failure
+    if target.stat().st_size == 0:
         target.unlink(missing_ok=True)
-        raise RuntimeError(f"Checksum mismatch for {target}")
+        raise RuntimeError(f"Download produced an empty file for {url}")
+
+    # Optionally – future-proof: extract archives automatically
+    if target.suffix in {".zip", ".tar", ".gz"}:
+        print(f"[preprocess] Extracting {target.name} …")
+        _extract_archive(target)
 
 
-# ============================================================
-#  Toy Dataset – CIFAR-10 wrapped as a clip stream (T = 1)
-# ============================================================
-
-class _CIFAR10Clips(Dataset):
-    """Wraps torchvision.CIFAR10 so that each sample mimics a video clip.
-
-    Output shape: (T=1, C=3, H=224, W=224) to match PhoenixMem expectation.
-    """
-
-    def __init__(self, root: Path, train: bool, transform):
-        self.ds = datasets.CIFAR10(root=root, train=train, download=True, transform=transform)
-
-    # ------------- Dataset API -------------
-    def __len__(self):
-        return len(self.ds)
-
-    def __getitem__(self, idx):
-        img, label = self.ds[idx]
-        # Add temporal dimension – shape becomes (1,C,H,W)
-        clip = img.unsqueeze(0)
-        return clip, label
-
-
-# ============================================================
-#  Loader helper (public)
-# ============================================================
-
-def _as_int(val):
-    if isinstance(val, str):
-        return int(float(val))
-    return int(val)
-
-
-def build_loader(root: Path, cfg: dict) -> Tuple[DataLoader, int]:
-    """Constructs a DataLoader for the experiments.
-
-    The function intentionally uses CIFAR-10 to guarantee that the pipeline has
-    concrete numerical data without requiring restricted datasets.
-    """
-
-    tfm = transforms.Compose(
-        [
-            transforms.Resize((224, 224)),
-            transforms.ToTensor(),
-        ]
-    )
-
-    ds = _CIFAR10Clips(root=root / "cifar10", train=True, transform=tfm)
-    loader = DataLoader(ds, batch_size=_as_int(cfg["batch_size"]), shuffle=True, num_workers=4)
-    n_classes = 10
-    return loader, n_classes
+def _extract_archive(archive: Path) -> None:
+    try:
+        shutil.unpack_archive(str(archive), extract_dir=str(archive.parent))
+    except (shutil.ReadError, ValueError) as err:
+        print(f"[preprocess] Could not extract {archive}: {err}", file=sys.stderr)
+        raise

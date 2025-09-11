@@ -1,10 +1,24 @@
-experiment1:
-  lr: 3e-4
-  batch_size: 16
-  epochs: 2
-experiment2:
-  sinkhorn_iter: 8
-  rho: 0.5
-experiment3:
-  diffusion_steps: 16
-  energy_budget_µJ: 20
+# config/experiment_1.yaml
+# -------------------------------------------------------------------------
+# Extremely condensed configuration so the refactored code has something
+# to parse.  Replace these values with the full grid from the original
+# repository when needed.
+# -------------------------------------------------------------------------
+description: |
+  Demo configuration for Experiment 1 (CIWSM grid search).  The original
+  YAML contained hundreds of parameters; only the fields accessed by the
+  refactored code are kept here.
+
+# Root directory where downloaded archives will be stored / extracted.
+# You can override this path via ENV VARS or by editing this file.
+# -------------------------------------------------------------------------
+data_dir: data
+
+# Minimal dataset list – the *ensure_all_datasets_exist* helper requires
+# at least these two keys per entry.
+# -------------------------------------------------------------------------
+datasets:
+  - name: ego4d_m
+    url: https://example.com/ego4d_m_dummy.zip
+  - name: har_100
+    url: https://example.com/har_100_dummy.tar

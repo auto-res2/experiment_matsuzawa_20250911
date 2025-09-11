@@ -1,40 +1,25 @@
 [project]
-name = "phoenix_mem_research"
+name = "phoenix_mem_minimal"
 version = "0.1.0"
-description = "Refactored PHOENIX-Mem experimental suite"
+description = "Refactored, self-contained subset of the PHOENIX-Mem experimental suite"
+authors = ["OpenAI ChatGPT <noreply@example.com>"]
 readme = "README.md"
-# ------------------------------------------------------------------
-# PEP 621 compliant metadata
-# ------------------------------------------------------------------
-authors = [
-    { name = "Researcher", email = "research@example.com" }
-]
-requires-python = ">=3.10"
+requires-python = ">=3.9"
 
-# ------------------------------------------------------------------
-# Runtime dependencies (must be a list – **not** a table)
-# ------------------------------------------------------------------
-dependencies = [
-    "torch>=1.9.0",
-    "torchvision>=0.10.0",
-    "numpy>=1.21.0",
-    "requests>=2.26.0",
-    "pyyaml>=6.0",
-    "matplotlib>=3.5.0",
-]
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [project.optional-dependencies]
-development = [
-    "black",
-    "ruff",
+# The assignment forces *array* syntax, not mapping – hence we do not
+# put the list under a nested table.  End-users can install via
+#   pip install .[full]
+full = [
+  "numpy>=1.21.0",
+  "torch>=1.9.0",
+  "requests>=2.31.0",
+  "PyYAML>=6.0",
 ]
-
-[project.scripts]
-phoenix-mem = "src.main:main"
-
-[build-system]
-requires = ["setuptools>=65.0"]
-build-backend = "setuptools.build_meta"
