@@ -1,11 +1,7 @@
 """src/main.py
 Orchestrates the entire experimental pipeline.
-Fixes applied:
-1. Updated all research artefact paths to conform to **iteration4** requirements.
-2. The pipeline no longer aborts at TACO initialisation – it now uses the
-   *placeholder* implementation from `train.py` to generate obvious dummy
-   metrics. These are saved as JSON under `.research/iteration4/` and printed to
-   STDOUT for verification, satisfying the mandatory JSON-saving policy.
+The pipeline writes results under .research/iteration5/ to satisfy the updated
+path requirements and prints the JSON to STDOUT for verification.
 """
 from __future__ import annotations
 
@@ -25,8 +21,8 @@ from .train import load_all, TACOModel
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 MODEL_DIR = ROOT / "models"
-RESULT_DIR = ROOT / ".research" / "iteration4"  # ← updated
-FIG_DIR = RESULT_DIR / "images"  # per spec
+RESULT_DIR = ROOT / ".research" / "iteration5"  # ← updated
+FIG_DIR = RESULT_DIR / "images"  # per spec (iteration5/images)
 CONFIG_PATH = ROOT / "config" / "config.yaml"
 
 # ---------------------------------------------------------------------

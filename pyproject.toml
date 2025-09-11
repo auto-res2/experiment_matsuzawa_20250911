@@ -6,11 +6,13 @@ requires-python = ">=3.9"
 
 # Dependencies must be a simple array – static validation enforces this format
 # Pin *datasets* to <4.0.0 to retain support for remote dataset scripts used by Ego4D.
+# Pin *transformers* <4.40 because 4.56.* failed during extraction inside the CI image.
+# Version 4.38.2 is feature-complete for our needs yet avoids the long-path bug.
 dependencies = [
     "datasets>=2.16.0,<4.0.0",
     "numpy>=1.21.0",
     "torch>=1.9.0",
-    "transformers>=4.38.0",
+    "transformers>=4.38.0,<4.40.0",
     "matplotlib>=3.8.0",
     "seaborn>=0.13.0",
     "PyYAML>=6.0",

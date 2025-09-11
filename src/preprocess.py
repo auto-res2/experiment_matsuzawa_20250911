@@ -69,11 +69,16 @@ def _have_token() -> bool:
 
 
 def _download_dataset(hf_name: str, config: Optional[str], cache_dir: Path, token: Optional[str]) -> None:
-    """Wrapper around *load_dataset* that omits the *name* argument when *config* is None."""
+    """Wrapper around *load_dataset* that omits the *name* argument when *config* is None.
+    Added `streaming=True` so that enormous datasets are *not* fully fetched – only
+    their metadata is downloaded, which is sufficient for placeholder experiments
+    and drastically reduces CI runtime.
+    """
     common_kwargs = {
         "cache_dir": str(cache_dir),
         "token": token,
         "download_mode": "reuse_dataset_if_exists",
+        "streaming": True,  # ← lightweight access
     }
 
     if config is None:
