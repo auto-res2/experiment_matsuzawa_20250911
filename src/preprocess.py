@@ -1,24 +1,30 @@
-"""
-src/preprocess.py
-=================
-Download / load the evaluation dataset.  We rely on the HuggingFace
-``datasets`` library because it is lightweight and the *HumanEval* split
-(≈200 KB) is tiny, so the download easily fits within the resource and
-network constraints of the execution sandbox.
+"""src/preprocess.py
+Data-loading & pre-processing helpers extracted from the original monolithic
+script so that I/O logic is clearly separated from experiment execution.
 """
 from __future__ import annotations
 
-from datasets import load_dataset
 from typing import Any
-
-_DATASET_ID = "openai_humaneval"
-_SPLIT = "test"
+from datasets import load_dataset
 
 
-def load_data() -> Any:
-    """Load the HumanEval *test* split and return it as a Dataset object."""
-    # `trust_remote_code` has been removed from the datasets API as of v4.0.
-    # The HumanEval dataset is now packaged as standard metadata, so a plain
-    # call without the flag suffices.
-    ds = load_dataset(_DATASET_ID, split=_SPLIT)
-    return ds
+# ----------------------------------------------------------------------------
+# Machine-translation EN→DE WMT-22 test split
+# ----------------------------------------------------------------------------
+
+def load_wmt22_en_de(split: str = "test") -> Any:
+    return load_dataset("wmt22", "en-de", split=split)
+
+# ----------------------------------------------------------------------------
+# Protein CATH-4.3 backbone benchmark
+# ----------------------------------------------------------------------------
+
+def load_protein_cath(split: str = "test") -> Any:
+    return load_dataset("cctien/protein_backbone_cath_4.3", split=split)
+
+# ----------------------------------------------------------------------------
+# OpenAI HumanEval code generation benchmark
+# ----------------------------------------------------------------------------
+
+def load_humaneval(split: str = "test") -> Any:
+    return load_dataset("openai_humaneval", split=split)
