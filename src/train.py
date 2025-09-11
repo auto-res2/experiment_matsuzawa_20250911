@@ -17,7 +17,7 @@ from torch.utils.data import DataLoader
 class PhoenixMem(nn.Module):
     """Highly simplified PHOENIX-Mem backbone (vision-RNN)."""
 
-    def __init__(self, use_causal: bool = True, ecc_r: int = 14, sram_protect: bool = True):
+    def __init__(self, use_causal: bool = True, ecc_r: int = 14, sram_protect: bool = True, num_classes: int = 100):
         super().__init__()
         self.encoder = nn.Sequential(
             nn.Conv2d(3, 16, 3, stride=2, padding=1),  # 224×224 → 112×112
@@ -26,7 +26,7 @@ class PhoenixMem(nn.Module):
             nn.Linear(16 * 112 * 112, 128),
         )
         self.gru = nn.GRU(input_size=128, hidden_size=64, num_layers=2, batch_first=True)
-        self.classifier = nn.Linear(64, 100)  # assume 100 classes
+        self.classifier = nn.Linear(64, num_classes)
         # Metadata for later serialisation
         self.metadata = dict(use_causal=use_causal, ecc_r=ecc_r, sram_protect=sram_protect)
 
@@ -45,6 +45,25 @@ class PhoenixMem(nn.Module):
 #  Training Helper
 # =========================
 
+def _as_float(maybe_scalar):
+    """Helper – converts strings like '3e-4' to float while leaving numbers untouched."""
+    if isinstance(maybe_scalar, str):
+        try:
+            return float(maybe_scalar)
+        except ValueError as e:
+            raise TypeError(f"Expected numeric value, got {maybe_scalar!r}") from e
+    return maybe_scalar
+
+
+def _as_int(maybe_scalar):
+    if isinstance(maybe_scalar, str):
+        try:
+            return int(float(maybe_scalar))
+        except ValueError as e:
+            raise TypeError(f"Expected integer value, got {maybe_scalar!r}") from e
+    return int(maybe_scalar)
+
+
 def train_model(
     model: nn.Module,
     loader: DataLoader,
@@ -53,12 +72,13 @@ def train_model(
 ) -> Tuple[nn.Module, Dict[str, float]]:
     """Basic supervised training loop – returns trained model & logs."""
 
-    optimiser = torch.optim.AdamW(model.parameters(), lr=cfg["lr"])
+    lr = _as_float(cfg["lr"])
+    optimiser = torch.optim.AdamW(model.parameters(), lr=lr)
     criterion = nn.CrossEntropyLoss()
 
     epoch_logs: dict[str, float] = {}
 
-    for epoch in range(cfg["epochs"]):
+    for epoch in range(_as_int(cfg["epochs"])):
         model.train()
         epoch_loss = 0.0
         epoch_start = time.time()

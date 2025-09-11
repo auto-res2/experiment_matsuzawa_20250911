@@ -2,7 +2,7 @@
 """Unified entry point orchestrating PHOENIX-Mem experiments.
 
 All artefacts (figures, JSON) are written to the mandatory
-`.research/iteration2` hierarchy as required by the task description.
+`.research/iteration3` hierarchy as required by the task description.
 """
 from __future__ import annotations
 
@@ -24,10 +24,10 @@ from .evaluate import evaluate_model
 # =========================
 #  Paths
 # =========================
-RESEARCH_ROOT = Path(".research/iteration2")
+RESEARCH_ROOT = Path(".research/iteration3")
 IMG_DIR = RESEARCH_ROOT / "images"
 IMG_DIR.mkdir(parents=True, exist_ok=True)
-RES_DIR = RESEARCH_ROOT
+RES_DIR = RESEARCH_ROOT  # JSON files live directly here per instructions
 RES_DIR.mkdir(parents=True, exist_ok=True)
 
 CONFIG_PATH = Path("config/config.yaml")
@@ -56,7 +56,7 @@ def run_experiment_1(cfg: dict):
 
     # ---------- Model ----------
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = PhoenixMem(use_causal=True, ecc_r=14, sram_protect=True).to(device)
+    model = PhoenixMem(use_causal=True, ecc_r=14, sram_protect=True, num_classes=n_classes).to(device)
 
     # ---------- Training ----------
     try:

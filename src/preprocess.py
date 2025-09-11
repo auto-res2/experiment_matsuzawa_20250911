@@ -1,5 +1,5 @@
 # src/preprocess.py
-"""Data download & preprocessing utilities – now uses CIFAR-10 for a self-contained, 
+"""Data download & preprocessing utilities – now uses CIFAR-10 for a self-contained,
 licence-free testbed in accordance with the fail-fast policy (no silent fallbacks).
 """
 from __future__ import annotations
@@ -75,6 +75,12 @@ class _CIFAR10Clips(Dataset):
 #  Loader helper (public)
 # ============================================================
 
+def _as_int(val):
+    if isinstance(val, str):
+        return int(float(val))
+    return int(val)
+
+
 def build_loader(root: Path, cfg: dict) -> Tuple[DataLoader, int]:
     """Constructs a DataLoader for the experiments.
 
@@ -90,6 +96,6 @@ def build_loader(root: Path, cfg: dict) -> Tuple[DataLoader, int]:
     )
 
     ds = _CIFAR10Clips(root=root / "cifar10", train=True, transform=tfm)
-    loader = DataLoader(ds, batch_size=cfg["batch_size"], shuffle=True, num_workers=4)
+    loader = DataLoader(ds, batch_size=_as_int(cfg["batch_size"]), shuffle=True, num_workers=4)
     n_classes = 10
     return loader, n_classes
