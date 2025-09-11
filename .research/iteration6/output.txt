@@ -1,0 +1,4 @@
+=== uv sync start Thu Sep 11 05:56:17 AM UTC 2025 ===
+=== uv install end Thu Sep 11 05:57:16 AM UTC 2025 ===
+=== experiment start Thu Sep 11 05:57:16 AM UTC 2025 ===
+[FATAL] Could not load model bitdiffusion/bitdiffusion-t5-large: load() missing 1 required positional argument: 'model'
