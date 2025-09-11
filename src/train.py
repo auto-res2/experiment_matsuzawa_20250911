@@ -2,7 +2,7 @@
 
 For this refactor the heavy GPU-bound logic is still represented by a
 light-weight placeholder that merely demonstrates the workflow and produces
-the mandated JSON artefact.  Real training / inference code would live in this
+ the mandated JSON artefact.  Real training / inference code would live in this
 module.
 """
 from __future__ import annotations
@@ -10,6 +10,13 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Any, Dict
+
+
+# -----------------------------------------------------------------------------
+# Constants – central place so the mandatory research paths are used consistently
+# -----------------------------------------------------------------------------
+_JSON_ROOT = Path(".research/iteration2")
+_JSON_ROOT.mkdir(parents=True, exist_ok=True)
 
 
 def run_experiment_placeholders(config: Dict[str, Any]) -> None:  # noqa: D401 – imperative style
@@ -30,9 +37,7 @@ def run_experiment_placeholders(config: Dict[str, Any]) -> None:  # noqa: D401 �
     # ------------------------------------------------------------------
     # Persist a minimal result file so downstream evaluation scripts have
     # deterministic artefacts to look at.
-    results_path = Path("results")
-    results_path.mkdir(exist_ok=True)
-    result_file = results_path / "exp_validation_passed.json"
+    result_file = _JSON_ROOT / "exp_validation_passed.json"
 
     json_content = {
         "status": "resource_validation_passed",
