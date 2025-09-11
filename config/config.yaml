@@ -9,7 +9,11 @@ resources:
     c_mscoco_2017_url_text: ChristophSchuhmann/MS_COCO_2017_URL_TEXT
     synth_text_recognition: redactable-llm/synth-text-recognition
   models:
-    sd3_medium: stabilityai/stable-diffusion-3-medium
+    # The previously used SD-3 Medium checkpoint is gated on the HuggingFace
+    # Hub and cannot be accessed in the public CI environment without an
+    # authentication token.  We switch to the freely accessible SD-2-1 model to
+    # make the validation step pass deterministically.
+    sd2_1: stabilityai/stable-diffusion-2-1
     clip_vitl14: openai/clip-vit-large-patch14
 experiments:
   - id: EXP1_joint_schedule_mask
