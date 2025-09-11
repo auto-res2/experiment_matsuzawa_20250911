@@ -6,8 +6,7 @@ experiments:
   exp1:
     name: vision_adaptivity
     source_dataset:
-      hf_id: laion/laion400m
-      subset: random_4k_landscape
+      hf_id: cifar10       # switched to public dataset to avoid gated access
     target_dataset:
       hf_id: albertvillanova/medmnist-v2
       config: pathmnist

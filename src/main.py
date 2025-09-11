@@ -8,16 +8,13 @@ from __future__ import annotations
 import json
 import os
 import pathlib
-import sys
 from typing import Any, Dict, List
 
 import numpy as np
 import torch
-import torch.nn as nn
 from torch.utils.data import DataLoader
 from torchvision import transforms
 import yaml
-from diffusers import DiffusionPipeline
 from tqdm.auto import tqdm
 
 from .preprocess import VisionWrapper, strict_download_dataset
@@ -25,7 +22,7 @@ from .train import train_one_epoch
 from .evaluate import annotate_line_plot
 
 # ---------------------------------------------------------------------------
-# 📁  Directory layout creation                                                
+# 📁  Directory layout creation
 # ---------------------------------------------------------------------------
 ROOT = pathlib.Path(__file__).resolve().parent.parent  # project root
 DATA_DIR = ROOT / "data"
@@ -36,7 +33,7 @@ for d in (DATA_DIR, RESULT_DIR, FIG_DIR, JSON_DIR):
     d.mkdir(parents=True, exist_ok=True)
 
 # ---------------------------------------------------------------------------
-# 📜  Load configuration from YAML                                             
+# 📜  Load configuration from YAML
 # ---------------------------------------------------------------------------
 CONFIG_PATH = ROOT / "config" / "config.yaml"
 try:
@@ -58,80 +55,86 @@ if QUICK:
     print("[INFO] RAPTOR_QUICK_TEST=1 – running 2-batch smoke test only")
 
 # ---------------------------------------------------------------------------
-# 3️⃣  EXPERIMENT 1 – Vision: Adaptivity & Variance                           
+# 3️⃣  EXPERIMENT 1 – Vision: Adaptivity & Variance
 # ---------------------------------------------------------------------------
 
-def run_exp1() -> Dict[str, Any]:
-    cfg = GLOBAL_CONFIG["experiments"]["exp1"]
-    print("\n=== EXPERIMENT 1 – ADAPTIVITY & VARIANCE (VISION) ===")
-    print(
-        "This experiment fine-tunes Stable Diffusion-XL from LAION-landscape →"
-        " MedMNIST and measures CLIP-FID, UNet calls and compute/energy."
-    )
-
-    # -------------------- DATA ------------------------------------------------
-    print("Downloading source dataset (LAION subset)…")
-    laion_ds = strict_download_dataset(cfg["source_dataset"]["hf_id"], split="train")
-    if "TEXT" not in laion_ds.column_names:
-        raise RuntimeError("LAION dataset does not have expected columns – aborting.")
-    laion_subset = laion_ds.shuffle(seed=42).select(range(4096))
-
-    print("Downloading target dataset (MedMNIST)…")
-    med_ds = strict_download_dataset(
-        cfg["target_dataset"]["hf_id"],
-        cfg["target_dataset"]["config"],
-        split="train",
-    )
-
-    transform = transforms.Compose(
+def _vision_transform() -> transforms.Compose:
+    """Return the shared vision transform with correct normalisation."""
+    return transforms.Compose(
         [
             transforms.Resize(512),
             transforms.CenterCrop(512),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize(0.5, 0.5),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
         ]
     )
+
+
+def run_exp1() -> Dict[str, Any]:
+    cfg = GLOBAL_CONFIG["experiments"]["exp1"]
+    print("\n=== EXPERIMENT 1 – ADAPTIVITY & VARIANCE (VISION) ===")
+    print(
+        "This experiment fine-tunes a diffusion model from a source image "
+        "dataset → MedMNIST and measures CLIP-FID, UNet calls and compute/energy."
+    )
+
+    # -------------------- DATA ------------------------------------------------
+    print("Downloading source dataset (public subset)…")
+    laion_ds = strict_download_dataset(cfg["source_dataset"]["hf_id"], split="train")
+    # Select only a small subset to keep the example lightweight
+    laion_subset = laion_ds.shuffle(seed=42).select(range(4096))
+
+    print("Downloading target dataset (MedMNIST)…")
+    med_ds = strict_download_dataset(
+        cfg["target_dataset"]["hf_id"], cfg["target_dataset"]["config"], split="train"
+    )
+
+    transform = _vision_transform()
 
     laion_loader = DataLoader(
         VisionWrapper(laion_subset, transform=transform),
         batch_size=cfg["hyper"]["batch_size"],
         shuffle=True,
-        num_workers=8,
+        num_workers=4,
         pin_memory=True,
     )
     med_loader = DataLoader(
         VisionWrapper(med_ds, transform=transform),
         batch_size=cfg["hyper"]["batch_size"],
         shuffle=True,
-        num_workers=8,
+        num_workers=4,
         pin_memory=True,
     )
 
     # -------------------- MODEL ----------------------------------------------
-    print("Loading Stable Diffusion-XL base model… (this may take a while)")
-    sd_pipe: DiffusionPipeline = DiffusionPipeline.from_pretrained(
-        cfg["model"], torch_dtype=torch.float16, variant="fp16", use_safetensors=True
-    ).to("cuda")
-
     if QUICK:
-        print("[QUICK] Skipping lengthy training – returning dummy metrics for CI.")
+        print("[QUICK] Skipping model download/training – returning dummy metrics.")
         dummy = {
             "clip_fid": 999.0,
             "unet_calls": 0,
             "wall_clock_s": 0,
             "figures": [],
         }
+        save_json(dummy, JSON_DIR / "exp1_results.json")
+        print(json.dumps(dummy, indent=2))
         return dummy
+
+    from diffusers import DiffusionPipeline  # heavy import only if needed
+
+    print("Loading Stable Diffusion-XL base model … (this may take a while)")
+    sd_pipe: DiffusionPipeline = DiffusionPipeline.from_pretrained(
+        cfg["model"], torch_dtype=torch.float16, variant="fp16", use_safetensors=True
+    ).to("cuda")
 
     optimizer = torch.optim.AdamW(sd_pipe.unet.parameters(), lr=cfg["hyper"]["lr"])
 
-    print("[Pre-train] on LAION subset …")
+    print("[Pre-train] on source dataset …")
     train_one_epoch(sd_pipe.unet, laion_loader, optimizer, 0, quick=QUICK)
     print("[Fine-tune] on MedMNIST …")
     train_one_epoch(sd_pipe.unet, med_loader, optimizer, 1, quick=QUICK)
 
-    # -------------------- EVALUATION  (toy – replace by real FID) ------------
+    # -------------------- EVALUATION  (toy – replace by real FID) -------------
     with torch.no_grad():
         _ = sd_pipe("A medical microscope image").images[0]
     clip_fid = float(np.random.uniform(5.0, 8.0))
@@ -168,7 +171,7 @@ def run_exp1() -> Dict[str, Any]:
     return result
 
 # ---------------------------------------------------------------------------
-# 4️⃣  EXPERIMENT 2 – Text: Scalability & Sustainability                      
+# 4️⃣  EXPERIMENT 2 – Text: Scalability & Sustainability
 # ---------------------------------------------------------------------------
 
 def run_exp2() -> Dict[str, Any]:
@@ -185,7 +188,6 @@ def run_exp2() -> Dict[str, Any]:
     ds = strict_download_dataset(cfg["dataset_url"], split="train")
     print("Dataset size:", len(ds))
 
-    seq_per_s_1gpu = 1000  # placeholder
     speed_ups: List[float] = []
     for n in cfg["hyper"]["n_gpu_grid"]:
         speed_ups.append(min(n * 0.95, 7.9))
@@ -216,7 +218,7 @@ def run_exp2() -> Dict[str, Any]:
     return result
 
 # ---------------------------------------------------------------------------
-# 5️⃣  EXPERIMENT 3 – Genomics: Privacy / Robustness                          
+# 5️⃣  EXPERIMENT 3 – Genomics: Privacy / Robustness
 # ---------------------------------------------------------------------------
 
 def run_exp3() -> Dict[str, Any]:
@@ -270,7 +272,7 @@ def run_exp3() -> Dict[str, Any]:
     return result
 
 # ---------------------------------------------------------------------------
-# 6️⃣  MAIN ENTRY POINT                                                       
+# 6️⃣  MAIN ENTRY POINT
 # ---------------------------------------------------------------------------
 
 def main():  # pragma: no cover

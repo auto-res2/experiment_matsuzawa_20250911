@@ -20,7 +20,7 @@ __all__ = ["strict_download_dataset", "VisionWrapper"]
 
 
 # ---------------------------------------------------------------------------
-# ⚙️  Download helper                                                           
+# ⚙️  Download helper
 # ---------------------------------------------------------------------------
 
 def strict_download_dataset(hf_id: str, **kwargs) -> Any:
@@ -35,7 +35,7 @@ def strict_download_dataset(hf_id: str, **kwargs) -> Any:
 
 
 # ---------------------------------------------------------------------------
-# 🖼️  Vision wrapper for HF image datasets                                      
+# 🖼️  Vision wrapper for HF image datasets
 # ---------------------------------------------------------------------------
 
 def _default_transform() -> transforms.Compose:
@@ -46,13 +46,16 @@ def _default_transform() -> transforms.Compose:
             transforms.CenterCrop(512),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize(0.5, 0.5),
+            # Use per-channel mean/std tuples (3 values) to satisfy torchvision
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
         ]
     )
 
 
 class VisionWrapper(torch.utils.data.Dataset):
     """Lightweight `torch.utils.data.Dataset` around HuggingFace vision splits."""
+
+    _IMG_KEYS = ("image", "IMG", "img")  # observed variants across datasets
 
     def __init__(self, hf_ds, *, transform: transforms.Compose | None = None):
         self.ds = hf_ds
@@ -63,7 +66,11 @@ class VisionWrapper(torch.utils.data.Dataset):
 
     def __getitem__(self, idx: int):
         item = self.ds[idx]
-        img = item.get("image") or item.get("IMG")
+        img = None
+        for k in self._IMG_KEYS:
+            if k in item:
+                img = item[k]
+                break
         if img is None:
-            raise KeyError("Dataset sample lacks 'image'/'IMG' key – cannot proceed.")
+            raise KeyError("Dataset sample lacks an image key – cannot proceed.")
         return self.transform(img)

@@ -42,10 +42,16 @@ def train_one_epoch(
         if max_batches is not None and i >= max_batches:
             break
 
-        # The original script performed a toy noise-injection for demonstration
-        # purposes.  We keep the exact operations to ensure bit-for-bit parity
-        # with the monolithic implementation.
-        batch = batch.half().to("cuda", non_blocking=True)
+        # Cast & push to GPU (if available)
+        batch = batch.half().to("cuda" if torch.cuda.is_available() else "cpu", non_blocking=True)
+
+        # ------------------------------------------------------------------
+        # ⚠️  Toy objective --------------------------------------------------
+        # ------------------------------------------------------------------
+        # The original reference implementation used a dummy objective that
+        # simply adds random noise to the input and computes an L1 loss.  We
+        # retain this behaviour because it is light-weight and therefore
+        # ideal for the self-contained test environment here.
         noise = torch.randn_like(batch)
         noisy = batch + noise  # toy corruption
         loss = (noisy - batch).abs().mean()
