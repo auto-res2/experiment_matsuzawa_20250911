@@ -1,204 +1,283 @@
-import logging
-import time
+"""
+Training logic for RAPTOR experiments (single-file refactor of the original
+script).  All building blocks that used to live in multiple modules are now
+collapsed here so we remain within the six-file constraint.
+"""
+from __future__ import annotations
+
 import json
-import pathlib
-from typing import Dict, Any, List
+import sys
+import time
+from dataclasses import dataclass
+from pathlib import Path
+from typing import List
 
-import numpy as np
 import torch
+import yaml
+from torch.cuda.amp import GradScaler, autocast
+from torch.utils.data import DataLoader
+from tqdm import tqdm
 
-# -----------------------------------------------------------------------------
-# Optional dependency handling -------------------------------------------------
-# -----------------------------------------------------------------------------
-try:
-    from diffusers import DiffusionPipeline  # noqa: F401
-except ModuleNotFoundError:  # pragma: no cover
+try:  # optional – will be silently skipped if fvcore is unavailable
+    from fvcore.nn.flop_count import flop_count_table  # noqa: F401
+except Exception:  # pragma: no cover
+    flop_count_table = None
 
-    class _DummyUNet:  # pylint: disable=too-few-public-methods
-        """Very small stand-in so that downstream code can safely access .unet."""
+# ============================================================================
+#                          CONFIGURATION OBJECTS
+# ============================================================================
 
-        def __init__(self):
-            self.dummy_param = torch.nn.Parameter(torch.zeros(1))
 
-    class DiffusionPipeline:  # type: ignore
-        """Fallback that mimics the minimal interface used in this scaffold."""
+@dataclass
+class HutchConf:
+    top_k: int
+    sketch: int
+    refresh: int
 
-        def __init__(self):
-            self.unet = _DummyUNet()
 
-        @classmethod
-        def from_pretrained(cls, *_ , **__):  # noqa: D401, D403
-            logging.getLogger("train").warning(
-                "'diffusers' not available – using dummy pipeline; results are NOT"
-                "\n" "meaningful and are meant only for CI/test execution."
-            )
-            return cls()
+@dataclass
+class SchedConf:
+    tau: float
 
-        # pylint: disable=unused-argument
-        def to(self, *_):  # noqa: D401
-            return self
 
-# -----------------------------------------------------------------------------
-# Local project imports --------------------------------------------------------
-# -----------------------------------------------------------------------------
-from .preprocess import prepare_dataset, build_dataloader
-from .evaluate import lineplot
-from .config_loader import ExpCfg, DatasetCfg, ModelCfg
+@dataclass
+class TrainConf:
+    pretrain_steps: int
+    finetune_epochs: int
+    lr_pretrain: float
+    lr_finetune: float
 
-log = logging.getLogger("train")
-logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(name)s: %(message)s")
 
-# -----------------------------------------------------------------------------
-# Constants --------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-# All experiment artefacts must reside in iteration11 according to the grading
-# rubric.  Centralising the constant here makes future migrations easier.
-_ITERATION_ROOT = pathlib.Path(".research/iteration11")
-_IMAGES_DIR = _ITERATION_ROOT / "images"
-_ITERATION_ROOT.mkdir(parents=True, exist_ok=True)
-_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+@dataclass
+class ExperimentConf:
+    id: str
+    description: str
+    seeds: List[int]
+    variants: List[str]
+    data: dict
+    model: dict
+    training: TrainConf
+    hutch: HutchConf
+    scheduler: SchedConf
+    output_dir: str
 
-# -----------------------------------------------------------------------------
-# Model helpers ----------------------------------------------------------------
-# -----------------------------------------------------------------------------
 
-def load_sd_xl(cfg: ModelCfg):
-    """Load a Stable-Diffusion-XL pipeline (or a lightweight stand-in).
+# ----------------------------------------------------------------------------
+#                             YAML LOADER
+# ----------------------------------------------------------------------------
 
-    A dummy pipeline is used automatically if *diffusers* cannot be imported.
+def load_yaml(path: str | Path) -> ExperimentConf:
+    """Parse the configuration YAML into an ExperimentConf dataclass."""
+    path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(f"Configuration file {path} not found.")
+    with path.open() as fp:
+        raw = yaml.safe_load(fp)
+
+    exp = raw["experiment"]
+    return ExperimentConf(
+        id=exp["id"],
+        description=exp["description"],
+        seeds=exp["seeds"],
+        variants=exp["variants"],
+        data=exp["data"],
+        model=exp["model"],
+        training=TrainConf(**exp["training"]),
+        hutch=HutchConf(**exp["hutch"]),
+        scheduler=SchedConf(**exp["scheduler"]),
+        output_dir=exp["output_dir"],
+    )
+
+
+# ============================================================================
+#                                CORE MODULES
+# ============================================================================
+import torch.nn as nn  # noqa: E402
+from diffusers import DiffusionPipeline  # noqa: E402
+
+
+class HutchFisher(nn.Module):
+    """Hutch++ Streaming approximation of the Fisher Information Matrix top-K eigenvectors."""
+
+    eig_vec: torch.Tensor  # static type hint for mypy
+
+    def __init__(self, model: nn.Module, topk: int = 128, sketch: int = 2048, refresh: int = 256):
+        super().__init__()
+        self.model = model
+        self.topk = topk
+        self.sketch = sketch
+        self.refresh = refresh
+        # register_buffer ensures tensor moves with .to(device)
+        self.register_buffer("eig_vec", torch.randn(topk, self.numel()).normal_())
+        self.steps = 0
+
+    def numel(self):
+        return sum(p.numel() for p in self.model.parameters() if p.requires_grad)
+
+    @torch.no_grad()
+    def forward(self, grads_flat: torch.Tensor):
+        self.steps += 1
+        if self.steps % self.refresh != 0:
+            return self.eig_vec
+        device = grads_flat.device
+        R = torch.randint(0, 2, (self.sketch,), device=device, dtype=torch.float32) * 2 - 1
+        Y = torch.outer(R, grads_flat)
+        Q, _ = torch.linalg.qr(Y)
+        B = Q.T @ torch.diag_embed(grads_flat) @ Q
+        eigv, _ = torch.linalg.eigh(B)
+        top_ids = torch.argsort(eigv, descending=True)[: self.topk]
+        # runtime assignment is safe; the buffer is updated in-place
+        self.eig_vec = Q[:, top_ids].T
+        return self.eig_vec
+
+
+class AsyncScheduler:
+    """Event-driven token scheduler."""
+
+    def __init__(self, unet: nn.Module, fisher: HutchFisher, tau: float = 0.015):
+        self.unet = unet
+        self.fisher = fisher
+        self.tau = tau
+
+    def select_tokens(self, scores_before, scores_after):
+        delta = (scores_after - scores_before).norm(dim=-1)
+        return delta > self.tau
+
+
+class ControlVariate(nn.Module):
+    """Simple control-variate autoregressive model that predicts jump counts."""
+
+    def __init__(self, vocab: int):
+        super().__init__()
+        self.embed = nn.Embedding(vocab, 256)
+        self.fc = nn.Linear(256, 1)
+
+    def forward(self, ids):
+        h = torch.tanh(self.embed(ids))
+        return self.fc(h).squeeze(-1)
+
+
+class CarbonMonitor:
+    """
+    Rudimentary GPU energy monitor using NVML.  The class is optional – if NVML
+    is not available (e.g. on CPU boxes), monitoring is silently disabled so
+    that experiments can still run.
     """
 
-    dtype = torch.float16 if cfg.fp16 else torch.float32
-    pipe = DiffusionPipeline.from_pretrained(
-        cfg.repo,
-        torch_dtype=dtype,
-        use_safetensors=True,
-        variant="fp16" if cfg.fp16 else None,
+    def __init__(self, out_file: Path | str):
+        self.enabled = False
+        try:
+            import pynvml
+
+            pynvml.nvmlInit()
+            self._pynvml = pynvml
+            self.handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+            self.enabled = True
+        except Exception:
+            # NVML unavailable – disable energy tracking
+            self.enabled = False
+        self.start_t = time.time()
+        self.j_gpu = 0.0
+        self.out_file = Path(out_file)
+
+    def sample(self):
+        if not self.enabled:
+            return
+        p = self._pynvml.nvmlDeviceGetPowerUsage(self.handle) / 1e3  # watt
+        self.j_gpu += p * 0.1  # assume call every 100 ms
+
+    def stop(self):
+        res = {"joule_gpu": self.j_gpu, "wall_clock": time.time() - self.start_t}
+        try:
+            self.out_file.parent.mkdir(parents=True, exist_ok=True)
+            with self.out_file.open("w") as fp:
+                json.dump(res, fp)
+        except Exception as e:  # pragma: no cover
+            print(f"[CarbonMonitor] Could not write energy file: {e}", file=sys.stderr)
+        return res
+
+
+class RaptorDiffuser:
+    """Wrapper around Stable-Diffusion XL with the RAPTOR modules attached."""
+
+    def __init__(self, model_id: str, fisher_conf: HutchConf, sched_conf: SchedConf, control_var: bool = True):
+        try:
+            self.pipe = DiffusionPipeline.from_pretrained(
+                model_id, torch_dtype=torch.float16, use_safetensors=True, variant="fp16"
+            )
+        except Exception as e:  # pragma: no cover
+            raise RuntimeError(
+                f"Unable to load model {model_id}. Ensure diffusers & model weights are available.\n{e}"
+            )
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.pipe.to(device)
+
+        self.fisher = HutchFisher(self.pipe.unet, **fisher_conf.__dict__)
+        self.scheduler = AsyncScheduler(self.pipe.unet, self.fisher, tau=sched_conf.tau)
+        self.control = ControlVariate(8192) if control_var else None
+
+
+# ============================================================================
+#                                   TRAIN
+# ============================================================================
+from .preprocess import ImageTokenDataset  # noqa: E402
+
+
+def fit(exp_conf: ExperimentConf, variant: str, seed: int):
+    """Fine-tune the diffusion model according to the configuration."""
+    torch.manual_seed(seed)
+    out_dir = Path(".research") / "iteration12" / exp_conf.id / f"{variant}_seed{seed}"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    monitor = CarbonMonitor(out_dir / "energy.json")
+
+    # -------------------------- model ------------------------------------ #
+    control_on = variant == "v0"
+    model = RaptorDiffuser(
+        model_id=exp_conf.model["base"],
+        fisher_conf=exp_conf.hutch,
+        sched_conf=exp_conf.scheduler,
+        control_var=control_on,
     )
-    pipe.to("cuda" if torch.cuda.is_available() else "cpu")
-    return pipe
+
+    # --------------------------- data ------------------------------------ #
+    train_ds = ImageTokenDataset(hf_name=exp_conf.data["target"]["url"], split="train", vq_encoder=model.pipe.vae)
+    train_dl = DataLoader(train_ds, batch_size=32, shuffle=True, num_workers=4, pin_memory=True)
+
+    scaler = GradScaler()
+    optimizer = torch.optim.AdamW(model.pipe.unet.parameters(), lr=exp_conf.training.lr_finetune)
+
+    # ------------------------ training loop ------------------------------ #
+    monitor.sample()
+    device = next(model.pipe.unet.parameters()).device
+    for epoch in range(exp_conf.training.finetune_epochs):
+        for batch in tqdm(train_dl, desc=f"{variant}-E{epoch}", leave=False):
+            batch = batch.to(device)
+            with autocast():
+                loss = model.pipe.unet(batch)  # surrogate loss placeholder
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+            optimizer.zero_grad(set_to_none=True)
+            monitor.sample()
+        torch.save(model.pipe.unet.state_dict(), out_dir / f"ckpt_{epoch}.pt")
+
+    energy = monitor.stop()
+
+    # -------------------------- evaluation ------------------------------- #
+    from .evaluate import evaluate_and_plot  # delayed import to avoid circularity
+
+    metrics = evaluate_and_plot(model, exp_conf, out_dir)
+    metrics.update(energy)
+
+    with (out_dir / "result.json").open("w") as fp:
+        json.dump(metrics, fp, indent=2)
+
+    print(json.dumps(metrics, indent=2))
 
 
-# -----------------------------------------------------------------------------
-# RAPTOR component skeletons ---------------------------------------------------
-# -----------------------------------------------------------------------------
-
-class HutchFisher:
-    """Streaming Hutch++ sketch of the Fisher information matrix (stub)."""
-
-    def __init__(self, unet, topk: int = 128, sketch: int = 2048, refresh: int = 256):
-        self.unet, self.k, self.m, self.refresh = unet, topk, sketch, refresh
-        self._steps = 0
-
-    # pylint: disable=unused-argument
-    def step(self, feats):  # noqa: D401
-        """Advance the Hutch++ estimator – no-op placeholder."""
-        self._steps += 1
-
-
-class RaptorScheduler:  # pylint: disable=too-few-public-methods
-    """Asynchronous tau-leaping scheduler (placeholder)."""
-
-    def __init__(self, unet, fisher: HutchFisher, tau: float, async_tokens: bool = True):
-        self.unet, self.fisher, self.tau, self.async_tokens = unet, fisher, tau, async_tokens
-
-    # pylint: disable=unused-argument
-    def sample(self, *_ , **__):
-        raise NotImplementedError("Event-driven tau-leaper not implemented in scaffold.")
-
-
-# -----------------------------------------------------------------------------
-# Experiment runner ------------------------------------------------------------
-# -----------------------------------------------------------------------------
-
-class Experiment1Runner:  # pylint: disable=too-few-public-methods
-    """Dynamic geometry & variance ablation under domain shift."""
-
-    def __init__(
-        self,
-        exp_cfg: ExpCfg,
-        ds_cfgs: Dict[str, DatasetCfg],
-        model_cfg: ModelCfg,
-        out_root: pathlib.Path,
-    ):
-        self.exp_cfg, self.ds_cfgs, self.model_cfg = exp_cfg, ds_cfgs, model_cfg
-        self.out_root = out_root / exp_cfg.id
-        self.out_root.mkdir(parents=True, exist_ok=True)
-
-        # ------------------------------------------------------------------
-        # Output paths conforming to the assignment specification ----------
-        # ------------------------------------------------------------------
-        self.json_path = _ITERATION_ROOT / f"{exp_cfg.id}_results.json"
-
-    # ---------------------------------------------------------------------
-    # Main entry -----------------------------------------------------------
-    # ---------------------------------------------------------------------
-
-    def run(self):  # noqa: D401
-        log.info("Starting Experiment-1 runner …")
-
-        # 1) Prepare datasets ---------------------------------------------
-        src_root = prepare_dataset(self.ds_cfgs["source"])
-        tgt_root = prepare_dataset(self.ds_cfgs["target"])
-        train_dl = build_dataloader(tgt_root, self.exp_cfg.batch_size, split="train")
-        # Validation loader is instantiated for completeness although not used downstream.
-        _ = build_dataloader(tgt_root, self.exp_cfg.batch_size, split="val")
-        log.info("Prepared dummy datasets at %s and %s", src_root, tgt_root)
-
-        # 2) Load model + RAPTOR components --------------------------------
-        pipe = load_sd_xl(self.model_cfg)
-        fisher = HutchFisher(
-            pipe.unet,
-            topk=self.exp_cfg.extra.get("topk", 128),
-            refresh=self.exp_cfg.extra.get("refresh", 256),
-        )
-        _ = RaptorScheduler(pipe.unet, fisher, tau=self.exp_cfg.extra.get("tau", 0.015))
-
-        # 3) Lightweight training-loop skeleton ---------------------------
-        results: Dict[str, Any] = {"seed_metrics": []}
-        for seed in self.exp_cfg.seeds:
-            torch.manual_seed(seed)
-
-            t0 = time.time()
-            unet_calls = 0
-            for _ in range(self.exp_cfg.epochs):
-                for _ in train_dl:
-                    # Placeholder: forward / backward / optimiser steps.
-                    unet_calls += 1
-            wall = time.time() - t0
-
-            # Placeholder FID value; real evaluator will supply this later.
-            fid_val = 999.0
-            results["seed_metrics"].append(
-                {"seed": seed, "fid": fid_val, "unet_calls": unet_calls, "wall": wall}
-            )
-            log.info(
-                "Seed %s finished – dummy-FID %.1f | UNet calls %d | wall %.2fs",
-                seed,
-                fid_val,
-                unet_calls,
-                wall,
-            )
-
-        # 4) Aggregation ---------------------------------------------------
-        fid_vals: List[float] = [m["fid"] for m in results["seed_metrics"]]
-        calls = [m["unet_calls"] for m in results["seed_metrics"]]
-        results["agg"] = {
-            "fid_mean": float(np.mean(fid_vals)),
-            "fid_std": float(np.std(fid_vals)),
-            "calls_mean": float(np.mean(calls)),
-        }
-        log.info("Aggregation complete: %s", results["agg"])
-
-        # 5) Save JSON -----------------------------------------------------
-        self.json_path.write_text(json.dumps(results, indent=2))
-
-        # 6) Plotting ------------------------------------------------------
-        xs = list(range(len(fid_vals)))
-        lineplot(xs, fid_vals, "Run", "CLIP-FID", "FID per seed", "training_loss_ablation")
-
-        # 7) stdout for verification --------------------------------------
-        print(
-            "Experiment 1 – Dynamic Geometry & Variance Ablation under Domain Shift\n",
-        )
-        print(self.json_path.read_text())
+__all__ = [
+    "ExperimentConf",
+    "load_yaml",
+    "fit",
+]
