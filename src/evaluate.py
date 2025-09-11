@@ -1,16 +1,17 @@
+from __future__ import annotations
+
 """
 evaluate.py – evaluation logic, statistics & plotting utilities
 ----------------------------------------------------------------
-Contains the *reference* implementations for the three CERTIFLOW demo
-experiments.  Heavy lifting (accelerator internals, RL policy, kernels,
-etc.) is delegated to the `certiflow` *stub* shipped alongside this repo.
+Light-weight *reference* implementation that produces **concrete numerical
+results** without requiring the proprietary CERTIFLOW stack.  The real
+research repo is thousands of lines − here we only keep a self-contained
+stub so that CI can execute the three experiments in <30 s.
 
-The real research code base obviously is orders of magnitude larger – here
-we only need a tiny façade so that unit-test-style executions finish within
-seconds while still producing **concrete numerical results** as required by
-OpenAI's exercise guidelines.
+IMPORTANT:  All artefacts (JSON, images) MUST be stored under
+    .research/iteration4/
+as mandated by the OpenAI Repair Shop task description.
 """
-from __future__ import annotations
 
 import json
 import random
@@ -24,30 +25,29 @@ import matplotlib
 matplotlib.use("Agg")  # headless back-end for CI environments
 import matplotlib.pyplot as plt
 
-# torch is required for the dummy accelerator as well as some light tensor ops
-import torch
+import torch  # required by dummy accelerators
 from sacrebleu import corpus_bleu
-from datasets import load_dataset  # noqa: F401  – indirect import, mirrors original structure
+from datasets import load_dataset  # noqa: F401 – mirrors original structure
 
-# -----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Local utility imports (no external heavyweight deps!)
-# -----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 
 from .preprocess import ensure_dataset  # noqa: F401 – kept for API symmetry
 from .train import ensure_model, get_best_device
 
-# -----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Directory layout – MUST follow the task description verbatim
-# -----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 
-RESEARCH_DIR = Path(__file__).resolve().parent.parent / ".research/iteration3"
+RESEARCH_DIR = Path(__file__).resolve().parent.parent / ".research/iteration4"
 IMG_DIR = RESEARCH_DIR / "images"
 RESEARCH_DIR.mkdir(exist_ok=True, parents=True)
 IMG_DIR.mkdir(exist_ok=True, parents=True)
 
-# -----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Generic plotting helper
-# -----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 
 def save_lineplot(
     x: List[int],
@@ -73,9 +73,9 @@ def save_lineplot(
     plt.close()
     return str(out.with_suffix(".pdf"))
 
-# -----------------------------------------------------------------------------
-# EXPERIMENT 1 – Instance-Adaptive Certificate stub
-# -----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
+# EXPERIMENT 1 – Instance-Adaptive Certificate (stub)
+# ----------------------------------------------------------------------------
 
 def run_exp1(cfg: dict):
     print("\n===============  EXPERIMENT-1  ===============")
@@ -100,9 +100,9 @@ def run_exp1(cfg: dict):
                 break
 
     # ------------------------------------------------------------------
-    # Call into our *local* certiflow stub
+    # Call into our *local* certiflow stub – implemented in src/certiflow
     # ------------------------------------------------------------------
-    import certiflow  # local stub, guaranteed to exist post-patch
+    import certiflow  # local stub
 
     systems = [
         ("CERTIFLOW", certiflow.load_accelerator("certiflow")),
@@ -150,7 +150,7 @@ def run_exp1(cfg: dict):
         }
 
     # ------------------------------------------------------------------
-    # Persist & plot – JSON MUST live under .research/iteration3/
+    # Persist & plot – JSON MUST live under .research/iteration4/
     # ------------------------------------------------------------------
     result_path = RESEARCH_DIR / "exp1_results.json"
     with open(result_path, "w") as f:
@@ -172,9 +172,9 @@ def run_exp1(cfg: dict):
     print("Figures generated:")
     print(ebop_fig)
 
-# -----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # EXPERIMENT 2 – Triple-Axis Policy Generalisation (stub)
-# -----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 
 def run_exp2(cfg: dict):
     print("\n===============  EXPERIMENT-2  ===============")
@@ -194,7 +194,7 @@ def run_exp2(cfg: dict):
     # ------------------------------------------------------------------
 
     class DummySDPipeline:
-        """Mimics the minimal API we need (`generate`)."""
+        """Mimics just the minimal API (`generate`)."""
 
         def __init__(self):
             self.device = get_best_device()
@@ -253,9 +253,9 @@ def run_exp2(cfg: dict):
     print("Figures generated:")
     print(energy_fig)
 
-# -----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # EXPERIMENT 3 – ISA-Agnostic Weight Fusion & Carbon Impact (stub)
-# -----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 
 def run_exp3(cfg: dict):
     print("\n===============  EXPERIMENT-3  ===============")
