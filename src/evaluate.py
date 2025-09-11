@@ -1,7 +1,7 @@
 """Minimal evaluation utilities for the RAPTOR scaffold.
 
 Only the *lineplot* helper required by *train.py* is implemented.  It draws a
-simple line figure and stores it in `.research/iteration3/images/…` as mandated
+simple line figure and stores it in `.research/iteration4/images/…` as mandated
 by the grading rubric.
 """
 from __future__ import annotations
@@ -25,7 +25,7 @@ def lineplot(
     fig_name: str,
 ) -> pathlib.Path:
     """Draw *(xs, ys)* lineplot and save to the required research directory."""
-    images_dir = pathlib.Path(".research/iteration3/images")
+    images_dir = pathlib.Path(".research/iteration4/images")
     images_dir.mkdir(parents=True, exist_ok=True)
     fig_path = images_dir / f"{fig_name}.png"
 

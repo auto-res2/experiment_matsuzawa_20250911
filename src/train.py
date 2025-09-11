@@ -119,7 +119,7 @@ class Experiment1Runner:  # pylint: disable=too-few-public-methods
         # ------------------------------------------------------------------
         # Output paths conforming to the assignment specification ----------
         # ------------------------------------------------------------------
-        self.json_path = pathlib.Path(".research/iteration3") / f"{exp_cfg.id}_results.json"
+        self.json_path = pathlib.Path(".research/iteration4") / f"{exp_cfg.id}_results.json"
         self.json_path.parent.mkdir(parents=True, exist_ok=True)
 
     # ---------------------------------------------------------------------
