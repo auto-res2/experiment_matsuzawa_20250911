@@ -1,7 +1,7 @@
 """
 src/main.py
 Entry-point orchestrating full experimental workflow.
-Updated for iteration-6 (banner + artefact paths).
+Updated for iteration-7.
 """
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ CONFIG = yaml.safe_load((ROOT / "config" / "config.yaml").read_text())
 
 def main():  # noqa: D401 – imperative main OK
     print("************************************************************")
-    print("  CaFe-EDGE  –  Reproducibility Suite (Iteration-6)")
+    print("  CaFe-EDGE  –  Reproducibility Suite (Iteration-7)")
     print(
         "  Strict-No-Fallback is active – real data mandatory (tiny CI sample provided)."
     )

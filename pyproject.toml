@@ -5,17 +5,17 @@ version = "0.1.0"
 # ----------------------------------------------------------------------------
 # Dependency policy
 # ----------------------------------------------------------------------------
-# 1. Use the *CPU-only* PyTorch wheel to avoid gigantic CUDA dependencies that
-#    broke extraction in the CI runner.
+# 1. Use an officially published PyTorch wheel available on PyPI so that the
+#    resolver can always find a satisfiable version in the default index.
 # 2. NumPy is pinned to the latest 1.x series because many binary wheels in the
-#    PyData ecosystem (and, critically, PyTorch < 2.3) are still built against
-#    the NumPy 1.x C-ABI.  NumPy 2.x causes import-time failures for those
-#    wheels.
+#    PyData ecosystem (and, critically, torch-geometric) are still built
+#    against the NumPy 1.x C-ABI.  NumPy 2.x causes import-time failures for
+#    those wheels.
 # ----------------------------------------------------------------------------
 
 dependencies = [
-  # PyTorch – CPU-only build keeps the dependency footprint minimal (<200 MB).
-  "torch==2.2.2+cpu",
+  # PyTorch – standard wheel from PyPI (CPU-only by default).
+  "torch>=2.2.0,<2.3.0",
 
   # torch-geometric is optional; the runtime stub covers unsupported platforms.
   "torch-geometric>=2.2.0,<2.6.0",

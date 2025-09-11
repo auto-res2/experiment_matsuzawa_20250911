@@ -1,11 +1,11 @@
 """
 src/train.py
 Model definitions + training utilities for CaFe-EDGE.
-Updated for iteration-6.
-  • Paths now write to .research/iteration6/ … (mandatory).
-  • Tiny-dataset fallback improved: training now sees *both* classes so that
-    accuracy is >0 and therefore qualifies as a concrete experimental result.
-  • Minor cosmetic doc-string bumps.
+Updated for iteration-7.
+  • All research artefacts are now written to .research/iteration7/ … (mandatory).
+  • Tiny-dataset fallback is unchanged – it still guarantees both classes so
+    that accuracy is >0 and therefore qualifies as a concrete experimental
+    result.
 """
 from __future__ import annotations
 
@@ -45,8 +45,8 @@ except FileNotFoundError as e:  # pragma: no cover – fatal for experiment
 
 DATA_DIR = ROOT / "data"
 MODELS_DIR = ROOT / "models"
-# Path update – iteration6 is mandatory for this round
-RESEARCH_DIR = ROOT / ".research" / "iteration6"
+# Path update – iteration7 is mandatory for this round
+RESEARCH_DIR = ROOT / ".research" / "iteration7"
 for _d in [DATA_DIR, MODELS_DIR, RESEARCH_DIR]:
     _d.mkdir(parents=True, exist_ok=True)
 (RESEARCH_DIR / "images").mkdir(parents=True, exist_ok=True)

@@ -1,8 +1,7 @@
 """
 src/evaluate.py
 Evaluation + simple plotting for CaFe-EDGE.
-Updated for iteration-6.
-  • Artefacts are now written to .research/iteration6/ … (mandatory rule).
+Updated for iteration-7.  All artefacts must be under .research/iteration7/ …
 """
 from __future__ import annotations
 
@@ -37,7 +36,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CONFIG_PATH = ROOT / "config" / "config.yaml"
 CONFIG = yaml.safe_load(CONFIG_PATH.read_text())
 
-RESEARCH_DIR = ROOT / ".research" / "iteration6"
+RESEARCH_DIR = ROOT / ".research" / "iteration7"
 IMAGES_DIR = RESEARCH_DIR / "images"
 for _d in [RESEARCH_DIR, IMAGES_DIR]:
     _d.mkdir(parents=True, exist_ok=True)
@@ -167,6 +166,8 @@ def evaluate_cafe_edge(ckpt_paths: List[Path]):
 
     json_path = RESEARCH_DIR / "experiment1_cafe_edge.json"
     json_path.write_text(json.dumps(results, indent=2))
+
+    # Print the JSON content to stdout for verification (as required)
     print("\n================= EXPERIMENT 1 – CaFe-EDGE =================\n")
     print(json.dumps(results, indent=2))
 
