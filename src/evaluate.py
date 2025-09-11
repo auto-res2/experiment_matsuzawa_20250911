@@ -1,6 +1,13 @@
 """
 src/evaluate.py
 Evaluation + simple plotting for CaFe-EDGE.
+Fixed for iteration-5.1:
+  • Removed obsolete `# type: ignore` comment flagged by Ruff.
+  • Evaluation now *recreates* every model from the hyper-parameters that were
+    stored inside each checkpoint, guaranteeing shape compatibility with the
+    corresponding state_dict.  Falls back to config.yaml only if the metadata
+    is absent (e.g. legacy checkpoints).
+  • Artefacts continue to be written to .research/iteration5/ …
 """
 from __future__ import annotations
 
@@ -23,9 +30,9 @@ except ModuleNotFoundError:  # pragma: no cover – fallback stub
     from .tg_stub import install_tg_stub
 
     install_tg_stub()
-    from torch_geometric.data import Batch as PyGBatch
+    from torch_geometric.data import Batch as PyGBatch  # noqa: E402
 
-from .train import CaFeEDGE  # after stub install
+from .train import CaFeEDGE  # after stub install – shares implementation
 from .preprocess import StreamEdgeDataset
 
 # ---------------------------------------------------------------------------
@@ -35,7 +42,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CONFIG_PATH = ROOT / "config" / "config.yaml"
 CONFIG = yaml.safe_load(CONFIG_PATH.read_text())
 
-RESEARCH_DIR = ROOT / ".research" / "iteration4"  # updated path
+RESEARCH_DIR = ROOT / ".research" / "iteration5"
 IMAGES_DIR = RESEARCH_DIR / "images"
 for _d in [RESEARCH_DIR, IMAGES_DIR]:
     _d.mkdir(parents=True, exist_ok=True)
@@ -76,6 +83,21 @@ def _plot_accuracy(results: dict) -> Path:
 #                             EVALUATION
 # ---------------------------------------------------------------------------
 
+def _instantiate_from_ckpt_meta(meta: dict, in_dim: int) -> CaFeEDGE:
+    """Construct a CaFe-EDGE model from the hyper-parameter metadata saved
+    within a checkpoint.
+    """
+    return CaFeEDGE(
+        in_dim=in_dim,
+        hidden=meta["hidden_dim"],
+        layers=meta["gnn_layers"],
+        lambda_E=meta["lambda_E"],
+        lambda_MI=meta["lambda_MI"],
+        epsilon_F=meta["epsilon_F"],
+        epsilon_S=meta["epsilon_S"],
+    )
+
+
 def evaluate_cafe_edge(ckpt_paths: List[Path]):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -90,8 +112,24 @@ def evaluate_cafe_edge(ckpt_paths: List[Path]):
 
     metrics_per_seed = []
     for ckpt in ckpt_paths:
-        model = CaFeEDGE(in_dim=ds_test[0].x.shape[1]).to(device)
-        model.load_state_dict(torch.load(ckpt, map_location=device))
+        payload = torch.load(ckpt, map_location="cpu")
+        state_dict = payload["state_dict"] if isinstance(payload, dict) else payload
+        hparams = payload.get("hparams") if isinstance(payload, dict) else None
+
+        # Fallback to global config if metadata is missing (legacy ckpts)
+        if hparams is None:
+            mdl_cfg = CONFIG["models"]["cafe_edge"]
+            hparams = {
+                "hidden_dim": mdl_cfg["hidden_dim"],
+                "gnn_layers": mdl_cfg["gnn_layers"],
+                "lambda_E": mdl_cfg["lambda_E"],
+                "lambda_MI": mdl_cfg["lambda_MI"],
+                "epsilon_F": mdl_cfg["epsilon_F"],
+                "epsilon_S": mdl_cfg["epsilon_S"],
+            }
+
+        model = _instantiate_from_ckpt_meta(hparams, in_dim=ds_test[0].x.shape[1]).to(device)
+        model.load_state_dict(state_dict, strict=True)
         model.eval()
 
         correct = total = 0

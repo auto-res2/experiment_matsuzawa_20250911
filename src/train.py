@@ -1,6 +1,13 @@
 """
 src/train.py
 Model definitions + training utilities for CaFe-EDGE.
+Fixed for iteration-5.1:
+  • Removed obsolete `# type: ignore` comments that triggered Ruff’s
+    unused-ignore lint error.
+  • Check-point now stores the *full* hyper-parameter dictionary together
+    with the state_dict so that evaluation can always recreate an identical
+    network – eliminates the previous state-dict shape mismatch.
+  • All research artefacts continue to be written to .research/iteration5/ …
 """
 from __future__ import annotations
 
@@ -21,13 +28,11 @@ try:
     from torch_geometric.data import Batch as PyGBatch
     from torch_geometric.nn import SAGEConv, global_mean_pool
 except ModuleNotFoundError:  # pragma: no cover
-    # Install a minimal stub so that the remainder of the code can run on
-    # CPU-only setups without the heavy torch-geometric binaries.
     from .tg_stub import install_tg_stub
 
     install_tg_stub()
-    from torch_geometric.data import Batch as PyGBatch
-    from torch_geometric.nn import SAGEConv, global_mean_pool
+    from torch_geometric.data import Batch as PyGBatch  # noqa: E402
+    from torch_geometric.nn import SAGEConv, global_mean_pool  # noqa: E402
 
 # ---------------------------------------------------------------------------
 #                         CONFIG & DIRECTORY HANDLING
@@ -42,8 +47,8 @@ except FileNotFoundError as e:  # pragma: no cover – fatal for experiment
 
 DATA_DIR = ROOT / "data"
 MODELS_DIR = ROOT / "models"
-# Path update – iteration4 is mandatory for this round
-RESEARCH_DIR = ROOT / ".research" / "iteration4"
+# Path update – iteration5 is mandatory for this round
+RESEARCH_DIR = ROOT / ".research" / "iteration5"
 for _d in [DATA_DIR, MODELS_DIR, RESEARCH_DIR]:
     _d.mkdir(parents=True, exist_ok=True)
 (RESEARCH_DIR / "images").mkdir(parents=True, exist_ok=True)
@@ -57,10 +62,12 @@ class GraphEncoder(nn.Module):
     def __init__(self, in_dim: int, hidden: int, layers: int):
         super().__init__()
         self.convs = nn.ModuleList()
+        # First layer
         self.convs.append(SAGEConv(in_dim, hidden))
+        # Middle layers (if any)
         for _ in range(max(layers - 2, 0)):
             self.convs.append(SAGEConv(hidden, hidden))
-        # Ensure we always have at least 2 layers (SAGEConv requires >1 for skip connections)
+        # Final layer – ensure at least 2 total layers
         if layers > 1:
             self.convs.append(SAGEConv(hidden, hidden))
         self.act = nn.ReLU()
@@ -143,10 +150,13 @@ def _train_single_seed(seed: int, device: torch.device) -> Path:
     )
 
     in_dim = ds_train[0].x.shape[1]
+    hidden_dim = CONFIG["models"]["cafe_edge"]["hidden_dim"]
+    gnn_layers = CONFIG["models"]["cafe_edge"]["gnn_layers"]
+
     model = CaFeEDGE(
         in_dim=in_dim,
-        hidden=CONFIG["models"]["cafe_edge"]["hidden_dim"],
-        layers=CONFIG["models"]["cafe_edge"]["gnn_layers"],
+        hidden=hidden_dim,
+        layers=gnn_layers,
         lambda_E=CONFIG["models"]["cafe_edge"]["lambda_E"],
         lambda_MI=CONFIG["models"]["cafe_edge"]["lambda_MI"],
         epsilon_F=CONFIG["models"]["cafe_edge"]["epsilon_F"],
@@ -174,11 +184,23 @@ def _train_single_seed(seed: int, device: torch.device) -> Path:
             scaler.step(opt)
             scaler.update()
             opt.zero_grad()
-        # Validation omitted – early-stopping not critical for reference implementation.
+        # Validation omitted – single epoch only for CI.
 
-    ckpt = MODELS_DIR / f"cafe_edge_seed{seed}.pt"
-    torch.save(model.state_dict(), ckpt)
-    return ckpt
+    ckpt_path = MODELS_DIR / f"cafe_edge_seed{seed}.pt"
+    ckpt_payload = {
+        "state_dict": model.state_dict(),
+        "hparams": {
+            "in_dim": in_dim,
+            "hidden_dim": hidden_dim,
+            "gnn_layers": gnn_layers,
+            "lambda_E": CONFIG["models"]["cafe_edge"]["lambda_E"],
+            "lambda_MI": CONFIG["models"]["cafe_edge"]["lambda_MI"],
+            "epsilon_F": CONFIG["models"]["cafe_edge"]["epsilon_F"],
+            "epsilon_S": CONFIG["models"]["cafe_edge"]["epsilon_S"],
+        },
+    }
+    torch.save(ckpt_payload, ckpt_path)
+    return ckpt_path
 
 
 def train_all_seeds(device: torch.device) -> List[Path]:

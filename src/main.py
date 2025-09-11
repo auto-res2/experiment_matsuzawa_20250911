@@ -1,11 +1,11 @@
 """
 src/main.py
-Entry-point: orchestrates full experimental workflow.
-Run via:  python -m src.main
+Entry-point orchestrating full experimental workflow.
+Fixed for iteration-5:
+  • Updated banner text to Iteration-5 to match artefact paths.
 """
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 import torch
@@ -20,7 +20,7 @@ CONFIG = yaml.safe_load((ROOT / "config" / "config.yaml").read_text())
 
 def main():  # noqa: D401 – imperative main OK
     print("************************************************************")
-    print("  CaFe-EDGE  –  Reproducibility Suite (Iteration-4)")
+    print("  CaFe-EDGE  –  Reproducibility Suite (Iteration-5)")
     print("  Strict-No-Fallback is active – real data mandatory (tiny CI sample provided).")
     print("************************************************************\n")
 
