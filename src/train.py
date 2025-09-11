@@ -22,11 +22,12 @@ from transformers import (
 # Logger – used across the small code-base (imported by other modules)
 # ---------------------------------------------------------------------
 
-def get_logger(name: str, log_dir: Path | None = None) -> logging.Logger:
+def get_logger(name: str, log_dir: Path | None = None) -> logging.Logger:  # noqa: D401
     """Return a configured logger that writes both to console and (optionally)
-    to *log_dir*. The function is intentionally placed in *train.py* so that all
-    other modules can simply `from .train import get_logger` without creating
-    extra files (STRICT FILE CONSTRAINT).
+    to *log_dir*.
+    
+    Placing the helper here avoids an extra module and allows other files to
+    simply `from .train import get_logger`.
     """
     logger = logging.getLogger(name)
 
@@ -70,6 +71,7 @@ _MODELS: Dict[str, str] = {
 
 def load_all(model_dir: Path) -> Tuple[dict, dict]:
     """Download/instantiate the three foundation models required by the paper.
+
     Returns two dictionaries: *models* and *processors*.
     Execution terminates with *RuntimeError* if anything fails in order to
     comply with the STRICT NO-FALLBACK RULE.
@@ -80,44 +82,44 @@ def load_all(model_dir: Path) -> Tuple[dict, dict]:
     models: Dict[str, object] = {}
     processors: Dict[str, object] = {}
 
-    # MobileViT-S ---------------------------------------------------------
+    # MobileViT-S -------------------------------------------------------
     logger.info("Loading MobileViT-S (vision backbone)")
     try:
         models["mobilevit"] = AutoModelForImageClassification.from_pretrained(
-            _MODELS["mobilevit"], cache_dir=str(model_dir / "mobilevit")
+            _MODELS["mobilevit"], cache_dir=str(model_dir / "mobilevit"), local_files_only=False
         )
         processors["mobilevit"] = AutoProcessor.from_pretrained(
-            _MODELS["mobilevit"], cache_dir=str(model_dir / "mobilevit")
+            _MODELS["mobilevit"], cache_dir=str(model_dir / "mobilevit"), local_files_only=False
         )
     except Exception as e:
         logger.error("MobileViT could not be loaded: %s", e)
-        raise RuntimeError("Model download failure – terminating execution.")
+        raise RuntimeError("Model download failure – terminating execution.") from e
 
-    # Whisper-Tiny --------------------------------------------------------
+    # Whisper-Tiny ------------------------------------------------------
     logger.info("Loading Whisper-Tiny (audio backbone)")
     try:
         models["whisper"] = WhisperForConditionalGeneration.from_pretrained(
-            _MODELS["whisper"], cache_dir=str(model_dir / "whisper")
+            _MODELS["whisper"], cache_dir=str(model_dir / "whisper"), local_files_only=False
         )
         processors["whisper"] = WhisperProcessor.from_pretrained(
-            _MODELS["whisper"], cache_dir=str(model_dir / "whisper")
+            _MODELS["whisper"], cache_dir=str(model_dir / "whisper"), local_files_only=False
         )
     except Exception as e:
         logger.error("Whisper could not be loaded: %s", e)
-        raise RuntimeError("Model download failure – terminating execution.")
+        raise RuntimeError("Model download failure – terminating execution.") from e
 
-    # DistilBERT ----------------------------------------------------------
+    # DistilBERT --------------------------------------------------------
     logger.info("Loading DistilBERT-base (text backbone)")
     try:
         models["distilbert"] = DistilBertForMaskedLM.from_pretrained(
-            _MODELS["distilbert"], cache_dir=str(model_dir / "distilbert")
+            _MODELS["distilbert"], cache_dir=str(model_dir / "distilbert"), local_files_only=False
         )
         processors["distilbert"] = DistilBertTokenizerFast.from_pretrained(
-            _MODELS["distilbert"], cache_dir=str(model_dir / "distilbert")
+            _MODELS["distilbert"], cache_dir=str(model_dir / "distilbert"), local_files_only=False
         )
     except Exception as e:
         logger.error("DistilBERT could not be loaded: %s", e)
-        raise RuntimeError("Model download failure – terminating execution.")
+        raise RuntimeError("Model download failure – terminating execution.") from e
 
     logger.info("All backbone models downloaded successfully")
     return models, processors
@@ -126,15 +128,16 @@ def load_all(model_dir: Path) -> Tuple[dict, dict]:
 # Continual-learning algorithm stub (formerly *taco.py*)
 # ---------------------------------------------------------------------
 
-class TACOModel:  # noqa: D101 – documented in docstring below
+
+class TACOModel:  # noqa: D101 – docstring below suffices
     """Stub for the proprietary TACO continual learner.
 
-    The actual algorithm is *not* part of the public reference. Any attempt to
+    The actual algorithm is **not** part of the public reference. Any attempt to
     instantiate the class will raise *NotImplementedError* – thereby enforcing
     the STRICT NO-FALLBACK RULE that forbids silent degradation of results.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs):  # noqa: D401
         raise NotImplementedError(
             "TACO research implementation is proprietary and not included in this "
             "public reference. Please integrate the full algorithm before use."

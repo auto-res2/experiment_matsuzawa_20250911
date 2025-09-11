@@ -4,6 +4,11 @@ Steps:
 1. Download/validate datasets.
 2. Download foundation models.
 3. Attempt to initialise TACO (will raise *NotImplementedError*).
+
+Path updates:
+    • All images must reside under `.research/iteration2/images`.
+    • All JSON artefacts must reside directly under `.research/iteration2/`.
+The constants below have therefore been updated accordingly.
 """
 from __future__ import annotations
 
@@ -22,8 +27,8 @@ from .train import load_all, TACOModel
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 MODEL_DIR = ROOT / "models"
-RESULT_DIR = ROOT / ".research" / "iteration1"
-FIG_DIR = RESULT_DIR / "images"
+RESULT_DIR = ROOT / ".research" / "iteration2"
+FIG_DIR = RESULT_DIR / "images"  # mandatory location per spec
 CONFIG_PATH = ROOT / "config" / "config.yaml"
 
 # ---------------------------------------------------------------------
@@ -35,9 +40,7 @@ def main() -> None:  # noqa: D401 – imperative mood is fine here
     logger.info("========== Experiment Launcher ==========")
 
     # ------------------------------------------------------------------
-    # 0. Load configuration (not strictly needed for the minimal script
-    #    but demonstrates correct YAML handling & will be useful once the
-    #    proprietary TACO implementation is plugged in).
+    # 0. Load configuration --------------------------------------------
     # ------------------------------------------------------------------
     try:
         cfg = yaml.safe_load(CONFIG_PATH.read_text())
@@ -47,7 +50,7 @@ def main() -> None:  # noqa: D401 – imperative mood is fine here
         sys.exit(1)
 
     # ------------------------------------------------------------------
-    # 1. Data acquisition ------------------------------------------------
+    # 1. Data acquisition ----------------------------------------------
     # ------------------------------------------------------------------
     logger.info("Step 1/3: Downloading datasets …")
     try:
@@ -57,7 +60,7 @@ def main() -> None:  # noqa: D401 – imperative mood is fine here
         sys.exit(1)
 
     # ------------------------------------------------------------------
-    # 2. Backbone models -------------------------------------------------
+    # 2. Backbone models -----------------------------------------------
     # ------------------------------------------------------------------
     logger.info("Step 2/3: Downloading backbone models …")
     try:
@@ -67,7 +70,7 @@ def main() -> None:  # noqa: D401 – imperative mood is fine here
         sys.exit(1)
 
     # ------------------------------------------------------------------
-    # 3. Instantiate TACO -----------------------------------------------
+    # 3. Instantiate TACO ----------------------------------------------
     # ------------------------------------------------------------------
     logger.info("Step 3/3: Initialising TACO …")
     try:
@@ -79,8 +82,9 @@ def main() -> None:  # noqa: D401 – imperative mood is fine here
         )
         sys.exit(1)
 
-    # The code below is unreachable until TACO is available. It is preserved
-    # for completeness (results saving & printing requirements).
+    # ------------------------------------------------------------------
+    # The code below will become reachable once TACO is integrated.  It
+    # already fulfils the mandatory JSON-saving policy.
     # ------------------------------------------------------------------
     # results = {"status": "success"}
     # RESULT_DIR.mkdir(parents=True, exist_ok=True)
