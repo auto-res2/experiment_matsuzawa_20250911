@@ -488,6 +488,68 @@
       }
     }
   ],
+  "reference_research_study_list": [
+    {
+      "title": "Online continual learning with maximal interfered retrieval"
+    },
+    {
+      "title": "Task-free continual learning"
+    },
+    {
+      "title": "Gradient based sample selection for online continual learning"
+    },
+    {
+      "title": "Gradient ﬂows: In metric spaces and in the space of probability measures"
+    },
+    {
+      "title": "Stochastic Processes"
+    },
+    {
+      "title": "Convex optimization"
+    },
+    {
+      "title": "Towards evaluating the robustness of neural networks"
+    },
+    {
+      "title": "Efﬁcient lifelong learning with a-gem"
+    },
+    {
+      "title": "Continual learning with tiny episodic memories"
+    },
+    {
+      "title": "Stochastic gradient hamiltonian monte carlo"
+    },
+    {
+      "title": "Svgd as a kernelized wasserstein gradient ﬂow of the chi-squared divergence"
+    },
+    {
+      "title": "Online continual learning from imbalanced data"
+    },
+    {
+      "title": "Task agnostic continual learning via meta learning"
+    },
+    {
+      "title": "Gradient-based editing of memory examples for online task-free continual learning"
+    },
+    {
+      "title": "The variational formulation of the fokker–planck equation"
+    },
+    {
+      "title": "Overcoming catastrophic forgetting in neural networks"
+    },
+    {
+      "title": "Learning multiple layers of features from tiny images"
+    },
+    {
+      "title": "A neural dirichlet process mixture model for task-free continual learning"
+    },
+    {
+      "title": "Understanding mcmc dynamics as ﬂows on the wasserstein spac"
+    },
+    {
+      "title": "Stein variational gradient descent as gradient ﬂow"
+    }
+  ],
   "new_method": {
     "method": "Open Problems: 1. Can on-device continual learners survive with *sub-kilobyte* memories when the data stream is (a) unlabeled, (b) exhibits gradual concept drift and (c) spans several modalities?  \n2. How to guarantee both *differential privacy* and *membership-inference resilience* when the same tiny memory is replayed thousands of times?  \n3. What is the *joint optimum* of (memory bytes, energy per sample, latency) – i.e. an information-theoretic Pareto frontier – and can a practical system match it across vision, audio and text?  \n4. How to make such memories *federatable* without any shared codec or task boundaries while keeping communication <100 B per round?  \n5. How can codebooks remain useful when the backbone itself is updated by larger foundation-model checkpoints that arrive intermittently on the device?\nMethods: We propose TACO (Task-Agnostic COnstant-memory learning), a successor to ZIPP that pushes the budget down to 512 bytes and adds foundation-model compatibility.\nA. Self-Supervised Drift Probes  \n• Replace conformal distance with a lightweight contrastive probe trained online; its temperature is used as a proxy for distributional change—works without labels.  \n• The probe’s running entropy drives a PID controller that decides whether to recycle, merge or allocate new codes (no manual thresholds).\nB. Universal 4-Level Codebook  \n• L0: 32 sinusoidal bases (positional) – hard-wired.  \n• L1: 128 learned orthogonal vectors shared across modalities (6-bit addresses) stored once per device (≈1 kB Flash).  \n• L2: 256 user-specific *delta* codes (8-bit) learned by product quantisation.  \n• L3: Event-specific XOR-sketches (24–48 bit) produced by a single pass of locality-sensitive Bloom pooling.  \n• A streaming weighted set-cover algorithm guarantees |L2∪L3|≤64 ⇒ total ≤512 B including timestamps.\nC. Elastic LoRA Patching  \n• Instead of one hyper-decoder, TACO writes LoRA rank-1 patches *directly* into backbone layers; patches are addressed by (L1,L2,L3) triples and applied only if the probe entropy signals relevance.  \n• This avoids any extra forward pass even for multi-modal models.\nD. Dual-Privacy Guard  \n• Gaussian DP on stored statistics (as in ZIPP) *plus* a new randomized response on address bits → provable (ε,δ)-DP *and* membership-inference leakage ≤1 bit.  \n• Homomorphic averaging now works on *entropy-weighted* counts so that rare-event information travels faster across peers.\nE. Memory–Energy–Accuracy Bound  \n• We extend ZIPP’s rate–distortion–forgetting theorem to include energy: E≥Ω(B⁻¹ log²m).  \n• Show that LoRA patching makes TACO match the bound within 1.2× on both ARM Cortex-A55 and Pixel TPU-lite.\nF. Foundation-Model Sync  \n• When a new backbone checkpoint (e.g. MobileViT-L) is pushed, a small adaptor network projects old codes; costs 0.3× original backbone FLOPs once, after which memory resumes at 512 B.\nExperimental Setup: Streams & Benchmarks  \nVision: Ego4D-clips (video), ImageNet-1K (224²), and RingCam-360 continuous home-robot feed.  \nAudio: LibriSpeech chronological stream + UrbanSound8K online recordings.  \nText: Wikipedia + Reddit Live-feed for masked-LM.  \nHardware:  Cortex-M55 microcontroller (128 kB SRAM), Raspberry-Pi 5, Pixel 8a; energy via INA260 + on-chip PMU counters.  \nBaselines: ZIPP (1 kB), DER++, SparCL, KCL, LOC, ULC, and a 512 B oracle.  \nMetrics: Avg Acc, BWT, Online mAP (for detection), bytes total, SRAM peak, Joules/sample, latency, ε-DP, MI-attack AUC, comm bytes/round.  \nAblations: probe type, LoRA rank (1–4), Bloom pool size, adaptor frequency, foundation-model swap.  \nRobustness: 20 % label noise, adversarial PGD, synthetic gradual drift.\nExpected Result: • TACO retains >97 % of joint-training accuracy on ImageNet-1K after 1 000 drift events with exactly 512 B memory (-0.8 % forgetting).  \n• Average energy per video frame: 3.1 mJ (-45 % vs SparCL, ‑30 % vs ZIPP).  \n• Membership-inference attack success ≤51 % (random) while ε≤0.8.  \n• Federated entropy-weighted exchange adds +2.5 % FWT using only 64 B uplink.  \n• After swapping MobileViT-S→MobileViT-L, adaptor converges in 180 ms and memory remains at 512 B with <1 % accuracy drop.\nExpected Conclusion: TACO shows that *half-kilobyte*, privacy-safe memories are sufficient for unlabeled, multi-modal continual learning on commodity edge hardware—even when the underlying backbone evolves. By unifying self-supervised drift probes, Bloom-pooled sketches and LoRA patching under a strict 512 B contract, it matches new information-theoretic bounds on memory-energy trade-offs and withstands membership attacks. This paves the way for sustainable, always-on learning in wearables, micro-drones and medical implants without cloud dependence.",
     "experimental_design": {
