@@ -6,5 +6,82 @@
     "rehearsal coreset selection",
     "continual learning parameter pruning",
     "knowledge distillation continual learning"
+  ],
+  "research_study_list": [
+    {
+      "title": "Continual Learning in Low-rank Orthogonal Subspaces"
+    },
+    {
+      "title": "Contextual Transformation Networks for Online Continual Learning"
+    },
+    {
+      "title": "Improving Task-free Continual Learning by Distributionally Robust Memory Evolution"
+    },
+    {
+      "title": "Improving Task-free Continual Learning by Distributionally Robust Memory Evolution"
+    },
+    {
+      "title": "SparCL: Sparse Continual Learning on the Edge"
+    },
+    {
+      "title": "Online Learned Continual Compression with Adaptive Quantization Modules"
+    },
+    {
+      "title": "Remember the Past: Distilling Datasets into Addressable Memories for Neural Networks"
+    },
+    {
+      "title": "Contextual Transformation Networks for Online Continual Learning"
+    },
+    {
+      "title": "Forget-free Continual Learning with Winning Subnetworks"
+    },
+    {
+      "title": "Forget-free Continual Learning with Winning Subnetworks"
+    },
+    {
+      "title": "Fast Bayesian Coresets via Subsampling and Quasi-Newton Refinement"
+    },
+    {
+      "title": "Probabilistic Bilevel Coreset Selection"
+    },
+    {
+      "title": "Probabilistic Bilevel Coreset Selection"
+    },
+    {
+      "title": "Policy Rehearsing: Training Generalizable Policies for Reinforcement Learning"
+    },
+    {
+      "title": "Black-box coreset variational inference"
+    },
+    {
+      "title": "Uncertainty-guided Continual Learning with Bayesian Neural Networks"
+    },
+    {
+      "title": "SparCL: Sparse Continual Learning on the Edge"
+    },
+    {
+      "title": "Bayesian Structural Adaptation for Continual Learning"
+    },
+    {
+      "title": "Scalable and Order-robust Continual Learning with Additive Parameter Decomposition"
+    },
+    {
+      "title": "Long Live the Lottery: The Existence of Winning Tickets in Lifelong Learning"
+    },
+    {
+      "title": "Rethinking Momentum Knowledge Distillation in Online Continual Learning"
+    },
+    {
+      "title": "Heterogeneous Continual Learning"
+    },
+    {
+      "title": "Prototype-Sample Relation Distillation: Towards Replay-Free Continual Learning"
+    },
+    {
+      "title": "Preserving Linear Separability in Continual Learning by Backward Feature Projection"
+    },
+    {
+      "title": "Provable Contrastive Continual Learning"
+    }
   ]
 }
