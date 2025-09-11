@@ -1,0 +1,31 @@
+=== uv sync start Thu Sep 11 07:35:38 AM UTC 2025 ===
+=== uv install end Thu Sep 11 07:36:40 AM UTC 2025 ===
+=== experiment start Thu Sep 11 07:36:40 AM UTC 2025 ===
+
+=== Experiment 1 – Component-level Compression & Reliability ===
+Epoch 0: loss=1.791  time=36.2s
+Epoch 1: loss=1.596  time=29.5s
+
+Experimental numerical data:
+{
+  "timestamp": "2025-09-11T07:38:38.837642",
+  "top1": 0.44745999574661255,
+  "min_class": 0.1940000057220459,
+  "train_logs": {
+    "epoch_0_loss": 1.7912283613204956,
+    "epoch_1_loss": 1.595970411567688
+  },
+  "config": {
+    "use_causal": true,
+    "ecc_r": 14,
+    "sram_protect": true,
+    "lr": "3e-4",
+    "batch_size": 16,
+    "epochs": 2
+  }
+}
+Names of figures summarising the numerical data:
+images/training_loss_phoenix_mem.pdf
+
+All requested experiments completed in 1.79 min.
+=== experiment end Thu Sep 11 07:38:43 AM UTC 2025 ===
