@@ -1,0 +1,5 @@
+=== uv sync start Thu Sep 11 05:29:28 AM UTC 2025 ===
+=== uv install end Thu Sep 11 05:30:33 AM UTC 2025 ===
+=== experiment start Thu Sep 11 05:30:33 AM UTC 2025 ===
+EdgeBench-48 archive not found locally and remote download is disabled inside the test sandbox.  Creating a placeholder …
+Extracting dataset to data/EdgeBench-48-v1.2 (this may consume >1 TB disk)
