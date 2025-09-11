@@ -1,7 +1,7 @@
 from __future__ import annotations
 """src/main.py
 Entry-point that orchestrates the three studies and stores every artefact in
-``.research/iteration13`` exactly as required by the specification.
+``.research/iteration14`` exactly as required by the specification.
 Run with e.g.::
 
     python -m tiny_taco.main  # runs all studies on CPU
@@ -40,7 +40,7 @@ def main():  # noqa: D403
     args = _parse_args()
 
     # All artefacts – JSON logs and figures – must live here per spec
-    out_dir = Path(".research/iteration13")
+    out_dir = Path(".research/iteration14")
     out_dir.mkdir(parents=True, exist_ok=True)
 
     device = torch.device(args.device)
