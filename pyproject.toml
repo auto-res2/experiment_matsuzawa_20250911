@@ -1,11 +1,11 @@
 [project]
 name = "hydrasketch_phi_experiment"
-version = "0.1.0"
-description = "Research code for HydraSketch-Φ continual-learning experiments"
+version = "0.1.1"
+description = "Research code for HydraSketch-Φ continual-learning experiments (CI edition)"
 requires-python = ">=3.9"
 # ------------------------------------------------------------------
-# Core, *always* needed dependencies.  Heavy ML libraries like Torch are
-# intentionally excluded because the CI stub never touches them.
+# Core dependencies – heavy ML libs intentionally excluded so that the
+# analytical CI path remains lightweight.
 # ------------------------------------------------------------------
 dependencies = [
     "requests>=2.25.0",
@@ -21,7 +21,7 @@ build-backend = "setuptools.build_meta"
 where = ["src"]
 
 [project.optional-dependencies]
-# Reserved for future, full-scale runs only.
+# Reserved for full-scale hardware runs.
 full = [
     "torch>=1.9.0",
 ]

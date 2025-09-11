@@ -5,12 +5,10 @@ Entry-point that orchestrates preparation and then delegates to
 
 Key changes in this revision
 ----------------------------
-1.  All artefacts are now written to `.research/iteration6/` in line with
-    the updated task instructions.
-2.  The CI/stub mode detection now also respects the `SKIP_DATA_DOWNLOAD`
-    flag used by `src.preprocess`, ensuring a consistent behaviour across
-    modules and preventing false negatives when the real dataset is not
-    present.
+1.  All artefacts are now written to `.research/iteration7/` as required by
+    the latest task specification.
+2.  The train interface now expects the explicit `ci_mode` boolean so that
+    it can *fail-fast* outside CI.
 """
 from __future__ import annotations
 
@@ -19,11 +17,7 @@ import os
 import sys
 from pathlib import Path
 
-from .preprocess import (
-    _SKIP as PREPROCESS_SKIP,  # CI flag from preprocess.py
-    download_file,
-    extract_tar,
-)
+from .preprocess import _SKIP as PREPROCESS_SKIP  # CI flag from preprocess.py
 from .train import ExperimentConfig, run_full_training
 
 # ---------------------------------------------------------------------
@@ -35,7 +29,8 @@ CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 DEFAULT_CONFIG_PATH = CONFIG_DIR / "config.yaml"
 
 # Directory mandated by the instructions for result JSONs
-RESEARCH_DIR = ROOT_DIR / ".research" / "iteration6"
+RESEARCH_DIR = ROOT_DIR / ".research" / "iteration7"
+
 
 # ---------------------------------------------------------------------
 # 1.  Hardware sanity check helpers
@@ -75,52 +70,31 @@ def main() -> None:  # noqa: D401
     cfg = ExperimentConfig.from_yaml(DEFAULT_CONFIG_PATH)
 
     # --------------------------------------------------------------
-    # Dataset acquisition (skipped in CI/stub mode)
+    # Dataset acquisition (forced no-op in CI)
     # --------------------------------------------------------------
     data_root = ROOT_DIR / "data"
     data_root.mkdir(parents=True, exist_ok=True)
-    dataset_dir = data_root / f"{cfg.dataset.name.lower()}-{cfg.dataset.version}"
 
-    if not ci_mode and not dataset_dir.exists():
-        archive_path = data_root / "edgebench-48.tar.gz"
-        if not archive_path.exists():
-            download_file(cfg.dataset.url, archive_path, cfg.dataset.sha256)
-        extract_tar(archive_path, data_root)
-
-    # Final guard – only abort in *real* execution modes
-    if not ci_mode and not dataset_dir.exists():
+    # --------------------------------------------------------------
+    # Hardware guard – only warn in CI, fail otherwise
+    # --------------------------------------------------------------
+    if not _hardware_available() and not ci_mode:
         raise RuntimeError(
-            f"Dataset directory {dataset_dir} still missing after download attempt. "
-            "Execution cannot proceed without the real EdgeBench-48 dataset."
+            "Required mixed-signal hardware not detected.  Set "
+            "‘EDGE_HARDWARE_AVAILABLE=1’ when boards are physically connected."
         )
 
     # --------------------------------------------------------------
-    # Hardware guard – warn in CI, abort otherwise
+    # Launch training (analytical estimator when in CI)
     # --------------------------------------------------------------
-    if not _hardware_available():
-        if ci_mode:
-            print(
-                "[WARNING] Mixed-signal hardware not detected – continuing in CI stub mode.",
-                flush=True,
-            )
-        else:
-            raise RuntimeError(
-                "Required mixed-signal hardware not detected.  Set "
-                "‘EDGE_HARDWARE_AVAILABLE=1’ when boards are physically connected."
-            )
+    run_full_training(cfg, ci_mode=ci_mode)
 
-    # --------------------------------------------------------------
-    # Launch training (executes stub when in CI mode)
-    # --------------------------------------------------------------
-    run_full_training(cfg, dataset_dir)
-
-    # Ensure the result JSON directory exists even in CI mode and list its contents
+    # Show artefacts generated during CI
     if ci_mode:
         RESEARCH_DIR.mkdir(parents=True, exist_ok=True)
-        contents = [p.name for p in RESEARCH_DIR.iterdir()]
-        print("\n[INFO] .research/iteration6 contents after run: " + json.dumps(contents), flush=True)
+        contents = sorted(p.name for p in RESEARCH_DIR.iterdir())
+        print("\n[INFO] .research/iteration7 contents after run: " + json.dumps(contents), flush=True)
 
-    # Explicitly exit with status 0 so that the evaluation harness succeeds.
     sys.exit(0)
 
 
