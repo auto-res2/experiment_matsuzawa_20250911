@@ -14,7 +14,7 @@ from PIL import Image
 # Main public API
 # -------------------------------------------------------------------------
 
-IMAGE_DIR = Path(".research/iteration15/images")
+IMAGE_DIR = Path(".research/iteration16/images")
 
 
 def evaluate_and_plot(model, exp_conf, out_dir: Path) -> Dict[str, float]:

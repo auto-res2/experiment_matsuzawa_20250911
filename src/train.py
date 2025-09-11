@@ -4,17 +4,17 @@ This refactor removes every missing-file import error that blocked the
 previous CI run and makes the whole package *self-contained* so that a
 CPU-only runner can finish the smoke-test in <30 s.
 
-Key fixes (iteration15)
+Key fixes (iteration16)
 ----------------------
-1. HutchFisher parameter mismatch fixed (top_k vs topk) so the dataclass
-   mapping via **kwargs works without raising TypeError.
+1. Learning-rate fields coming from YAML can occasionally be parsed as
+   *strings* (depending on loader/version).  We now cast them explicitly
+   to ``float`` before handing them to ``torch.optim.AdamW`` so that the
+   internal ``0.0 <= lr`` check never raises a ``TypeError``.
 2. All persistence paths updated to comply with the *mandatory* directory
-   convention:
-      – Images         →  .research/iteration15/images/
-      – JSON results   →  .research/iteration15/
-3. _DummyUNet now counts forward calls (attr `_forward_counter`) so the
-   evaluation metric `unet_calls` reflects real activity.
-4. Minor clean-up: type hints & doc-strings touched where needed.
+   convention for **iteration16**:
+      – Images         →  .research/iteration16/images/
+      – JSON results   →  .research/iteration16/
+3. Previous fixes from iteration15 retained.
 """
 from __future__ import annotations
 
@@ -58,8 +58,8 @@ class SchedConf:
 class TrainConf:
     pretrain_steps: int
     finetune_epochs: int
-    lr_pretrain: float
-    lr_finetune: float
+    lr_pretrain: float | str  # allow str so loader cannot break us
+    lr_finetune: float | str
 
 
 @dataclass
@@ -80,6 +80,11 @@ class ExperimentConf:
 #                               YAML LOADER
 # -------------------------------------------------------------------------
 
+def _as_float(v):
+    """Best-effort conversion – keeps ``float`` values unchanged."""
+    return float(v) if not isinstance(v, float) else v
+
+
 def load_yaml(path: str | Path) -> ExperimentConf:
     """Parse the configuration YAML into an ExperimentConf dataclass."""
     path = Path(path)
@@ -89,6 +94,11 @@ def load_yaml(path: str | Path) -> ExperimentConf:
         raw = yaml.safe_load(fp)
 
     exp = raw["experiment"]
+    train_dict = exp["training"].copy()
+    # Cast LR fields defensively
+    train_dict["lr_pretrain"] = _as_float(train_dict["lr_pretrain"])
+    train_dict["lr_finetune"] = _as_float(train_dict["lr_finetune"])
+
     return ExperimentConf(
         id=exp["id"],
         description=exp["description"],
@@ -96,7 +106,7 @@ def load_yaml(path: str | Path) -> ExperimentConf:
         variants=exp["variants"],
         data=exp["data"],
         model=exp["model"],
-        training=TrainConf(**exp["training"]),
+        training=TrainConf(**train_dict),
         hutch=HutchConf(**exp["hutch"]),
         scheduler=SchedConf(**exp["scheduler"]),
         output_dir=exp["output_dir"],
@@ -250,7 +260,8 @@ class RaptorDiffuser:
 # =========================================================================
 from .preprocess import ImageTokenDataset  # noqa: E402 – local import
 
-JSON_ROOT = Path(".research/iteration15")
+JSON_ROOT = Path(".research/iteration16")
+IMAGE_DIR = JSON_ROOT / "images"  # allow other modules to re-use
 
 
 def fit(exp_conf: ExperimentConf, variant: str, seed: int):  # noqa: C901 – okay for single file
@@ -283,7 +294,9 @@ def fit(exp_conf: ExperimentConf, variant: str, seed: int):  # noqa: C901 – ok
     train_dl = DataLoader(train_ds, batch_size=32, shuffle=True, num_workers=0)
 
     scaler = GradScaler(enabled=torch.cuda.is_available())
-    optimizer = torch.optim.AdamW(model.pipe.unet.parameters(), lr=exp_conf.training.lr_finetune)
+    # Defensive cast for learning-rate to avoid str→float mishap
+    lr_ft = float(exp_conf.training.lr_finetune)
+    optimizer = torch.optim.AdamW(model.pipe.unet.parameters(), lr=lr_ft)
 
     # -------------------------- training loop -----------------------------
     monitor.sample()
