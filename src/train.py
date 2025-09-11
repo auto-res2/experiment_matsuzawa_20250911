@@ -72,12 +72,23 @@ def _load_numpy(params: Sequence[object], model: nn.Module):
             raise ValueError("Not enough tensors when loading NumPy weights") from exc
 
         # ------------------------------------------------------------------
-        # 1) Decode – bytes → ndarray if needed
+        # 1) Decode – bytes → ndarray if needed. We must be robust to dtype
+        #     disparities introduced during aggregation (e.g. float32 → float64).
         # ------------------------------------------------------------------
         if isinstance(p_src, bytes):
-            # Re-construct an ndarray with the correct dtype/shape directly
-            # from the serialized raw bytes created by ``np.ndarray.tobytes``
-            dtype = p_torch.detach().cpu().numpy().dtype
+            # Determine dtype by inspecting byte length; aggregated parameters
+            # might be float64 even if the original model used float32.
+            n_elems = p_torch.numel()
+            expected_bytes_fp32 = n_elems * 4
+            expected_bytes_fp64 = n_elems * 8
+            if len(p_src) == expected_bytes_fp32:
+                dtype = np.float32
+            elif len(p_src) == expected_bytes_fp64:
+                dtype = np.float64
+            else:
+                raise ValueError(
+                    "Parameter size mismatch when loading NumPy weights (raw-bytes)"
+                )
             p_np = np.frombuffer(p_src, dtype=dtype)
         elif isinstance(p_src, np.ndarray):
             p_np = p_src
@@ -93,8 +104,11 @@ def _load_numpy(params: Sequence[object], model: nn.Module):
         if p_torch.numel() != p_np.size:
             raise ValueError("Parameter size mismatch when loading NumPy weights")
 
-        # Shape the array and copy into the model parameter (on the right device)
-        p_torch.data = torch.from_numpy(p_np.reshape(p_torch.shape)).to(p_torch.device)
+        # 3) Copy data (casting dtype if necessary) --------------------------
+        tensor = torch.from_numpy(p_np.reshape(p_torch.shape))
+        if tensor.dtype != p_torch.dtype:
+            tensor = tensor.to(p_torch.dtype)
+        p_torch.data.copy_(tensor.to(p_torch.device))
 
 
 # ---------------------------------------------------------------------------
