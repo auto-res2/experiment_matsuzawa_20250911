@@ -1,70 +1,58 @@
 # src/preprocess.py
-"""Dataset download & preprocessing utilities.
-Downloads public datasets from the HuggingFace Hub into ./data/ and raises
-DatasetNotFound if a download fails – complying with the *strict no-fallback*
-rule in the policy.
-"""
+"""Dataset loading and preparation layer – no synthetic fallbacks allowed."""
 from __future__ import annotations
 
-import pathlib
-from typing import Optional
+import sys
+import os
+import signal
+from pathlib import Path
 
-import datasets as hf_datasets  # Ensure module is available for type hints
-from datasets import load_dataset, DatasetDict, Dataset  # huggingface-datasets package
+import torch
+from datasets import load_dataset, DownloadConfig
+from torch_geometric.data import Data, InMemoryDataset
 
-__all__ = ["ensure_dataset", "DatasetNotFound"]
+# ---------------------------------------------------------------------------
+#  Local abort helper (kept minimal to avoid circular imports)
+# ---------------------------------------------------------------------------
 
-DATA_ROOT = pathlib.Path("data").resolve()
-DATA_ROOT.mkdir(exist_ok=True)
-
-
-class DatasetNotFound(RuntimeError):
-    """Raised when a dataset could not be retrieved from the HF hub."""
-
-
-def _extract_cache_folder(ds: Dataset) -> pathlib.Path:
-    """Return the physical cache folder that stores *ds* on disk.
-
-    Parameters
-    ----------
-    ds : datasets.Dataset
-        A single split of a HuggingFace dataset.
-    """
-    if not getattr(ds, "cache_files", None):
-        raise RuntimeError(
-            "Dataset object has no cache_files attribute – cannot locate files on disk."
-        )
-    return pathlib.Path(ds.cache_files[0]["filename"]).parent
+def abort(msg: str):
+    print(f"FATAL: {msg}", file=sys.stderr)
+    sys.stderr.flush()
+    os.kill(os.getpid(), signal.SIGTERM)
 
 
-def ensure_dataset(repo: str, *, split: str | None = None) -> pathlib.Path:
-    """Download `repo` from the HuggingFace hub and return the local folder.
+# ---------------------------------------------------------------------------
+#  Partition dataset class
+# ---------------------------------------------------------------------------
 
-    Parameters
-    ----------
-    repo: str
-        e.g. "ag_news" or "SocialGrep/one-year-of-tsla-on-reddit".
-    split: Optional[str]
-        Passed on to `datasets.load_dataset`.  None → the builder decides.
-    """
-    try:
-        ds = load_dataset(
-            repo,
-            split=split,
-            cache_dir=str(DATA_ROOT / repo.replace("/", "_")),
-        )
+class FedPartitionDataset(InMemoryDataset):
+    """HuggingFace FedGraph partition  →  PyG Data."""
 
-        # `load_dataset` returns either a Dataset (when split is given) or
-        # a DatasetDict.  We need a *single* split to locate the cache folder.
-        if isinstance(ds, DatasetDict):
-            # Take the first available split deterministically.
-            first_split = ds[next(iter(ds))]
-        else:
-            first_split = ds  # already a Dataset
+    def __init__(self, repo_id: str, root: Path):
+        self.repo_id = repo_id
+        self._root = root
+        super().__init__(str(root))
+        self.data, self.slices = torch.load(self.processed_paths[0])
 
-        return _extract_cache_folder(first_split)
-    except Exception as exc:  # broad – we want to signal any failure clearly
-        raise DatasetNotFound(
-            f"Could not download dataset '{repo}'. Obtain the files manually "
-            f"and place them under {DATA_ROOT} to proceed.  Original error: {exc}"
-        ) from exc
+    @property
+    def raw_file_names(self):  # noqa: D401
+        return []  # handled by 🤗 datasets
+
+    @property
+    def processed_file_names(self):  # noqa: D401
+        return ["data.pt"]
+
+    # ------------------------------ pipeline hooks -----------------------
+    def download(self):  # noqa: D401
+        cfg = DownloadConfig(resume_download=True, use_etag=True, num_proc=4)
+        ds = load_dataset(self.repo_id, download_config=cfg)
+        g = ds["train"]  # each partition has only a train split
+        edge_index = torch.tensor(g["edge_index"], dtype=torch.long)
+        x = torch.tensor(g["x"], dtype=torch.float)
+        y = torch.tensor(g["y"], dtype=torch.long)
+        data = Data(x=x, edge_index=edge_index, y=y)
+        torch.save(self.collate([data]), self.processed_paths[0])
+
+    def process(self):  # noqa: D401
+        # Work done in `download` because HF already gives the arrays.
+        pass

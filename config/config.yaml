@@ -1,51 +1,39 @@
-# =============================================================
-#  MAESTRO – benchmark configuration (extractable to YAML)
-# =============================================================
-experiment_1:
-  name: End-to-End Federated Dynamic Training Benchmark
-  datasets:
-    financial_fed:
-      repo: ag_news            # public & tiny – replaces private Financial-Fed
-      split: train
-    health_fed:
-      repo: imdb               # public – replaces private Health-Fed
-      split: train
-    reddit_year:
-      repo: emotion            # lightweight, script-free replacement for Reddit-Year
-      split: train
-    ogbn_products:
-      repo: ag_news            # re-use small dataset to keep CI lightweight
-      split: test
-  epochs: 400
-  batch_size: 16000
-  lr_grid: [0.01, 0.005, 0.001]
-  ode_dt_grid: [0.25, 0.5, 1.0]
-  hidden: 256
-  seeds: [42, 43, 44, 45, 46]
-experiment_2:
-  name: Two-Level Robustness & Certification Stress-Test
-  datasets:
-    taobao_alive:
-      repo: arkiv/Taobao-Alive
-      split: null
-    twitter_covid:
-      repo: NoCaptain/COVID_Twitter_Reddit_Jan2020_Feb2022
-      split: null
-  stress_regimes:
-    R1: {edge: 0.05, comm: 0.05}
-    R2: {edge: 0.15, comm: 0.20}
-    R3: {edge: "targeted", comm: 0.40}
-  seeds: [0, 1, 2, 3, 4]
-experiment_3:
-  name: Privacy, Traffic-Analysis Resistance & Temporal Fairness
-  datasets:
-    reddit_year:
-      repo: emotion            # match the change above so script-free dataset is used
-      split: train
-  tau: 30
-  service_days: 180
-  privacy_targets:
-    epsilon_T: 2.0
-    delta: 1e-5
-  seeds: [7, 8, 9]
+hardware:
+  gpus_required: 6
+  expected_gpu_name: A100
 
+datasets:
+  ogbn_products_partitions:
+    base: FedGraph/fedgraph_ogbn-products_5trainer_1hop_iid_beta_1.0_trainer_id_{}
+    num_partitions: 5
+  reddit_tsla: SocialGrep/one-year-of-tsla-on-reddit
+  twitter_covid: citiusLTL/Twitter-COVID-19
+
+experiments:
+  exp1:
+    num_rounds: 150
+    local_epochs: 1
+    batch_size: 8192
+    hidden_dim: 256
+    ode_step_size: 0.5
+    lr: 0.005
+    count_sketch_dim: 256
+    carbon_intensity_threshold: 150
+  exp2:
+    stress_regimes:
+      R1:
+        edge_noise: 0.05
+        comm_drop: 0.05
+      R2:
+        edge_noise: 0.15
+        comm_drop: 0.2
+      R3:
+        edge_noise: 0.4
+        comm_drop: 0.4
+    montecarlo_samples: 32
+  exp3:
+    epsilon_target: 2.0
+    delta: 1.0e-05
+    noise_multiplier: 1.0
+    clip: 1.0
+    mix_hops: 3

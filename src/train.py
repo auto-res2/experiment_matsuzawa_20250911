@@ -1,186 +1,183 @@
 # src/train.py
-"""Model definitions and training / experiment utilities for MAESTRO.
-Keeping only the parts required for the refactored public repository – full
-ODE kernels and the large-scale federated runner live in the private repo
-submitted to AAAI.  The public stub is nevertheless fully executable and
-writes result JSON/figure files so that CI & reviewers can reproduce the
-paper table layout without multi–day GPU jobs.
+"""Model architectures, federated client and carbon controller.
+All heavy-weight logic that touches the GPU or the network lives here so
+that other modules can import lightweight utilities only.
 """
 from __future__ import annotations
 
-import json
 import os
-from pathlib import Path
-from typing import Dict, Any
+import signal
+import sys
+import threading
+import time
+from typing import Dict, List
 
+import requests
 import torch
-import torch.nn as nn
-from torchmetrics.classification import MulticlassAccuracy  # noqa: F401 – retained for future use
-
-try:
-    # Optional acceleration library. Note that SAGEConv is the actual layer we
-    # need – the older placeholder import of `GraphSAGE` was wrong and broke on
-    # recent PyG versions.
-    from torch_geometric.nn import SAGEConv, GCNConv, GATConv
-except ModuleNotFoundError as _e:  # pragma: no cover – torch geometric not in tiny-CI
-    raise ImportError(
-        "torch_geometric is required for the MAESTRO reference implementation. "
-        "Install via 'pip install torch-geometric' (see https://pytorch-geometric.readthedocs.io)."
-    ) from _e
-
-from .evaluate import line_plot  # plotting lives in evaluate.py
-from .preprocess import ensure_dataset  # dataset download helper
+import torch.nn.functional as F
+from torch import Tensor, nn
+from torch_geometric.nn import SAGEConv
+import flwr as fl
 
 # ---------------------------------------------------------------------------
-#   Model zoo (public lightweight versions – see full repo for CT-ODE kernel)
+#  Safety helpers (NO-FALLBACK philosophy)
 # ---------------------------------------------------------------------------
 
+def abort(msg: str):
+    """Terminate immediately – external callers must handle clean-up."""
+    print(f"FATAL: {msg}", file=sys.stderr)
+    sys.stderr.flush()
+    os.kill(os.getpid(), signal.SIGTERM)
 
-class MaestroCTGNN(nn.Module):
-    """Tiny stand-in for the full continuous-time GNN used in the paper."""
 
-    def __init__(self, in_dim: int, hidden: int = 256, depth: int = 3, n_classes: int = 16):
+# ---------------------------------------------------------------------------
+#  Continuous-time GNN
+# ---------------------------------------------------------------------------
+
+class ODEFunc(nn.Module):
+    """Right-hand side  dh/dt = f(h,A)."""
+
+    def __init__(self, in_dim: int):
         super().__init__()
-        self.convs = nn.ModuleList()
-        dims = [in_dim] + [hidden] * depth
-        for d_in, d_out in zip(dims[:-1], dims[1:]):
-            self.convs.append(SAGEConv(d_in, d_out))
-        self.classifier = nn.Linear(hidden, n_classes)
+        self.conv = SAGEConv(in_dim, in_dim)
+        self.nfe: int = 0  # number of function evaluations
 
-    def forward(self, x, edge_index):  # noqa: D401 – simple forward pass
-        for conv in self.convs:
-            x = conv(x, edge_index).relu()
-        return self.classifier(x)
+    def forward(self, t: Tensor, h: Tensor, edge_index: Tensor):  # noqa: N802
+        self.nfe += 1
+        return F.relu(self.conv(h, edge_index))
 
 
-# ---------------------------------------------------------------------------
-#   Helper – very small GraphSAGE two-layer baseline (used in ablations)
-# ---------------------------------------------------------------------------
+class CTGNN(nn.Module):
+    """Encoder – ODE – Decoder architecture used in all experiments."""
 
-class _ToyGraphSAGE(nn.Module):
-    def __init__(self, in_dim: int, hidden: int):
+    def __init__(self, in_dim: int, hidden_dim: int, num_classes: int, step_size: float):
         super().__init__()
-        self.conv1 = SAGEConv(in_dim, hidden)
-        self.conv2 = SAGEConv(hidden, hidden)
+        from torchdiffeq import odeint_adjoint as odeint  # local import, avoids global pollut.
 
-    def forward(self, x, edge_index):
-        x = self.conv1(x, edge_index).relu()
-        return self.conv2(x, edge_index)
+        self.encoder = nn.Linear(in_dim, hidden_dim)
+        self.odefunc = ODEFunc(hidden_dim)
+        self.decoder = nn.Linear(hidden_dim, num_classes)
+        self.step_size = step_size
+        self._odeint = odeint
 
-
-def build_model(kind: str, in_dim: int, hidden: int):
-    """Factory for baseline & MAESTRO models."""
-    kind = kind.lower()
-    if kind == "maestro":
-        return MaestroCTGNN(in_dim, hidden)
-    if kind == "graphsage":
-        return _ToyGraphSAGE(in_dim, hidden)
-    if kind == "gcn":
-        # Very small, two-layer GCN baseline.
-        class _GCN(nn.Module):
-            def __init__(self, _in: int, _hidden: int):
-                super().__init__()
-                self.conv1 = GCNConv(_in, _hidden)
-                self.conv2 = GCNConv(_hidden, _hidden)
-
-            def forward(self, x, edge_index):
-                x = self.conv1(x, edge_index).relu()
-                return self.conv2(x, edge_index)
-
-        return _GCN(in_dim, hidden)
-    raise ValueError(f"Unknown model kind '{kind}'.")
+    def forward(self, data):  # `data` is torch_geometric.data.Data
+        x = self.encoder(data.x)
+        t = torch.tensor([0, self.step_size], device=x.device)
+        z = self._odeint(
+            self.odefunc,
+            x,
+            t,
+            method="dopri5",
+            options={"step_size": self.step_size},
+            args=(data.edge_index,),
+        )[-1]
+        return self.decoder(z)
 
 
 # ---------------------------------------------------------------------------
-#   Minimal training loop for demonstration (does *not* federate yet)
+#  FLwr client wrapper
 # ---------------------------------------------------------------------------
 
-# Mandatory path change requested by policy: all JSON results under
-# .research/iteration6/  and all images under .research/iteration6/images
-RESULTS_DIR = Path(".research/iteration6").resolve()
-FIG_DIR = RESULTS_DIR / "images"
-RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-FIG_DIR.mkdir(parents=True, exist_ok=True)
+
+def get_model_state(model: nn.Module):
+    return {k: v.cpu() for k, v in model.state_dict().items()}
 
 
-def _select_device() -> torch.device:
-    """Return an available torch.device (CUDA preferred when available)."""
-    if torch.cuda.is_available():
-        return torch.device("cuda")
-    return torch.device("cpu")
+def set_model_state(model: nn.Module, state):
+    model.load_state_dict(state)
 
 
-def _folder_size_bytes(root: Path) -> int:
-    """Return cumulative size of all files under *root* (recursive)."""
-    total = 0
-    for p in root.rglob("*"):
-        if p.is_file():
+class Client(fl.client.NumPyClient):
+    """Flower client around a single data partition."""
+
+    def __init__(self, dataset, cfg_exp1: Dict):
+        from torch_geometric.loader import NeighborLoader  # late import keeps start-up light
+        self.data = dataset
+        self.cfg = cfg_exp1
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model = CTGNN(
+            in_dim=dataset.num_node_features,
+            hidden_dim=cfg_exp1["hidden_dim"],
+            num_classes=int(dataset.data.y.max().item()) + 1,
+            step_size=cfg_exp1["ode_step_size"],
+        ).to(self.device)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=cfg_exp1["lr"])
+        # One huge batch per local epoch – identical to the monolithic script.
+        self.loader = NeighborLoader(dataset, batch_size=dataset.data.num_nodes, num_neighbors=[-1])
+        self.criterion = nn.CrossEntropyLoss()
+
+    #  ------ FLwr interface -------------------------------------------------
+    def get_parameters(self, *args, **kwargs):  # noqa: D401  (Flower API)
+        return [v.cpu().numpy() for v in self.model.state_dict().values()]
+
+    def set_parameters(self, parameters, *args, **kwargs):  # noqa: D401
+        params_dict = zip(self.model.state_dict().keys(), parameters)
+        state_dict = {k: torch.tensor(v) for k, v in params_dict}
+        set_model_state(self.model, state_dict)
+
+    def fit(self, parameters, config):  # noqa: D401
+        self.set_parameters(parameters, config)
+        self.model.train()
+        for _ in range(self.cfg["local_epochs"]):
+            for batch in self.loader:
+                batch = batch.to(self.device)
+                logits = self.model(batch)
+                loss = self.criterion(logits, batch.y)
+                self.optimizer.zero_grad()
+                loss.backward()
+                self.optimizer.step()
+        return self.get_parameters(config), len(self.data), {}
+
+    def evaluate(self, parameters, config):  # noqa: D401
+        self.set_parameters(parameters, config)
+        self.model.eval()
+        with torch.no_grad():
+            batch = next(iter(self.loader)).to(self.device)
+            logits = self.model(batch)
+            pred = logits.argmax(dim=-1)
+            acc = (pred == batch.y).float().mean().item()
+            loss = self.criterion(logits, batch.y).item()
+        return float(loss), len(self.data), {"accuracy": float(acc)}
+
+
+# ---------------------------------------------------------------------------
+#  Carbon intensity controller (Exp-1)
+# ---------------------------------------------------------------------------
+
+class CarbonController:  # pylint: disable=too-few-public-methods
+    """Continuously fetch carbon intensity and decide if uploads are allowed."""
+
+    def __init__(self, threshold: float):
+        self.threshold = threshold
+        self._lock = threading.Lock()
+        self._last_val: float | None = None
+        self._stop = False
+        self.thread = threading.Thread(target=self._poll, daemon=True)
+        self.thread.start()
+
+    # ------------------------- internal helpers ---------------------------
+    def _poll(self):
+        url = "https://api.electricitymap.org/v3/carbon-intensity/latest?zone=US"
+        headers = {"auth-token": os.getenv("ELECTRICITYMAP_TOKEN", "")}
+        if not headers["auth-token"]:
+            abort("ELECTRICITYMAP_TOKEN environment variable not set – cannot fetch carbon data.")
+        while not self._stop:
             try:
-                total += p.stat().st_size
-            except (FileNotFoundError, PermissionError):
-                # Best-effort – skip files that disappear between listing & stat.
-                continue
-    return total
+                response = requests.get(url, headers=headers, timeout=10)
+                response.raise_for_status()
+                intensity = response.json()["carbonIntensity"]
+                with self._lock:
+                    self._last_val = intensity
+            except Exception as exc:  # noqa: BLE001
+                abort(f"ElectricityMap API unreachable: {exc}")
+            time.sleep(300)  # poll every 5 minutes
 
+    # ------------------------ public API ---------------------------------
+    def ok_to_upload(self) -> bool:  # noqa: D401
+        with self._lock:
+            val = self._last_val
+        return val is not None and val < self.threshold
 
-def run_experiment_1(cfg: Dict[str, Any], *, device: str | None = None) -> None:
-    """Toy implementation of the *End-to-End Federated Dynamic Training Benchmark*.
-
-    A full federated runner would spin up gRPC workers.  Here we actually
-    download the datasets, compute a few cheap statistics (dataset size as a
-    proxy for communication volume and an ultra-simple CO₂ estimate) and write
-    *numerical* results so that CI treats the run as successful.
-    """
-
-    experiment_name: str = cfg["name"]
-    print(f"\n🧪  Running Experiment 1 – {experiment_name}\n")
-
-    torch_device = torch.device(device) if device else _select_device()
-    _ = torch_device  # reserved for future use; suppress unused-var warnings.
-
-    # ------------------------------------------------------------------
-    # Dataset download & simple metric extraction
-    # ------------------------------------------------------------------
-    results: Dict[str, Dict[str, float]] = {}
-
-    for dname, meta in cfg["datasets"].items():
-        repo = meta["repo"]
-        split = meta.get("split") or None
-        # The helper will raise DatasetNotFound on failure – complying with the
-        # fail-fast policy.
-        local_folder = ensure_dataset(repo, split=split)
-
-        num_bytes = float(_folder_size_bytes(local_folder))
-        # Simple CO₂ estimator – 5e-10 kg per byte ≈ 0.5 g per GB.
-        co2_kg = num_bytes * 5e-10
-
-        # We do *not* train a model here; instead, store deterministic dummy
-        # accuracy derived from file size so it is reproducible yet non-trivial.
-        # The formula maps bytes → [0, 1) but will be very small for most repos.
-        accuracy = min(num_bytes / 1e9, 1.0)  # cap at 1.0
-
-        results[dname] = {
-            "accuracy": round(accuracy, 4),
-            "bytes": int(num_bytes),
-            "co2": round(co2_kg, 6),  # kg CO₂
-        }
-
-    # ------------------------------------------------------------------
-    # Persist JSON & echo for verification
-    # ------------------------------------------------------------------
-    out_file = RESULTS_DIR / "experiment_1.json"
-    out_file.write_text(json.dumps(results, indent=2))
-    print(out_file.read_text())
-
-    # ------------------------------------------------------------------
-    # Generate a tiny learning-curve plot (placeholder but numeric)
-    # ------------------------------------------------------------------
-    line_plot(
-        xs=[0, 1],
-        ys=[0.1, 0.2],  # arbitrary but concrete numbers
-        xlabel="epoch",
-        ylabel="acc",
-        title="placeholder",
-        path=FIG_DIR / "training_loss_placeholder.pdf",
-    )
-    print(f"Figures written to {FIG_DIR.as_posix()}")
+    def shutdown(self):
+        self._stop = True
+        self.thread.join()
