@@ -1,0 +1,11 @@
+=== uv sync start Thu Sep 11 07:30:39 AM UTC 2025 ===
+=== uv install end Thu Sep 11 07:31:44 AM UTC 2025 ===
+=== experiment start Thu Sep 11 07:31:45 AM UTC 2025 ===
+Validating dataset: ChristophSchuhmann/MS_COCO_2017_URL_TEXT …
+  ✓ accessible
+Validating dataset: redactable-llm/synth-text-recognition …
+  ✓ accessible
+Validating model: stabilityai/stable-diffusion-3-medium …
+
+ERROR: Model 'stabilityai/stable-diffusion-3-medium' is not accessible.  Original error: Model 'stabilityai/stable-diffusion-3-medium' is gated but no HF_TOKEN was provided.
+Programme terminated due to missing external resource.
