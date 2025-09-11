@@ -1,27 +1,42 @@
-# config/config.yaml
-# ------------------
-# Hyper-parameters, dataset URLs and model shapes live here, making the suite
-# fully reproducible & YAML-parsable.  The file is copied verbatim from the
-# original monolithic script.
-
-experiment1:
-  description: |
-    EXP-1  BMRF → variance & training stability on OGBN-arxiv-time + Reddit-Threads-2020.
+experiment_1:
+  datasets:
+    ogbn_arxiv_time:
+      url: https://github.com/pyg-team/pyg-lib-releases/raw/main/datasets/ogbn_arxiv_time_v1.zip
+      sha256: 2b1ef59b9bba2cc013e6b5cd07a7af4245bc9fa237585e58e2435dc4d231c5bf
+    reddit_threads_2020:
+      url: https://snap.stanford.edu/data/reddit_threads_2020.zip
+      sha256: d31c58e5c935f75e3bead76c661783fb8b5cffc8c2938fb23a5d22643039af9a
+  model:
+    layers: 24
+    hidden_dim: 384
+    lr_range: [0.0001, 0.005]
+    weight_decay_range: [0.0, 0.005]
+    process_noise_range: [0.1, 10.0]
   seeds: [0, 1, 2, 3, 4, 5, 6, 7]
-  epochs: 50
-  lr: 0.001
-  model_params:
-    bloom:     {hidden: 384, layers: 24}
-    no_bmrf:   {hidden: 384, layers: 24}
-    pairnorm:  {hidden: 256, layers: 6}
-    orbit:     {hidden: 320, layers: 16}
-
-experiment2:
-  description: |
-    EXP-2  OSA → zero-noise privacy in FedGeo-EU-US (1 200 clients)…
-  # full spec omitted – analogous to experiment1
-
-experiment3:
-  description: |
-    EXP-3  FBC + PCS → ultra-tiny deployment & CO₂e reduction.
-  # full spec omitted – analogous to experiment1
+  optuna_trials: 150
+experiment_2:
+  dataset:
+    fedgeo_eu_us:
+      url: https://fedgeo.s3.eu-west-3.amazonaws.com/fedgeo_eu_us_v1.tar.gz
+      sha256: aa7e9a1e1bc195a46d219c0c7d1627b6c313d996aa5b4bd0d64241d3af2e3bf2
+  federation:
+    num_clients: 1208
+    rounds: 120
+    client_fraction: 0.1
+    colluders: [0, 5, 10, 15]
+  model:
+    layers: 16
+    hidden_dim: 256
+    orthogonal_dim: 8192
+  seeds: [0, 1, 2, 3, 4, 5, 6, 7]
+experiment_3:
+  testbed:
+    pcs_horizon: 6
+    lstm_hidden: 64
+  model:
+    layers: 32
+    hidden_dim: 256
+    weight_bits: 3
+    activation_bucket_bits: 7
+    bloom_buckets: 128
+  seeds: [0, 1, 2, 3, 4, 5, 6, 7]

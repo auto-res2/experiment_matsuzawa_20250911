@@ -1,74 +1,96 @@
-"""
-src/train.py
-==============
-Lightweight model stubs that keep the public API identical to the original
-prototype while removing all heavyweight logic.  The only requirement for the
-unit-tests and the evaluation harness is that a forward pass succeeds, returns
-something that requires gradients, and keeps dtype / device consistency so the
-optimiser can run without crashing.
-"""
 from __future__ import annotations
+
+from typing import Tuple
 
 import torch
 import torch.nn as nn
-
-__all__ = [
-    "BloomGNN",
-    "BloomGNNNoBMRF",
-    "OrbitGCN",
-    "PairNormGCN",
-]
+import torch.nn.functional as F
+import dgl
+from dgl.nn import GraphConv
 
 
-class _Base(nn.Module):
-    """Ultra-thin base class used by every dummy model.
+class BMRFKalman(torch.nn.Module):
+    """1-D Kalman filter for online curvature estimation (per-edge)."""
 
-    The real curvature gating, Kalman filtering, etc. are **not implemented** –
-    they would be irrelevant for the CI pipeline which only checks that the
-    code runs end-to-end.  What *is* important is that:
+    mu: torch.Tensor  # registered as buffer
+    sigma2: torch.Tensor  # registered as buffer
 
-    1. forward_temporal accepts an arbitrary positional argument (the dataset)
-       and ignores it safely.
-    2. The returned loss is attached to the computational graph so that
-       ``loss.backward()`` produces gradients for *all* parameters – otherwise
-       the optimiser step would raise.
-    """
-
-    def __init__(self, hidden: int, layers: int):
+    def __init__(self, process_noise: float = 1.0, obs_noise: float = 1.0):
         super().__init__()
-        self.layers = nn.ModuleList([nn.Linear(hidden, hidden) for _ in range(layers)])
+        # register "learned" state as non-trainable buffers so they travel with .to(device)
+        self.register_buffer("mu", torch.tensor(0.0))
+        self.register_buffer("sigma2", torch.tensor(1.0))
+        self.process_noise = float(process_noise)
+        self.obs_noise = float(obs_noise)
 
-    # ------------------------------------------------------------------
-    def forward_temporal(self, *_args, **_kwargs):  # noqa: D401, N802 – keep original API
-        """Dummy forward that is agnostic of the actual dataset structure.
-
-        Returns
-        -------
-        loss : torch.Tensor (scalar)
-            Zero-valued scalar *linked to the parameters* so gradients flow.
-        kappa_var : float
-            Always ``0.0`` – this is just a placeholder.
-        """
-        # A parameter is guaranteed to exist because we create Linear layers.
-        param_ref = next(self.parameters())
-        # Multiply by *0* so that the numerical value is zero but the graph
-        # still contains the parameter → non-empty gradients.
-        loss = param_ref.sum() * 0.0
-        kappa_var: float = 0.0
-        return loss, kappa_var
+    def forward(self, kappa_hat: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        # Prediction
+        sigma_pred = self.sigma2 + self.process_noise
+        # Kalman gain
+        K = sigma_pred / (sigma_pred + self.obs_noise)
+        # Update
+        self.mu = self.mu + K * (kappa_hat - self.mu)
+        self.sigma2 = (1 - K) * sigma_pred
+        return self.mu, self.sigma2
 
 
-class BloomGNN(_Base):
-    pass
+class CurvatureGatedGCN(nn.Module):
+    """GCN stack with optional curvature gating & BMRF."""
+
+    def __init__(
+        self,
+        in_dim: int,
+        hidden_dim: int,
+        out_dim: int,
+        num_layers: int,
+        use_bmrf: bool = True,
+        process_noise: float = 1.0,
+    ) -> None:
+        super().__init__()
+        self.use_bmrf = use_bmrf
+        self.layers = nn.ModuleList()
+        # input layer
+        self.layers.append(GraphConv(in_dim, hidden_dim, weight=True))
+        # hidden layers
+        for _ in range(num_layers - 2):
+            self.layers.append(GraphConv(hidden_dim, hidden_dim, weight=True))
+        # output layer
+        self.layers.append(GraphConv(hidden_dim, out_dim, weight=True))
+
+        if self.use_bmrf:
+            self.bmrf = BMRFKalman(process_noise=process_noise, obs_noise=1.0)
+        self.register_buffer("gate_threshold", torch.tensor(0.0))
+
+    def forward(self, g: dgl.DGLGraph, feat: torch.Tensor):
+        h = feat
+        for layer in self.layers[:-1]:
+            if self.use_bmrf and "kappa_hat" in g.edata:
+                with g.local_scope():
+                    kappa_hat = g.edata["kappa_hat"]
+                    self.bmrf(kappa_hat.mean())  # posterior mean not directly used
+                    mask = (kappa_hat > self.gate_threshold).float()
+                    g.edata["w"] = mask
+                    h = layer(g, h, edge_weight=g.edata["w"])
+            else:
+                h = layer(g, h)
+            h = F.relu(h)
+        logits = self.layers[-1](g, h)
+        return logits
 
 
-class BloomGNNNoBMRF(_Base):
-    pass
-
-
-class OrbitGCN(_Base):
-    pass
-
-
-class PairNormGCN(_Base):
-    pass
+def train_epoch(
+    model: nn.Module,
+    g: dgl.DGLGraph,
+    idx: torch.Tensor,
+    labels: torch.Tensor,
+    opt: torch.optim.Optimizer,
+) -> float:
+    """Single training epoch – returns cross-entropy loss."""
+    model.train()
+    opt.zero_grad()
+    logits = model(g, g.ndata["feat"])
+    loss = F.cross_entropy(logits[idx], labels[idx])
+    loss.backward()
+    torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+    opt.step()
+    return float(loss.item())
