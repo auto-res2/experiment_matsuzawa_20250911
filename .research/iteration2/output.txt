@@ -1,0 +1,13 @@
+=== uv sync start Thu Sep 11 04:52:44 PM UTC 2025 ===
+=== uv install end Thu Sep 11 04:53:45 PM UTC 2025 ===
+=== experiment start Thu Sep 11 04:53:45 PM UTC 2025 ===
+
+================ SMOKE_TEST ================
+
+========================================================
+EXPERIMENT 1 – Benchmark v. SOTA Samplers
+========================================================
+
+'transformer_text8_teacher'
+
+One or more phases failed – see tracebacks above.
