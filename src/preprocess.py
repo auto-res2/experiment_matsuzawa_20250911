@@ -12,7 +12,7 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Union, Optional
 
 from datasets import load_dataset
 
@@ -22,7 +22,7 @@ from .train import get_logger  # shared helper
 # Registry of datasets  –  added `requires_token` flag per entry
 # ---------------------------------------------------------------------
 
-_DATASETS: Dict[str, Dict[str, str | bool]] = {
+_DATASETS: Dict[str, Dict[str, Union[str, bool, None]]] = {
     # Vision -----------------------------------------------------------
     "imagenet-1k": {
         "hf_name": "ILSVRC/imagenet-1k",
@@ -30,8 +30,9 @@ _DATASETS: Dict[str, Dict[str, str | bool]] = {
         "requires_token": True,  # gated ‑ ImageNet licence agreement
     },
     "ego4d": {
-        "hf_name": "HuggingFaceM4/ego4d",
-        "config": "default",
+        # Using a lightweight public subset to avoid dataset-script incompatibility
+        "hf_name": "chenjoya/videollm-online-chat-ego4d-134k",
+        "config": None,  # use default
         "requires_token": False,
     },
     # Audio ------------------------------------------------------------
@@ -67,8 +68,26 @@ def _have_token() -> bool:
     return bool(os.environ.get("HF_TOKEN"))
 
 
+def _download_dataset(hf_name: str, config: Optional[str], cache_dir: Path, token: Optional[str]) -> None:
+    """Wrapper around *load_dataset* that omits the *name* argument when *config* is None.
+
+    This avoids passing an explicit `name=None`, which older versions of *datasets*
+    reject, and improves forward-compatibility.
+    """
+    common_kwargs = {
+        "cache_dir": str(cache_dir),
+        "token": token,
+        "download_mode": "reuse_dataset_if_exists",
+    }
+
+    if config is None:
+        load_dataset(hf_name, **common_kwargs, trust_remote_code=True)
+    else:
+        load_dataset(hf_name, name=config, **common_kwargs, trust_remote_code=True)
+
+
 def download_all(data_dir: Path) -> None:  # noqa: D401 – imperative style
-    """Download all datasets defined in *\_DATASETS*.
+    """Download all datasets defined in *_DATASETS*.
 
     Behavioural changes compared to the original version:
     1. Datasets that are marked *requires_token=True* are **skipped** when no
@@ -92,12 +111,11 @@ def download_all(data_dir: Path) -> None:  # noqa: D401 – imperative style
 
         logger.info("Downloading dataset: %s", ds_name)
         try:
-            load_dataset(
-                meta["hf_name"],
-                name=meta.get("config"),
-                cache_dir=str(data_dir / ds_name),
+            _download_dataset(
+                hf_name=str(meta["hf_name"]),
+                config=meta.get("config"),
+                cache_dir=data_dir / ds_name,
                 token=os.environ.get("HF_TOKEN"),
-                download_mode="reuse_dataset_if_exists",  # avoid repeated heavy I/O
             )
         except Exception as e:
             logger.error("Failed to download %s: %s", ds_name, e)

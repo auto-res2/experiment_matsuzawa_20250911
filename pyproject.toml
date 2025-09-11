@@ -5,8 +5,9 @@ description = "Refactored experimental pipeline for TACO continual learning (512
 requires-python = ">=3.9"
 
 # Dependencies must be a simple array – static validation enforces this format
+# Pin *datasets* to <4.0.0 to retain support for remote dataset scripts used by Ego4D.
 dependencies = [
-    "datasets>=2.16.0",
+    "datasets>=2.16.0,<4.0.0",
     "numpy>=1.21.0",
     "torch>=1.9.0",
     "transformers>=4.38.0",

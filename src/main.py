@@ -6,8 +6,8 @@ Steps:
 3. Attempt to initialise TACO (will raise *NotImplementedError*).
 
 Path updates:
-    • All images must reside under `.research/iteration2/images`.
-    • All JSON artefacts must reside directly under `.research/iteration2/`.
+    • All images must reside under `.research/iteration3/images`.
+    • All JSON artefacts must reside directly under `.research/iteration3/`.
 The constants below have therefore been updated accordingly.
 """
 from __future__ import annotations
@@ -27,7 +27,7 @@ from .train import load_all, TACOModel
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 MODEL_DIR = ROOT / "models"
-RESULT_DIR = ROOT / ".research" / "iteration2"
+RESULT_DIR = ROOT / ".research" / "iteration3"  # ← updated
 FIG_DIR = RESULT_DIR / "images"  # mandatory location per spec
 CONFIG_PATH = ROOT / "config" / "config.yaml"
 
