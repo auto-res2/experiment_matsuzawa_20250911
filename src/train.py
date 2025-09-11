@@ -8,7 +8,7 @@ exactly the public API expected by the rest of the MAESTRO pipeline.
 from __future__ import annotations
 
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Sequence
 
 import flwr as fl
 import numpy as np
@@ -49,17 +49,52 @@ class CarbonController:
 #  Helper conversions between PyTorch tensors and NumPy arrays
 # ---------------------------------------------------------------------------
 
-def _to_numpy(params: List[torch.Tensor]) -> List[np.ndarray]:
+def _to_numpy(params: Sequence[torch.Tensor]) -> List[np.ndarray]:
+    """Detach and move tensors to CPU, returning NumPy arrays."""
     return [p.detach().cpu().numpy() for p in params]
 
 
-def _load_numpy(params: List[np.ndarray], model: nn.Module):
-    for p_torch, p_np in zip(model.parameters(), params):
-        # Safeguard against shape mismatches (can happen if model architecture
-        # changes between rounds – shouldn’t in CI but we fail fast anyway)
+def _load_numpy(params: Sequence[object], model: nn.Module):
+    """Load parameters into *model*.
+
+    The *params* argument may contain either ``np.ndarray`` objects (the usual
+    Flower <-> Client interface) **or** raw ``bytes`` (when we manually pass
+    ``strategy.final_parameters.tensors``).  This helper transparently handles
+    both cases, performing strict size/shape checks so that any mismatch is
+    caught immediately.
+    """
+
+    params_iter = iter(params)
+    for p_torch in model.parameters():
+        try:
+            p_src = next(params_iter)
+        except StopIteration as exc:  # pragma: no cover – defensive
+            raise ValueError("Not enough tensors when loading NumPy weights") from exc
+
+        # ------------------------------------------------------------------
+        # 1) Decode – bytes → ndarray if needed
+        # ------------------------------------------------------------------
+        if isinstance(p_src, bytes):
+            # Re-construct an ndarray with the correct dtype/shape directly
+            # from the serialized raw bytes created by ``np.ndarray.tobytes``
+            dtype = p_torch.detach().cpu().numpy().dtype
+            p_np = np.frombuffer(p_src, dtype=dtype)
+        elif isinstance(p_src, np.ndarray):
+            p_np = p_src
+        else:
+            raise TypeError(
+                "Expected elements of parameters to be either bytes or np.ndarray, "
+                f"got {type(p_src)}"
+            )
+
+        # ------------------------------------------------------------------
+        # 2) Sanity checks – size/shape must match target tensor
+        # ------------------------------------------------------------------
         if p_torch.numel() != p_np.size:
             raise ValueError("Parameter size mismatch when loading NumPy weights")
-        p_torch.data = torch.from_numpy(p_np).view_as(p_torch).to(p_torch.device)
+
+        # Shape the array and copy into the model parameter (on the right device)
+        p_torch.data = torch.from_numpy(p_np.reshape(p_torch.shape)).to(p_torch.device)
 
 
 # ---------------------------------------------------------------------------
