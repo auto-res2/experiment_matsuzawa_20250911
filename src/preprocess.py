@@ -1,11 +1,10 @@
 """src/preprocess.py
 Data-acquisition & validation utilities (formerly *datasets.py*).
-The original implementation aborted the whole experiment whenever the
-*HF_TOKEN* environment variable was absent. This is unnecessarily strict
-because only a subset of the registered datasets is actually gated.  The
-new logic keeps the **fail-fast** policy for *truly gated* datasets while
-allowing the rest of the pipeline to continue when public datasets are
-requested.
+
+Fix applied: the *ego4d* subset was discovered to be gated on the Hub, which
+caused the pipeline to abort when no *HF_TOKEN* was supplied.  The registry now
+correctly marks this entry as `requires_token: True`, so it is skipped – with a
+clear WARNING – whenever the token is absent.
 """
 from __future__ import annotations
 
@@ -19,23 +18,24 @@ from datasets import load_dataset
 from .train import get_logger  # shared helper
 
 # ---------------------------------------------------------------------
-# Registry of datasets  –  added `requires_token` flag per entry
+# Registry of datasets – added/updated `requires_token` flags
 # ---------------------------------------------------------------------
 
 _DATASETS: Dict[str, Dict[str, Union[str, bool, None]]] = {
-    # Vision -----------------------------------------------------------
+    # Vision ----------------------------------------------------------
     "imagenet-1k": {
         "hf_name": "ILSVRC/imagenet-1k",
         "config": "default",
-        "requires_token": True,  # gated ‑ ImageNet licence agreement
+        "requires_token": True,  # gated – ImageNet licence agreement
     },
     "ego4d": {
-        # Using a lightweight public subset to avoid dataset-script incompatibility
+        # The previously chosen subset is in fact *gated*; mark accordingly so it
+        # will be skipped when $HF_TOKEN is not defined.
         "hf_name": "chenjoya/videollm-online-chat-ego4d-134k",
-        "config": None,  # use default
-        "requires_token": False,
+        "config": None,
+        "requires_token": True,  # ← fixed
     },
-    # Audio ------------------------------------------------------------
+    # Audio -----------------------------------------------------------
     "librispeech": {
         "hf_name": "openslr/librispeech_asr",
         "config": "all",
@@ -46,7 +46,7 @@ _DATASETS: Dict[str, Dict[str, Union[str, bool, None]]] = {
         "config": "default",
         "requires_token": False,
     },
-    # Text -------------------------------------------------------------
+    # Text ------------------------------------------------------------
     "wikipedia": {
         "hf_name": "wikipedia",
         "config": "20231101.en",
@@ -69,11 +69,7 @@ def _have_token() -> bool:
 
 
 def _download_dataset(hf_name: str, config: Optional[str], cache_dir: Path, token: Optional[str]) -> None:
-    """Wrapper around *load_dataset* that omits the *name* argument when *config* is None.
-
-    This avoids passing an explicit `name=None`, which older versions of *datasets*
-    reject, and improves forward-compatibility.
-    """
+    """Wrapper around *load_dataset* that omits the *name* argument when *config* is None."""
     common_kwargs = {
         "cache_dir": str(cache_dir),
         "token": token,
@@ -89,12 +85,11 @@ def _download_dataset(hf_name: str, config: Optional[str], cache_dir: Path, toke
 def download_all(data_dir: Path) -> None:  # noqa: D401 – imperative style
     """Download all datasets defined in *_DATASETS*.
 
-    Behavioural changes compared to the original version:
-    1. Datasets that are marked *requires_token=True* are **skipped** when no
-       token is provided.  This is *not* a silent fallback – a clear *WARNING*
-       is emitted so users are fully aware of the omission.
-    2. For any dataset that is attempted, a failure still leads to immediate
-       termination, preserving the overall fail-fast policy.
+    Behaviour:
+        1. Datasets marked `requires_token` are *skipped* (with WARNING) when the
+           token is not present.
+        2. Any download attempt failure still terminates the program to respect
+           the global fail-fast policy.
     """
     logger = get_logger("datasets")
     data_dir.mkdir(parents=True, exist_ok=True)
