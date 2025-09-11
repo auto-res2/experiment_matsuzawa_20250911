@@ -1,0 +1,8 @@
+{
+  "avg_prompt_len": 450.5975609756098,
+  "max_prompt_len": 1360,
+  "min_prompt_len": 115,
+  "num_samples": 164,
+  "plot_path": ".research/iteration4/images/prompt_lengths_first30.pdf",
+  "std_prompt_len": 230.30376631590448
+}

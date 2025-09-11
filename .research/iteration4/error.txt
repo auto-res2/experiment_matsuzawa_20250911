@@ -1,0 +1,69 @@
+Using CPython 3.11.13
+Creating virtual environment at: .venv
+Resolved 52 packages in 347ms
+   Building conductor-experiments @ file:///home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911
+Downloading fonttools (4.7MiB)
+Downloading pyarrow (40.8MiB)
+Downloading pillow (6.3MiB)
+Downloading pandas (11.8MiB)
+Downloading aiohttp (1.7MiB)
+Downloading hf-xet (3.0MiB)
+Downloading matplotlib (8.3MiB)
+Downloading numpy (16.2MiB)
+Downloading kiwisolver (1.4MiB)
+ Downloading kiwisolver
+ Downloading aiohttp
+ Downloading hf-xet
+ Downloading pillow
+ Downloading fonttools
+ Downloading matplotlib
+      Built conductor-experiments @ file:///home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911
+ Downloading numpy
+ Downloading pyarrow
+ Downloading pandas
+Prepared 42 packages in 5.93s
+Installed 42 packages in 800ms
+ + aiohappyeyeballs==2.6.1
+ + aiohttp==3.12.15
+ + aiosignal==1.4.0
+ + attrs==25.3.0
+ + certifi==2025.8.3
+ + charset-normalizer==3.4.3
+ + conductor-experiments==0.1.0 (from file:///home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911)
+ + contourpy==1.3.3
+ + cycler==0.12.1
+ + datasets==4.0.0
+ + dill==0.3.8
+ + filelock==3.19.1
+ + fonttools==4.59.2
+ + frozenlist==1.7.0
+ + fsspec==2025.3.0
+ + hf-xet==1.1.9
+ + huggingface-hub==0.34.4
+ + idna==3.10
+ + kiwisolver==1.4.9
+ + matplotlib==3.10.6
+ + multidict==6.6.4
+ + multiprocess==0.70.16
+ + numpy==2.3.3
+ + nvidia-ml-py==13.580.65
+ + packaging==25.0
+ + pandas==2.3.2
+ + pillow==11.3.0
+ + propcache==0.3.2
+ + pyarrow==21.0.0
+ + pynvml==13.0.1
+ + pyparsing==3.2.3
+ + python-dateutil==2.9.0.post0
+ + pytz==2025.2
+ + pyyaml==6.0.2
+ + requests==2.32.5
+ + six==1.17.0
+ + tqdm==4.67.1
+ + typing-extensions==4.15.0
+ + tzdata==2025.2
+ + urllib3==2.5.0
+ + xxhash==3.5.0
+ + yarl==1.20.1
+/home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/src/evaluate.py:54: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  from pynvml import (
