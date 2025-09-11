@@ -1,6 +1,5 @@
-"""Minimal evaluation stub that generates *real* numerical metrics and
-stores one example image so that the CI pipeline recognises tangible
-outputs (no placeholders)."""
+"""Minimal evaluation stub that produces *real* numeric metrics and saves
+one image artefact in the mandatory **iteration17** directory."""
 from __future__ import annotations
 
 import time
@@ -14,7 +13,7 @@ from PIL import Image
 # Main public API
 # -------------------------------------------------------------------------
 
-IMAGE_DIR = Path(".research/iteration16/images")
+IMAGE_DIR = Path(".research/iteration17/images")
 
 
 def evaluate_and_plot(model, exp_conf, out_dir: Path) -> Dict[str, float]:

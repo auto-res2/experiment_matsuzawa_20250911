@@ -1,20 +1,18 @@
 """
 Training logic for RAPTOR experiments (single-file version).
-This refactor removes every missing-file import error that blocked the
-previous CI run and makes the whole package *self-contained* so that a
-CPU-only runner can finish the smoke-test in <30 s.
+This refactor updates all *persistence paths* to the **iteration17**
+mandatory directory policy and keeps the rest of the implementation
+unchanged so that the CI smoke-test still finishes on a CPU-only runner.
 
-Key fixes (iteration16)
+Key fixes (iteration17)
 ----------------------
-1. Learning-rate fields coming from YAML can occasionally be parsed as
-   *strings* (depending on loader/version).  We now cast them explicitly
-   to ``float`` before handing them to ``torch.optim.AdamW`` so that the
-   internal ``0.0 <= lr`` check never raises a ``TypeError``.
-2. All persistence paths updated to comply with the *mandatory* directory
-   convention for **iteration16**:
-      – Images         →  .research/iteration16/images/
-      – JSON results   →  .research/iteration16/
-3. Previous fixes from iteration15 retained.
+1.   All hard-coded directories now point to
+       – Images       →  .research/iteration17/images/
+       – JSON results →  .research/iteration17/
+     as required by the latest specification.
+2.   The configuration loader still casts learning-rate strings to
+     ``float`` to avoid ``TypeError`` inside ``torch.optim``.
+3.   Previous functional fixes from iteration16 are retained.
 """
 from __future__ import annotations
 
@@ -260,7 +258,7 @@ class RaptorDiffuser:
 # =========================================================================
 from .preprocess import ImageTokenDataset  # noqa: E402 – local import
 
-JSON_ROOT = Path(".research/iteration16")
+JSON_ROOT = Path(".research/iteration17")
 IMAGE_DIR = JSON_ROOT / "images"  # allow other modules to re-use
 
 
