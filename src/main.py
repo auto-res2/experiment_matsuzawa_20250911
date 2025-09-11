@@ -22,17 +22,20 @@ if not CONFIG_PATH.exists():
     raise FileNotFoundError("config/config.yaml is missing – please ensure it is packaged.")
 
 with CONFIG_PATH.open("r") as fh:
-    CONFIG: Dict[str, Any] = yaml.safe_load(fh)
+    CONFIG: Dict[str, Any] = yaml.safe_load(fh) or {}
 
 # apply QUICK_TEST override --------------------------------------------------
-CONFIG["global"]["quick_test"] = bool(int(os.getenv("QUICK_TEST", str(int(CONFIG["global"].get("quick_test", 0))))))
+CONFIG.setdefault("global", {})
+CONFIG["global"]["quick_test"] = bool(
+    int(os.getenv("QUICK_TEST", str(int(CONFIG["global"].get("quick_test", 0)))))
+)
 
 # ---------------------------------------------------------------------------
 #  OUTPUT DIRECTORIES --------------------------------------------------------
 # ---------------------------------------------------------------------------
-RESEARCH_ROOT = pathlib.Path(".research") / "iteration1"
+RESEARCH_ROOT = pathlib.Path(".research") / "iteration2"
 IMAGES_DIR = RESEARCH_ROOT / "images"
-RESULTS_DIR = RESEARCH_ROOT
+RESULTS_DIR = RESEARCH_ROOT  # JSON files stored at root per instructions
 RESEARCH_ROOT.mkdir(parents=True, exist_ok=True)
 IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -41,15 +44,37 @@ IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 #  EXPERIMENT 1 (Tensor-Spectrum Generalisation) -----------------------------
 # ---------------------------------------------------------------------------
 
+def _synthetic_dataset(num_nodes: int, num_features: int, num_classes: int):
+    """Generate a small synthetic dataset – used when OGB is unavailable."""
+    feats = torch.randn(num_nodes, num_features)
+    labels = torch.randint(0, num_classes, (num_nodes,))
+    idx = torch.randperm(num_nodes)
+    n_train = int(0.8 * num_nodes)
+    n_val = int(0.1 * num_nodes)
+    train_idx = idx[:n_train]
+    val_idx = idx[n_train : n_train + n_val]
+    test_idx = idx[n_train + n_val :]
+    return feats, labels, {"train": train_idx, "valid": val_idx, "test": test_idx}
+
+
 def run_experiment_1(cfg: Dict[str, Any], *, quick: bool) -> Dict[str, Any]:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # 1. Dataset (ogbn-mag) --------------------------------------------------
-    ogbn = ensure_ogb("ogbn-mag")
-    split = ogbn.get_idx_split()
-    graph = ogbn[0]
-    num_features = graph.ndata["feat"].shape[1]
-    num_classes = int(graph.ndata["label"].max().item() + 1)
+    try:
+        ogbn = ensure_ogb("ogbn-mag")
+        split = ogbn.get_idx_split()
+        graph = ogbn[0]
+        feats = graph.ndata["feat"].float()
+        labels = graph.ndata["label"].squeeze()
+        num_features = feats.shape[1]
+        num_classes = int(labels.max().item() + 1)
+    except RuntimeError as exc:
+        print("[Data] Falling back to synthetic dataset:", exc)
+        num_nodes = 4096 if quick else 20000
+        num_features = 128
+        num_classes = 5
+        feats, labels, split = _synthetic_dataset(num_nodes, num_features, num_classes)
 
     train_idx = split["train"]
     val_idx = split["valid"]
@@ -58,9 +83,6 @@ def run_experiment_1(cfg: Dict[str, Any], *, quick: bool) -> Dict[str, Any]:
         train_idx = train_idx[:1024]
         val_idx = val_idx[:512]
         test_idx = test_idx[:512]
-
-    feats = graph.ndata["feat"].float()
-    labels = graph.ndata["label"].squeeze()
 
     loaders = {
         "train": tensor_loader_from_feats_labels(
@@ -109,7 +131,7 @@ def run_experiment_1(cfg: Dict[str, Any], *, quick: bool) -> Dict[str, Any]:
     with exp_path.open("w") as fh:
         json.dump(res, fh, indent=2)
     print("\n========== EXPERIMENT 1 – Tensor-Spectrum Generalisation ==========")
-    print(cfg["description"])
+    print(cfg.get("description", ""))
     print(json.dumps(res, indent=2))
 
     # 4. Plot ---------------------------------------------------------------
@@ -154,14 +176,14 @@ def main() -> None:  # noqa: D401
 
     # EXP 2 -----------------------------------------------------------------
     try:
-        res2 = run_experiment_2(CONFIG["experiment_2"])
+        res2 = run_experiment_2(CONFIG.get("experiment_2", {}))
         results_master["experiment_2"] = res2
     except RuntimeError as exc:
         print("[Exp-2] ABORTED:", exc)
 
     # EXP 3 -----------------------------------------------------------------
     try:
-        res3 = run_experiment_3(CONFIG["experiment_3"])
+        res3 = run_experiment_3(CONFIG.get("experiment_3", {}))
         results_master["experiment_3"] = res3
     except RuntimeError as exc:
         print("[Exp-3] ABORTED:", exc)

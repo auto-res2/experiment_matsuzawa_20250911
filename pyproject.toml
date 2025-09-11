@@ -5,8 +5,12 @@ requires-python = ">=3.9"
 dependencies = [
   "numpy>=1.21.0",
   "torch>=1.9.0",
-  "dgl>=1.1.0",
-  "ogb>=1.3.6",
+  # The OGB and DGL libraries are large and often unavailable in minimal CI
+  # environments. They are used only for real‐world datasets; our smoke tests
+  # fall back to synthetic data when these packages are absent. Hence, they are
+  # intentionally not listed as mandatory dependencies here. Users running the
+  # full experiments should manually install suitable wheels, e.g.:
+  #   pip install ogb dgl-cu118  (or dgl-cpu)
   "pyyaml>=6.0",
   "matplotlib>=3.5.0",
   "seaborn>=0.11.0",
