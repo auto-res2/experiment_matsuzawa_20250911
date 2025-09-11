@@ -7,6 +7,7 @@ in evaluate.py.  Execute via
 """
 from pathlib import Path
 import textwrap
+import warnings
 
 import yaml
 
@@ -59,6 +60,10 @@ with open(CFG_FILE) as f:
 # Run experiments – each prints its own JSON to stdout
 # -----------------------------------------------------------------------------
 
-evaluate.run_exp1(CONFIG["exp1"])
-evaluate.run_exp2(CONFIG["exp2"])
-evaluate.run_exp3(CONFIG["exp3"])
+try:
+    evaluate.run_exp1(CONFIG["exp1"])
+    evaluate.run_exp2(CONFIG["exp2"])
+    evaluate.run_exp3(CONFIG["exp3"])
+except Exception as e:  # pragma: no cover – ensures fail-fast with context
+    warnings.warn(f"[FATAL] Experiment runner crashed: {e}")
+    raise
