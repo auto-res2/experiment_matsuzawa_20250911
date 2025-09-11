@@ -1,110 +1,159 @@
 """src/train.py
-================
-Fixed issues:
-1. TACOCore dataclass was hashable → PyTorch's `named_modules()` tried to add
-   the instance to a set, resulting in `TypeError: unhashable type: 'TACOCore'`.
-   → Set `eq=False` on the dataclass decorator so the default `__hash__` coming
-     from `object` is kept (and therefore hashable).
-2. No functional changes beyond that – unit-tests and downstream code remain
-   untouched.
+Model and training-related components extracted from the original monolithic
+script.  No new functionality is introduced – only minimal fixes that prevent
+obvious runtime failures (shape mismatches, iterable-dataset requirements).
 """
 from __future__ import annotations
-
 import random
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import List
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+from transformers import WhisperModel, DistilBertModel
+import timm
 
 __all__ = [
-    "TACOCore",
-    "ZIPP",
-    "DERPP",
+    "TinyCodeBuffer",
+    "Rank1LoRA",
+    "TinyTACO",
+    "build_models",
 ]
 
+# ---------------------------------------------------------------------------
+# Helper – 512-byte code buffer (32-bit hashes)
+# ---------------------------------------------------------------------------
+class TinyCodeBuffer:
+    """Fixed 512-byte circular buffer storing 4-byte int hashes → max 128 codes."""
 
-# -----------------------------------------------------------------------------
-# Helper – fixed-size "memory buffer" that tracks its own byte usage
-# -----------------------------------------------------------------------------
-class _FixedByteBuffer:
-    """Mimics the ≤512-byte external EEPROM described in the paper."""
+    CAPACITY = 128  # 128 × 4 B = 512 B
 
-    def __init__(self, capacity_bytes: int = 512) -> None:
-        self.capacity_bytes: int = capacity_bytes
-        self._storage: List[int] = []  # pretend each int == 1 byte
+    def __init__(self):
+        self._codes: List[int] = []
+        self._idx = 0
 
-    # ------------------------------------------------------------------
-    # Public helpers used by the unit-tests and src.main
-    # ------------------------------------------------------------------
+    # -------------------------------------------------------------------
+    def push(self, code: int):
+        if len(self._codes) < self.CAPACITY:
+            self._codes.append(code & 0xFFFFFFFF)
+        else:
+            self._codes[self._idx] = code & 0xFFFFFFFF
+            self._idx = (self._idx + 1) % self.CAPACITY
+
+    # -------------------------------------------------------------------
     @property
-    def used_bytes(self) -> int:  # noqa: D401 – property is self-explanatory
-        return len(self._storage)
-
-    def write(self, payload_size: int = 1) -> None:
-        """Append *payload_size* bytes – drop oldest if we would overflow."""
-        for _ in range(payload_size):
-            if len(self._storage) >= self.capacity_bytes:
-                self._storage.pop(0)  # FIFO eviction to stay within budget
-            self._storage.append(random.randrange(0, 256))
+    def used_bytes(self) -> int:  # always ≤512
+        return 4 * len(self._codes)
 
 
-# -----------------------------------------------------------------------------
-# Base model – shared dummy backbone producing 10-class logits
-# -----------------------------------------------------------------------------
-class _BaseDummyModel(nn.Module):
-    """A trivial 2-layer perceptron to keep the code self-contained."""
+# ---------------------------------------------------------------------------
+# LoRA rank-1 patch utility
+# ---------------------------------------------------------------------------
+class Rank1LoRA(nn.Module):
+    """A simple rank-1 LoRA adapter for a Linear layer."""
 
-    def __init__(self, n_features: int = 128, n_classes: int = 10) -> None:
+    def __init__(self, layer: nn.Linear, alpha: float = 1.0):
         super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(n_features, 64), nn.ReLU(), nn.Linear(64, n_classes)
+        self.layer = layer
+        self.alpha = alpha
+        self.weight_a = nn.Parameter(torch.zeros((1, layer.in_features)))
+        self.weight_b = nn.Parameter(torch.zeros((layer.out_features, 1)))
+        nn.init.normal_(self.weight_a, std=1e-4)
+        nn.init.normal_(self.weight_b, std=1e-4)
+
+    def forward(self, x):  # pylint: disable=arguments-differ
+        delta_w = (self.weight_b @ self.weight_a) * self.alpha
+        return F.linear(x, self.layer.weight + delta_w, self.layer.bias)
+
+
+# ---------------------------------------------------------------------------
+# TinyTACO – minimal continual learner (incl. classification heads)
+# ---------------------------------------------------------------------------
+class TinyTACO(nn.Module):
+    """A *minimal* continual-learning module – remains faithful to the
+    single-file reference but fixes dimension mismatches by attaching small
+    classification heads where necessary.
+    """
+
+    def __init__(
+        self,
+        vision_trunk: nn.Module,
+        audio_trunk: WhisperModel,
+        text_trunk: DistilBertModel,
+        device: torch.device,
+        cfg: dict,
+    ):
+        super().__init__()
+        self.device = device
+        self.codebook = TinyCodeBuffer()
+
+        # Attach LoRA rank-1 patches to *last* Linear layer of each trunk
+        self.vision = vision_trunk
+        self.audio = audio_trunk
+        self.text = text_trunk
+        self._patch_last_linear(self.vision)
+        self._patch_last_linear(self.audio)
+        self._patch_last_linear(self.text)
+
+        # ------------------------------------------------------------------
+        # Task-specific classification heads (fixes earlier shape issues)
+        # ------------------------------------------------------------------
+        self.audio_head = nn.Linear(self.audio.config.d_model, 50)  # ESC-50
+        self.text_head = nn.Linear(self.text.config.hidden_size, self.text.config.vocab_size)
+
+        # Simple probe network (used in the paper for drift estimation)
+        self.probe = nn.Sequential(
+            nn.Linear(512, 128), nn.ReLU(), nn.Linear(128, cfg["hyper_params"]["probe_dim"])
         )
 
-    # ------------------------------------------------------------------
-    def forward(self, sample: Dict) -> torch.Tensor:  # overriding nn.Module.forward
-        # The caller may pass arbitrary modality dictionaries.  We ignore the
-        # actual content and feed zeros of the expected shape.
-        device = next(self.parameters()).device
-        x = torch.zeros(1, 128, device=device)
-        return self.net(x)
-
-
-# -----------------------------------------------------------------------------
-# TACO – tracks a strict byte budget via _FixedByteBuffer
-# -----------------------------------------------------------------------------
-@dataclass(eq=False)  # eq=False keeps the default object.__hash__ (hashable)
-class TACOCore(_BaseDummyModel):
-    cfg: Dict = field(default_factory=dict)
-
-    def __post_init__(self) -> None:  # dataclass ⇒ post-init hook
-        mem_budget = int(self.cfg.get("memory_budget", 512))
-        super().__init__()
-        self.memory = _FixedByteBuffer(mem_budget)
+        self.to(device)
+        self.opt = optim.Adam(self.parameters(), lr=cfg["hyper_params"]["lr"])
 
     # ------------------------------------------------------------------
-    def forward(self, sample: Dict) -> torch.Tensor:  # overriding _BaseDummyModel.forward
-        # 1 byte per invocation – *far* below real TACO storage patterns, but
-        # good enough for the memory unit-test and energy/latency benchmark.
-        self.memory.write(1)
-        return super().forward(sample)
+    @staticmethod
+    def _patch_last_linear(model):
+        last_lin = None
+        for m in model.modules():
+            if isinstance(m, nn.Linear):
+                last_lin = m
+        if last_lin is None:
+            raise RuntimeError("No Linear layer found for LoRA patching.")
+        rank1 = Rank1LoRA(last_lin)
+
+        def _patched(x, rank1_layer=rank1):  # noqa: D401,E501
+            return rank1_layer(x)
+
+        last_lin.forward = _patched  # monkey-patch
+
+    # ------------------------------------------------------------------
+    # Forward methods return *logits* for classification
+    # ------------------------------------------------------------------
+    def forward_vision(self, imgs):
+        return self.vision(imgs)  # already (B,1000)
+
+    def forward_audio(self, mels):
+        feats = self.audio(mels).last_hidden_state.mean(dim=1)
+        return self.audio_head(feats)
+
+    def forward_text(self, input_ids, attention_mask):
+        feats = self.text(input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]
+        return self.text_head(feats)
+
+    # ------------------------------------------------------------------
+    def update_online(self, loss: torch.Tensor):
+        self.opt.zero_grad(set_to_none=True)
+        loss.backward()
+        self.opt.step()
+        self.codebook.push(random.getrandbits(32))
 
 
-# -----------------------------------------------------------------------------
-# ZIPP & DER++ baselines – added cfg-aware __init__ wrappers
-# -----------------------------------------------------------------------------
-class ZIPP(_BaseDummyModel):
-    """Minimal baseline that shares the dummy backbone with TACO."""
+# ---------------------------------------------------------------------------
+# Convenience factory -------------------------------------------------------
+# ---------------------------------------------------------------------------
 
-    def __init__(self, cfg: Optional[Dict] = None) -> None:  # noqa: D401
-        # cfg is ignored for this toy baseline but kept for API parity.
-        self.cfg = cfg or {}
-        super().__init__()
-
-
-class DERPP(_BaseDummyModel):
-    """Replay-buffer baseline – here identical to dummy backbone."""
-
-    def __init__(self, cfg: Optional[Dict] = None) -> None:  # noqa: D401
-        self.cfg = cfg or {}
-        super().__init__()
+def build_models(device: torch.device, cfg: dict) -> TinyTACO:
+    vision_trunk = timm.create_model(cfg["models"]["vision_trunk"].split("/")[-1], pretrained=True)
+    audio_trunk = WhisperModel.from_pretrained(cfg["models"]["audio_trunk"]).encoder
+    text_trunk = DistilBertModel.from_pretrained(cfg["models"]["text_trunk"])
+    return TinyTACO(vision_trunk, audio_trunk, text_trunk, device, cfg)
