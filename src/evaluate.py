@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CONFIG_PATH = ROOT / "config" / "config.yaml"
 CONFIG = yaml.safe_load(CONFIG_PATH.read_text())
 
-RESEARCH_DIR = ROOT / ".research" / "iteration1"
+RESEARCH_DIR = ROOT / ".research" / "iteration2"
 IMAGES_DIR = RESEARCH_DIR / "images"
 for _d in [RESEARCH_DIR, IMAGES_DIR]:
     _d.mkdir(parents=True, exist_ok=True)
@@ -81,7 +81,7 @@ def evaluate_cafe_edge(ckpt_paths: List[Path]):
 
     metrics_per_seed = []
     for ckpt in ckpt_paths:
-        model = CaFeEDGE(in_dim=ds_test[0].ndata["x"].shape[1]).to(device)
+        model = CaFeEDGE(in_dim=ds_test[0].x.shape[1]).to(device)
         model.load_state_dict(torch.load(ckpt, map_location=device))
         model.eval()
 

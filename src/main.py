@@ -20,7 +20,7 @@ CONFIG = yaml.safe_load((ROOT / "config" / "config.yaml").read_text())
 
 def main():  # noqa: D401 – imperative main OK
     print("************************************************************")
-    print("  CaFe-EDGE  –  Reproducibility Suite (Iteration-1)")
+    print("  CaFe-EDGE  –  Reproducibility Suite (Iteration-2)")
     print("  Strict-No-Fallback is active – real data mandatory!")
     print("************************************************************\n")
 

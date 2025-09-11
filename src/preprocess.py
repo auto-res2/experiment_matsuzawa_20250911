@@ -9,11 +9,13 @@ import shutil
 import sys
 import tarfile
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 
-import dgl
 import requests
 import yaml
+import numpy as np
+import torch
+from torch_geometric.data import Data
 from torch.utils.data import Dataset
 
 # ---------------------------------------------------------------------------
@@ -89,12 +91,12 @@ def ensure_dataset() -> Path:
 
 
 class StreamEdgeDataset(Dataset):
-    """Iterates over streaming-edge parquet shards."""
+    """Iterates over streaming-edge parquet shards and returns PyG Data objects."""
 
     def __init__(self, split: str):
         assert split in {"train", "val", "test"}
         root = ensure_dataset()
-        self.files = sorted((root / split).rglob("*.parquet"))
+        self.files: List[Path] = sorted((root / split).rglob("*.parquet"))
         if not self.files:
             sys.exit(f"ERROR: no parquet files for split '{split}'.")
 
@@ -102,15 +104,34 @@ class StreamEdgeDataset(Dataset):
         return len(self.files)
 
     def __getitem__(self, idx):  # pylint: disable=arguments-differ
-        import pandas as pd  # heavy import – local to keep init snappy
-        import pyarrow.parquet as pq
+        import pyarrow.parquet as pq  # heavy import – local to keep init snappy
 
         path = self.files[idx]
         table = pq.read_table(path)
         df = table.to_pandas()
 
-        g = dgl.graph((df.src.values, df.dst.values))
-        g.edata["timestamp"] = df.timestamp.values
-        g.edata["y"] = df.label.values
-        g.ndata["x"] = df[[c for c in df.columns if c.startswith("nf_")]].values
-        return g
+        # Edge list -------------------------------------------------------
+        src = df.src.values.astype(np.int64)
+        dst = df.dst.values.astype(np.int64)
+        edge_index = torch.tensor(np.vstack([src, dst]), dtype=torch.long)
+
+        # Node feature processing ----------------------------------------
+        nf_cols = [c for c in df.columns if c.startswith("nf_")]
+        num_nodes = int(max(src.max(), dst.max()) + 1)
+        if nf_cols:
+            x = np.zeros((num_nodes, len(nf_cols)), dtype=np.float32)
+            # Assign features where available (use last observed if multiple)
+            for node_id, feats in zip(src, df[nf_cols].values):
+                x[node_id] = feats
+            for node_id, feats in zip(dst, df[nf_cols].values):
+                x[node_id] = feats
+            x = torch.tensor(x, dtype=torch.float32)
+        else:
+            x = torch.zeros((num_nodes, 1), dtype=torch.float32)
+
+        # Graph label (binary) -------------------------------------------
+        label_val = float(df.label.iloc[0])  # assume homogeneous label per shard
+        y = torch.tensor([label_val], dtype=torch.float32)
+
+        data = Data(x=x, edge_index=edge_index, y=y)
+        return data

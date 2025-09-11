@@ -29,7 +29,7 @@ except FileNotFoundError as e:  # pragma: no cover – fatal for experiment
 
 DATA_DIR = ROOT / "data"
 MODELS_DIR = ROOT / "models"
-RESEARCH_DIR = ROOT / ".research" / "iteration1"
+RESEARCH_DIR = ROOT / ".research" / "iteration2"
 for _d in [DATA_DIR, MODELS_DIR, RESEARCH_DIR]:
     _d.mkdir(parents=True, exist_ok=True)
 
@@ -123,7 +123,7 @@ def _train_single_seed(seed: int, device: torch.device) -> Path:
         collate_fn=_collate,
     )
 
-    in_dim = ds_train[0].ndata["x"].shape[1]
+    in_dim = ds_train[0].x.shape[1]
     model = CaFeEDGE(
         in_dim=in_dim,
         hidden=CONFIG["models"]["cafe_edge"]["hidden_dim"],
