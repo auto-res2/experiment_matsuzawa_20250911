@@ -1,0 +1,54 @@
+=== uv sync start Thu Sep 11 07:36:14 AM UTC 2025 ===
+=== uv install end Thu Sep 11 07:36:59 AM UTC 2025 ===
+=== experiment start Thu Sep 11 07:36:59 AM UTC 2025 ===
+
+============================================================
+RUNNING EXPERIMENT1
+============================================================
+Downloading http://snap.stanford.edu/ogb/data/nodeproppred/arxiv.zip
+Extracting dataset/arxiv.zip
+Loading necessary files...
+This might take a while.
+Processing graphs...
+Converting graphs into PyG objects...
+Saving...
+
+EXPERIMENT DESCRIPTION:
+EXP-1  BMRF → variance & training stability on OGBN-arxiv-time + Reddit-Threads-2020.
+
+
+NUMERICAL RESULTS:
+{
+  "bloom": {
+    "kappa_variance_mean": 0.0,
+    "divergence_rate": 0.0
+  },
+  "no_bmrf": {
+    "kappa_variance_mean": 0.0,
+    "divergence_rate": 0.0
+  },
+  "pairnorm": {
+    "kappa_variance_mean": 0.0,
+    "divergence_rate": 0.0
+  },
+  "orbit": {
+    "kappa_variance_mean": 0.0,
+    "divergence_rate": 0.0
+  }
+}
+
+FIGURE FILES:
+ - images/experiment1_kappa_variance.pdf
+============================================================
+
+
+============================================================
+RUNNING EXPERIMENT2
+============================================================
+[WARN] No experiment runner registered for 'experiment2'. Skipping…
+
+============================================================
+RUNNING EXPERIMENT3
+============================================================
+[WARN] No experiment runner registered for 'experiment3'. Skipping…
+=== experiment end Thu Sep 11 07:39:12 AM UTC 2025 ===

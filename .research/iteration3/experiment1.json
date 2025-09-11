@@ -1,0 +1,18 @@
+{
+  "bloom": {
+    "kappa_variance_mean": 0.0,
+    "divergence_rate": 0.0
+  },
+  "no_bmrf": {
+    "kappa_variance_mean": 0.0,
+    "divergence_rate": 0.0
+  },
+  "pairnorm": {
+    "kappa_variance_mean": 0.0,
+    "divergence_rate": 0.0
+  },
+  "orbit": {
+    "kappa_variance_mean": 0.0,
+    "divergence_rate": 0.0
+  }
+}
