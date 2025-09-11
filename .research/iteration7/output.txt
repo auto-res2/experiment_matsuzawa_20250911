@@ -1,0 +1,5 @@
+=== uv sync start Thu Sep 11 06:02:09 AM UTC 2025 ===
+=== uv install end Thu Sep 11 06:03:17 AM UTC 2025 ===
+=== experiment start Thu Sep 11 06:03:17 AM UTC 2025 ===
+[WARN] Falling back to EchoModel for 'bitdiffusion/bitdiffusion-t5-large': bitdiffusion/bitdiffusion-t5-large is not a local folder and is not a valid model identifier listed on 'https://huggingface.co/models'
+If this is a private repository, make sure to pass a token having permission to this repo either by logging in with `hf auth login` or by passing `token=<your_token>`
