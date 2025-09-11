@@ -1,0 +1,59 @@
+warning: Skipping installation of entry points (`project.scripts`) because this project is not packaged; to install entry points, set `tool.uv.package = true` or define a `build-system`
+Using CPython 3.11.13
+Creating virtual environment at: .venv
+Resolved 48 packages in 507ms
+Downloading numpy (16.2MiB)
+Downloading diffusers (3.9MiB)
+Downloading nvidia-cufft-cu12 (184.2MiB)
+Downloading nvidia-cuda-nvrtc-cu12 (84.0MiB)
+Downloading triton (148.3MiB)
+Downloading nvidia-cusparse-cu12 (274.9MiB)
+Downloading nvidia-cudnn-cu12 (674.0MiB)
+Downloading nvidia-nvjitlink-cu12 (37.4MiB)
+Downloading setuptools (1.1MiB)
+Downloading torch (846.9MiB)
+Downloading nvidia-cuda-cupti-cu12 (9.8MiB)
+Downloading nvidia-cusolver-cu12 (255.1MiB)
+Downloading nvidia-cublas-cu12 (566.8MiB)
+Downloading nvidia-nccl-cu12 (307.4MiB)
+Downloading nvidia-curand-cu12 (60.7MiB)
+Downloading nvidia-cusparselt-cu12 (273.9MiB)
+Downloading nvidia-cufile-cu12 (1.1MiB)
+ Downloading nvidia-cufile-cu12
+ Downloading setuptools
+ Downloading diffusers
+ Downloading nvidia-cuda-cupti-cu12
+ Downloading numpy
+ Downloading nvidia-nvjitlink-cu12
+ Downloading nvidia-curand-cu12
+ Downloading nvidia-cuda-nvrtc-cu12
+ Downloading triton
+ Downloading nvidia-cufft-cu12
+ Downloading nvidia-cusolver-cu12
+ Downloading nvidia-cusparse-cu12
+ Downloading nvidia-cusparselt-cu12
+ Downloading nvidia-nccl-cu12
+ Downloading nvidia-cublas-cu12
+ Downloading nvidia-cudnn-cu12
+  × Failed to download `torch==2.8.0`
+  ├─▶ Failed to extract archive:
+  │   torch-2.8.0-cp311-cp311-manylinux_2_28_x86_64.whl
+  ├─▶ I/O operation failed during extraction
+  ╰─▶ failed to query metadata of file
+      `/home/toma/.cache/uv/.tmpxK74kG/torch/bin/protoc`: No such file or
+      directory (os error 2)
+  help: `torch` (v2.8.0) was included because `raptor-mini` (v0.1.0) depends
+        on `torch`
+Downloading torch (846.9MiB)
+ Downloading torch
+Installed 42 packages in 4.12s
+Cannot initialize model with low cpu memory usage because `accelerate` was not found in the environment. Defaulting to `low_cpu_mem_usage=False`. It is strongly recommended to install `accelerate` for faster and less memory-intense model loading. You can do so with: 
+```
+pip install accelerate
+```
+.
+/home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/src/train.py:296: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  scaler = GradScaler(enabled=torch.cuda.is_available())
+v0-E0:   0%|          | 0/2 [00:00<?, ?it/s]/home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/src/train.py:307: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast(enabled=torch.cuda.is_available()):
+v0-E0:  50%|█████     | 1/2 [00:00<00:00,  6.80it/s]                                                    
