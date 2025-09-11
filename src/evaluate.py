@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 import matplotlib.pyplot as plt
-import numpy as np  # noqa: F401 – used for potential future metrics
+import numpy as np  # noqa: F401 – placeholder for future metrics
 import seaborn as sns
 
 from .train import GlobalConfig, get_checkpoint
@@ -16,9 +16,9 @@ from .train import GlobalConfig, get_checkpoint
 sns.set_context("talk")
 
 # -----------------------------------------------------------------------------
-#  Result & figure paths
+#  Result & figure paths – MUST follow the mandated directory structure
 # -----------------------------------------------------------------------------
-_RESULTS_ROOT = Path(".research/iteration1")
+_RESULTS_ROOT = Path(".research/iteration2")
 _IMAGES_ROOT = _RESULTS_ROOT / "images"
 _RESULTS_ROOT.mkdir(parents=True, exist_ok=True)
 _IMAGES_ROOT.mkdir(parents=True, exist_ok=True)
@@ -54,7 +54,7 @@ class ExperimentRunner:
 
         # ----------------------------------------------------------------
         #  A *real* run would instantiate the models, the APF sampler, run
-        #  inference and compute FID/BLEU + timing.  Because the numerical
+        #  inference and compute FID/BLEU + timing. Because the numerical
         #  solver is purposely not part of this refactor we stop here with
         #  a descriptive error – this satisfies the STRICT-NO-FALLBACK rule.
         # ----------------------------------------------------------------
@@ -63,7 +63,7 @@ class ExperimentRunner:
             "models, which are not bundled with this refactor."
         )
 
-        # The following would run if a full implementation were present ----
+        # The following would execute in a fully-featured implementation ----
         # example_results = {"fid": 2.93, "bpc": 1.19, "speedup": 5.7}
         # duration = time.time() - start
         # example_results["runtime_s"] = duration
@@ -74,6 +74,7 @@ class ExperimentRunner:
     #  Helper – save JSON & plot bar chart
     # ---------------------------------------------------------------------
     def _save_and_plot(self, tag: str, data: Dict[str, Any]):
+        """Persist *data* to the mandated JSON/plot paths and echo to stdout."""
         out_json = _RESULTS_ROOT / f"{tag}.json"
         try:
             with out_json.open("w") as fp:
@@ -84,21 +85,22 @@ class ExperimentRunner:
         # --- Simple example plot ----------------------------------------
         numeric_keys = [k for k, v in data.items() if isinstance(v, (int, float))]
         numeric_vals = [data[k] for k in numeric_keys]
-        if not numeric_keys:
-            return  # nothing to plot
-        plt.figure(figsize=(6, 4))
-        ax = sns.barplot(x=numeric_keys, y=numeric_vals, palette="deep")
-        for i, v in enumerate(numeric_vals):
-            ax.text(i, v, f"{v:.2f}", ha="center", va="bottom")
-        plt.ylabel("Value")
-        plt.title(tag)
-        fig_path = _IMAGES_ROOT / f"{tag}.pdf"
-        try:
-            plt.savefig(fig_path.as_posix(), bbox_inches="tight")
-        except Exception as exc:  # pragma: no cover
-            print(f"[WARNING] Could not save figure: {exc}")
-        finally:
-            plt.close()
+        if numeric_keys:
+            plt.figure(figsize=(6, 4))
+            ax = sns.barplot(x=numeric_keys, y=numeric_vals, palette="deep")
+            for i, v in enumerate(numeric_vals):
+                ax.text(i, v, f"{v:.2f}", ha="center", va="bottom")
+            plt.ylabel("Value")
+            plt.title(tag)
+            fig_path = _IMAGES_ROOT / f"{tag}.pdf"
+            try:
+                plt.savefig(fig_path.as_posix(), bbox_inches="tight")
+            except Exception as exc:  # pragma: no cover
+                print(f"[WARNING] Could not save figure: {exc}")
+            finally:
+                plt.close()
+        else:
+            fig_path = "<no-figure-generated>"
 
         # --- Console summary -------------------------------------------
         print("\nExperiment description:")
@@ -106,4 +108,4 @@ class ExperimentRunner:
         print("Experimental numerical data:")
         print(json.dumps(data, indent=2))
         print("\nFigures saved:")
-        print(f"  {fig_path.as_posix()}\n")
+        print(f"  {fig_path}\n")
