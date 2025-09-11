@@ -1,0 +1,141 @@
+Warning 13 in paper.tex line 36: Intersentence spacing (`\@') should perhaps be used.
+\title{TACO: Sub-Kilobyte Privacy-Preserving Continual Learning on Edge Devices}  
+           ^
+Warning 8 in paper.tex line 50: Wrong length of dash may have been used.
+Continual learning closer to human cognition - absorbing information from a non-stationary stream without explicit task boundaries - remains an open challenge for neural networks. The problem becomes acute on commodity edge hardware where every byte of non-volatile memory and every milli-joule of energy is budgeted. A wearable cardiac monitor or cochlear implant must learn locally for years, yet even a handful of stored images can breach cost, safety or privacy limits. Replaying such a buffer can furthermore leak sensitive data: recent membership-inference attacks recover user content after only a few hundred replays.  
+                                             ^
+Warning 8 in paper.tex line 50: Wrong length of dash may have been used.
+Continual learning closer to human cognition - absorbing information from a non-stationary stream without explicit task boundaries - remains an open challenge for neural networks. The problem becomes acute on commodity edge hardware where every byte of non-volatile memory and every milli-joule of energy is budgeted. A wearable cardiac monitor or cochlear implant must learn locally for years, yet even a handful of stored images can breach cost, safety or privacy limits. Replaying such a buffer can furthermore leak sensitive data: recent membership-inference attacks recover user content after only a few hundred replays.  
+                                                                                                                                   ^
+Warning 2 in paper.tex line 53: Non-breaking space (`~') should have been used.
+Existing work alleviates forgetting by replaying stored examples \cite{chaudhry-2019-continual}, compressing memories into coresets \cite{borsos-2020-coresets,zhou-2023-probabilistic} or isolating parameters through sparsity \cite{wang-2022-sparcl,gurbuz-2022-nispa}. However, these methods keep kilobyte-scale buffers, assume labelled tasks, or leave privacy unaddressed. Orthogonal-subspace regularisers eliminate explicit memories \cite{chaudhry-2020-continual} but require task identifiers. Hence the following question is unresolved: can a learner thrive with only half a kilobyte of external memory when the stream is unlabeled, gradually drifting, multi-modal and subject to strict differential-privacy as well as communication budgets?  
+                                                                ^
+Warning 2 in paper.tex line 53: Non-breaking space (`~') should have been used.
+Existing work alleviates forgetting by replaying stored examples \cite{chaudhry-2019-continual}, compressing memories into coresets \cite{borsos-2020-coresets,zhou-2023-probabilistic} or isolating parameters through sparsity \cite{wang-2022-sparcl,gurbuz-2022-nispa}. However, these methods keep kilobyte-scale buffers, assume labelled tasks, or leave privacy unaddressed. Orthogonal-subspace regularisers eliminate explicit memories \cite{chaudhry-2020-continual} but require task identifiers. Hence the following question is unresolved: can a learner thrive with only half a kilobyte of external memory when the stream is unlabeled, gradually drifting, multi-modal and subject to strict differential-privacy as well as communication budgets?  
+                                                                                                                                   ^
+Warning 2 in paper.tex line 53: Non-breaking space (`~') should have been used.
+Existing work alleviates forgetting by replaying stored examples \cite{chaudhry-2019-continual}, compressing memories into coresets \cite{borsos-2020-coresets,zhou-2023-probabilistic} or isolating parameters through sparsity \cite{wang-2022-sparcl,gurbuz-2022-nispa}. However, these methods keep kilobyte-scale buffers, assume labelled tasks, or leave privacy unaddressed. Orthogonal-subspace regularisers eliminate explicit memories \cite{chaudhry-2020-continual} but require task identifiers. Hence the following question is unresolved: can a learner thrive with only half a kilobyte of external memory when the stream is unlabeled, gradually drifting, multi-modal and subject to strict differential-privacy as well as communication budgets?  
+                                                                                                                                                                                                                                ^
+Warning 2 in paper.tex line 53: Non-breaking space (`~') should have been used.
+Existing work alleviates forgetting by replaying stored examples \cite{chaudhry-2019-continual}, compressing memories into coresets \cite{borsos-2020-coresets,zhou-2023-probabilistic} or isolating parameters through sparsity \cite{wang-2022-sparcl,gurbuz-2022-nispa}. However, these methods keep kilobyte-scale buffers, assume labelled tasks, or leave privacy unaddressed. Orthogonal-subspace regularisers eliminate explicit memories \cite{chaudhry-2020-continual} but require task identifiers. Hence the following question is unresolved: can a learner thrive with only half a kilobyte of external memory when the stream is unlabeled, gradually drifting, multi-modal and subject to strict differential-privacy as well as communication budgets?  
+                                                                                                                                                                                                                                                                                                                                                                                                                                                 ^
+Warning 8 in paper.tex line 56: Wrong length of dash may have been used.
+We answer this question in theory - and partially in practice - by proposing TACO: Task-Agnostic COnstant-memory learning. A direct successor to ZIPP, TACO moves the memory ceiling down to 512 bytes and adds compatibility with evolving foundation-model checkpoints. The design contributes: self-supervised drift probes, a universal four-level codebook, elastic LoRA patching, a dual-privacy guard, a memory-energy bound and foundation-model synchronisation. Validation comes through three studies: cross-modal learning capacity over 24 hours, privacy and communication in a ten-node federation, and the memory-energy-latency Pareto with a backbone swap. Results confirm strict memory and privacy compliance as well as rapid adaptation but expose a substantial accuracy and efficiency gap that guides future work.  
+                                  ^
+Warning 8 in paper.tex line 56: Wrong length of dash may have been used.
+We answer this question in theory - and partially in practice - by proposing TACO: Task-Agnostic COnstant-memory learning. A direct successor to ZIPP, TACO moves the memory ceiling down to 512 bytes and adds compatibility with evolving foundation-model checkpoints. The design contributes: self-supervised drift probes, a universal four-level codebook, elastic LoRA patching, a dual-privacy guard, a memory-energy bound and foundation-model synchronisation. Validation comes through three studies: cross-modal learning capacity over 24 hours, privacy and communication in a ten-node federation, and the memory-energy-latency Pareto with a backbone swap. Results confirm strict memory and privacy compliance as well as rapid adaptation but expose a substantial accuracy and efficiency gap that guides future work.  
+                                                              ^
+Warning 13 in paper.tex line 56: Intersentence spacing (`\@') should perhaps be used.
+We answer this question in theory - and partially in practice - by proposing TACO: Task-Agnostic COnstant-memory learning. A direct successor to ZIPP, TACO moves the memory ceiling down to 512 bytes and adds compatibility with evolving foundation-model checkpoints. The design contributes: self-supervised drift probes, a universal four-level codebook, elastic LoRA patching, a dual-privacy guard, a memory-energy bound and foundation-model synchronisation. Validation comes through three studies: cross-modal learning capacity over 24 hours, privacy and communication in a ten-node federation, and the memory-energy-latency Pareto with a backbone swap. Results confirm strict memory and privacy compliance as well as rapid adaptation but expose a substantial accuracy and efficiency gap that guides future work.  
+                                                                                 ^
+Warning 2 in paper.tex line 70: Non-breaking space (`~') should have been used.
+Episodic replay dominates online continual learning. Even a single example per class mitigates forgetting \cite{chaudhry-2019-continual}, yet the buffer still grows linearly. Coreset selection via bilevel optimisation compresses more aggressively \cite{borsos-2020-coresets}; probabilistic bilevel sampling adds robustness to noisy labels \cite{zhou-2023-probabilistic}. Both exceed our 512 B budget and ignore privacy leakage.  
+                                                                                                         ^
+Warning 2 in paper.tex line 70: Non-breaking space (`~') should have been used.
+Episodic replay dominates online continual learning. Even a single example per class mitigates forgetting \cite{chaudhry-2019-continual}, yet the buffer still grows linearly. Coreset selection via bilevel optimisation compresses more aggressively \cite{borsos-2020-coresets}; probabilistic bilevel sampling adds robustness to noisy labels \cite{zhou-2023-probabilistic}. Both exceed our 512 B budget and ignore privacy leakage.  
+                                                                                                                                                                                                                                                      ^
+Warning 2 in paper.tex line 70: Non-breaking space (`~') should have been used.
+Episodic replay dominates online continual learning. Even a single example per class mitigates forgetting \cite{chaudhry-2019-continual}, yet the buffer still grows linearly. Coreset selection via bilevel optimisation compresses more aggressively \cite{borsos-2020-coresets}; probabilistic bilevel sampling adds robustness to noisy labels \cite{zhou-2023-probabilistic}. Both exceed our 512 B budget and ignore privacy leakage.  
+                                                                                                                                                                                                                                                                                                                                                  ^
+Warning 2 in paper.tex line 73: Non-breaking space (`~') should have been used.
+Structural approaches avoid explicit memories. Low-rank orthogonal subspaces allocate task-specific latent spaces \cite{chaudhry-2020-continual} and winning subnetworks reuse sparse masks \cite{kang-2023-forget}, but both presuppose known task boundaries. SparCL uses weight, data and gradient sparsity to cut FLOPs on edge devices by $23\times$, yet relies on an 8 kB centroid cache \cite{wang-2022-sparcl}. NISPA rewires sparse paths during learning, achieving parameter economy but not handling unlabeled drift or privacy \cite{gurbuz-2022-nispa}.  
+                                                                                                                 ^
+Warning 2 in paper.tex line 73: Non-breaking space (`~') should have been used.
+Structural approaches avoid explicit memories. Low-rank orthogonal subspaces allocate task-specific latent spaces \cite{chaudhry-2020-continual} and winning subnetworks reuse sparse masks \cite{kang-2023-forget}, but both presuppose known task boundaries. SparCL uses weight, data and gradient sparsity to cut FLOPs on edge devices by $23\times$, yet relies on an 8 kB centroid cache \cite{wang-2022-sparcl}. NISPA rewires sparse paths during learning, achieving parameter economy but not handling unlabeled drift or privacy \cite{gurbuz-2022-nispa}.  
+                                                                                                                                                                                           ^
+Warning 2 in paper.tex line 73: Non-breaking space (`~') should have been used.
+Structural approaches avoid explicit memories. Low-rank orthogonal subspaces allocate task-specific latent spaces \cite{chaudhry-2020-continual} and winning subnetworks reuse sparse masks \cite{kang-2023-forget}, but both presuppose known task boundaries. SparCL uses weight, data and gradient sparsity to cut FLOPs on edge devices by $23\times$, yet relies on an 8 kB centroid cache \cite{wang-2022-sparcl}. NISPA rewires sparse paths during learning, achieving parameter economy but not handling unlabeled drift or privacy \cite{gurbuz-2022-nispa}.  
+                                                                                                                                                                                                                                                                                                                                                                                               ^
+Warning 2 in paper.tex line 73: Non-breaking space (`~') should have been used.
+Structural approaches avoid explicit memories. Low-rank orthogonal subspaces allocate task-specific latent spaces \cite{chaudhry-2020-continual} and winning subnetworks reuse sparse masks \cite{kang-2023-forget}, but both presuppose known task boundaries. SparCL uses weight, data and gradient sparsity to cut FLOPs on edge devices by $23\times$, yet relies on an 8 kB centroid cache \cite{wang-2022-sparcl}. NISPA rewires sparse paths during learning, achieving parameter economy but not handling unlabeled drift or privacy \cite{gurbuz-2022-nispa}.  
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ^
+Warning 2 in paper.tex line 76: Non-breaking space (`~') should have been used.
+Compression-centric methods resemble our codebook. Adaptive Quantization Modules store discrete codes compatible with changing auto-encoders \cite{caccia-2019-online}; however, they retain per-sample activations and lack privacy analysis. Distributionally robust memory evolution hardens buffers against over-fitting \cite{wang-2022-improving} but still keeps kilobyte memories.  
+                                                                                                                                            ^
+Warning 2 in paper.tex line 76: Non-breaking space (`~') should have been used.
+Compression-centric methods resemble our codebook. Adaptive Quantization Modules store discrete codes compatible with changing auto-encoders \cite{caccia-2019-online}; however, they retain per-sample activations and lack privacy analysis. Distributionally robust memory evolution hardens buffers against over-fitting \cite{wang-2022-improving} but still keeps kilobyte memories.  
+                                                                                                                                                                                                                                                                                                                            ^
+Warning 2 in paper.tex line 79: Non-breaking space (`~') should have been used.
+Privacy-aware continual learning is mostly explored in federated contexts. Differentially private stochastic gradient MCMC controls $\epsilon$ but incurs heavy compute \cite{chen-2014-stochastic}; compounded leakage from replaying a tiny buffer is unstudied. TACO is unique in jointly satisfying sub-kilobyte memory, task-free operation, modality generality and dual privacy within a field-deployable implementation.  
+                                                                                                                                                                       ^
+Warning 2 in paper.tex line 92: Non-breaking space (`~') should have been used.
+The adversary controls the server and sees all public communication. Gaussian Differential Privacy ($\sigma=1.1$, sample-rate $q=0.05$) is applied to stored statistics; randomized response flips each 8-bit address with probability $0.12$. A R\'enyi accountant accumulates $\epsilon$; the run aborts if $\epsilon>1$. MI-AUC is estimated with a shadow-model attacker as in \cite{carlini-2016-towards}.  
+                                                                                                                                                                                                                                                                                                                                                                                  ^
+Warning 8 in paper.tex line 101: Wrong length of dash may have been used.
+External memory stores: L0 32 sinusoidal bases (implicit); L1 128 device-wide orthogonal vectors (6-bit addresses, stored in Flash); L2 up to 256 user-specific delta codes learned by product quantisation (8-bit addresses); L3 24-48 bit Bloom-pooled XOR sketches of recent residuals. A streaming weighted set-cover keeps the active set $S_t\subseteq(L2\cup L3)$ to $\leq 64$ codes, guaranteeing the total footprint - including timestamps and noisy counts - below 512 bytes.  
+                                                                                                                                                                                                                                    ^
+Warning 8 in paper.tex line 101: Wrong length of dash may have been used.
+External memory stores: L0 32 sinusoidal bases (implicit); L1 128 device-wide orthogonal vectors (6-bit addresses, stored in Flash); L2 up to 256 user-specific delta codes learned by product quantisation (8-bit addresses); L3 24-48 bit Bloom-pooled XOR sketches of recent residuals. A streaming weighted set-cover keeps the active set $S_t\subseteq(L2\cup L3)$ to $\leq 64$ codes, guaranteeing the total footprint - including timestamps and noisy counts - below 512 bytes.  
+                                                                                                                                                                                                                                                                                                                                                                                                                              ^
+Warning 8 in paper.tex line 101: Wrong length of dash may have been used.
+External memory stores: L0 32 sinusoidal bases (implicit); L1 128 device-wide orthogonal vectors (6-bit addresses, stored in Flash); L2 up to 256 user-specific delta codes learned by product quantisation (8-bit addresses); L3 24-48 bit Bloom-pooled XOR sketches of recent residuals. A streaming weighted set-cover keeps the active set $S_t\subseteq(L2\cup L3)$ to $\leq 64$ codes, guaranteeing the total footprint - including timestamps and noisy counts - below 512 bytes.  
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                      ^
+Warning 1 in paper.tex line 113: Command terminated with space.
+  \State \textbf{Input:} sample $x_t$, backbones $\phi^{\mathrm{v}},\phi^{\mathrm{a}},\phi^{\mathrm{t}}$, SimCLR head $g$, codebook (L1,L2,L3), active set $S_t$, LoRA weights $(A,B)$, PID gains $(K_p,K_i,K_d)$, temperature $\tau$  
+        ^
+Warning 1 in paper.tex line 114: Command terminated with space.
+  \State Compute features: $f\leftarrow \phi(x_t)$  
+        ^
+Warning 1 in paper.tex line 115: Command terminated with space.
+  \State Compute SimCLR logits and probabilities: $p\leftarrow \mathrm{softmax}(g(f)/\tau)$  
+        ^
+Warning 1 in paper.tex line 116: Command terminated with space.
+  \State Entropy and error: $H\leftarrow -\sum_i p_i\log p_i$, $e\leftarrow H-\bar{H}$  
+        ^
+Warning 1 in paper.tex line 117: Command terminated with space.
+  \State PID control: $u\leftarrow K_p e + K_i\sum_{j\le t} e_j + K_d(e-e_{t-1})$  
+        ^
+Warning 1 in paper.tex line 119: Command terminated with space.
+    \State Allocate new code in L2 or update L3 Bloom sketch  
+          ^
+Warning 1 in paper.tex line 121: Command terminated with space.
+    \State Merge closest codes and free an address if needed  
+          ^
+Warning 1 in paper.tex line 123: Command terminated with space.
+    \State Recycle least-contributing code from $S_t$  
+          ^
+Warning 1 in paper.tex line 124: Command terminated with space.
+  \EndIf  
+        ^
+Warning 1 in paper.tex line 125: Command terminated with space.
+  \State Select addressing triple(s) $(v_1,v_2,v_3)$ from $L1\times S_t$  
+        ^
+Warning 36 in paper.tex line 125: You should put a space in front of parenthesis.
+  \State Select addressing triple(s) $(v_1,v_2,v_3)$ from $L1\times S_t$  
+                                 ^
+Warning 1 in paper.tex line 126: Command terminated with space.
+  \State Forward: $h'\leftarrow h+\alpha\,A(B^{\top}h)$ on the last transformer block  
+        ^
+Warning 1 in paper.tex line 127: Command terminated with space.
+  \State One SGD step on $(A,B)$ with gradients projected to span of active triples  
+        ^
+Warning 1 in paper.tex line 128: Command terminated with space.
+  \State Quantise gradients to int8 and optionally update XOR sketch in L3  
+        ^
+Warning 1 in paper.tex line 129: Command terminated with space.
+  \State Apply privacy: add Gaussian noise to counts; flip each 8-bit address with prob. $0.12$  
+        ^
+Warning 1 in paper.tex line 130: Command terminated with space.
+  \State Update $\bar{H}$ and log energy/latency; abort if accountant gives $\epsilon>1$  
+        ^
+Warning 8 in paper.tex line 160: Wrong length of dash may have been used.
+\subsection{Study 1 - cross-modal learning}  
+                    ^
+Warning 8 in paper.tex line 169: Wrong length of dash may have been used.
+\subsection{Study 2 - privacy and membership inference}  
+                    ^
+Warning 8 in paper.tex line 178: Wrong length of dash may have been used.
+\subsection{Study 3 - memory-energy-latency Pareto and backbone swap}  
+                    ^
+Warning 13 in paper.tex line 179: Intersentence spacing (`\@') should perhaps be used.
+Energy per sample fell as memory grew: 12 mJ @256 B $\rightarrow$ 9 mJ @2048 B; at 512 B we record 11 mJ, within $1.2\times$ of the theoretical bound. Swapping MobileViT-S to -L triggered a 180 ms adaptor phase, after which accuracy dropped by $<1\%$ and memory stayed inside budget.  
+                                                                              ^
+Warning 8 in paper.tex line 188: Wrong length of dash may have been used.
+TACO meets memory and privacy goals and adapts quickly, yet fails at its primary purpose - accurate continual learning on vision and audio - and consumes excessive energy. Pending ablations will inspect probe temperature, LoRA rank and Bloom size, and integrate gradient sparsity techniques from SparCL \cite{wang-2022-sparcl} to cut power.  
+                                                                                         ^
+Warning 8 in paper.tex line 188: Wrong length of dash may have been used.
+TACO meets memory and privacy goals and adapts quickly, yet fails at its primary purpose - accurate continual learning on vision and audio - and consumes excessive energy. Pending ablations will inspect probe temperature, LoRA rank and Bloom size, and integrate gradient sparsity techniques from SparCL \cite{wang-2022-sparcl} to cut power.  
+                                                                                                                                           ^
+Warning 2 in paper.tex line 188: Non-breaking space (`~') should have been used.
+TACO meets memory and privacy goals and adapts quickly, yet fails at its primary purpose - accurate continual learning on vision and audio - and consumes excessive energy. Pending ablations will inspect probe temperature, LoRA rank and Bloom size, and integrate gradient sparsity techniques from SparCL \cite{wang-2022-sparcl} to cut power.  
+                                                                                                                                                                                                                                                                                                              ^
