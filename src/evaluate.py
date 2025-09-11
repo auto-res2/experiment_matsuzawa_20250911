@@ -1,3 +1,4 @@
+from __future__ import annotations
 """src/evaluate.py
 Evaluation utilities + three study entry points.
 The buggy round-robin iterator could exhaust one loader and terminate the
@@ -6,16 +7,23 @@ re-implemented to **never** exhaust – when a sub-iterator is empty it is
 simply re-initialised.
 Additionally, the audio branch no longer unsqueezes an extra channel because
 Whisper expects ``(B, 80, T)``, not ``(B, 1, T)``.
+
+Major bug-fix in this revision
+------------------------------
+Torch **does not** expose an ``env`` or ``getenv`` helper; the previous
+implementation therefore crashed at import-time with
+``AttributeError: module 'torch' has no attribute 'getenv'``.
+The code now correctly relies on the Python std-lib ``os.getenv``.
 """
-from __future__ import annotations
 import json
+import os
 from pathlib import Path
 from typing import Iterable, List
 
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt  # noqa: E402  (after Agg back-end switch)
 import torch
 import torch.nn.functional as F
 
@@ -69,7 +77,10 @@ def _round_robin(iterables: List[Iterable]):
 
 
 def run_study1(device: torch.device, cfg: dict, out_dir: Path):
-    max_iter = int(torch.getenv("TACO_MAX_ITER", "150"))
+    # ------------------------------------------------------------------
+    # BUG-FIX: use ``os.getenv`` – *not* ``torch.getenv`` – to read env var.
+    # ------------------------------------------------------------------
+    max_iter = int(os.getenv("TACO_MAX_ITER", "150"))
 
     taco = build_models(device, cfg)
     taco.train()

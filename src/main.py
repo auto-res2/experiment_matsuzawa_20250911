@@ -1,17 +1,17 @@
+from __future__ import annotations
 """src/main.py
 Entry-point that orchestrates the three studies and stores every artefact in
-``.research/iteration12`` exactly as required by the specification.
+``.research/iteration13`` exactly as required by the specification.
 Run with e.g.::
 
     python -m tiny_taco.main  # runs all studies on CPU
 """
-from __future__ import annotations
 import argparse
 from pathlib import Path
+
 import torch
 
 from .evaluate import run_study1, run_study2, run_study3
-
 
 # ---------------------------------------------------------------------------
 # Default human-readable config (used if ``config.yaml`` is empty/missing)
@@ -38,7 +38,9 @@ def _parse_args():
 
 def main():  # noqa: D403
     args = _parse_args()
-    out_dir = Path(".research/iteration12")
+
+    # All artefacts – JSON logs and figures – must live here per spec
+    out_dir = Path(".research/iteration13")
     out_dir.mkdir(parents=True, exist_ok=True)
 
     device = torch.device(args.device)
