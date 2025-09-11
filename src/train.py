@@ -54,6 +54,28 @@ def _to_numpy(params: Sequence[torch.Tensor]) -> List[np.ndarray]:
     return [p.detach().cpu().numpy() for p in params]
 
 
+def _deduce_dtype_from_bytes(raw: bytes, numel: int) -> np.dtype:
+    """Infer the numpy dtype stored in *raw* given the expected element count.
+
+    Flower serialises ndarrays via ``ndarray.tobytes()`` which preserves the raw
+    binary representation without any header.  Therefore the total byte length
+    is exactly ``numel * itemsize``.  We reverse-engineer *itemsize* and map it
+    to a plausible floating-point dtype so that we can reconstruct the tensor
+    whatever precision the aggregator used (FP16/32/64).
+    """
+
+    if len(raw) % numel != 0:
+        raise ValueError("Raw parameter bytes do not divide evenly into elements.")
+
+    itemsize = len(raw) // numel
+    dtype_map = {1: np.uint8, 2: np.float16, 4: np.float32, 8: np.float64}
+    if itemsize not in dtype_map:
+        raise ValueError(
+            f"Unsupported itemsize {itemsize} when inferring dtype from bytes."
+        )
+    return dtype_map[itemsize]
+
+
 def _load_numpy(params: Sequence[object], model: nn.Module):
     """Load parameters into *model*.
 
@@ -72,23 +94,11 @@ def _load_numpy(params: Sequence[object], model: nn.Module):
             raise ValueError("Not enough tensors when loading NumPy weights") from exc
 
         # ------------------------------------------------------------------
-        # 1) Decode – bytes → ndarray if needed. We must be robust to dtype
-        #     disparities introduced during aggregation (e.g. float32 → float64).
+        # 1) Decode – bytes → ndarray if needed, auto-detecting dtype.
         # ------------------------------------------------------------------
         if isinstance(p_src, bytes):
-            # Determine dtype by inspecting byte length; aggregated parameters
-            # might be float64 even if the original model used float32.
             n_elems = p_torch.numel()
-            expected_bytes_fp32 = n_elems * 4
-            expected_bytes_fp64 = n_elems * 8
-            if len(p_src) == expected_bytes_fp32:
-                dtype = np.float32
-            elif len(p_src) == expected_bytes_fp64:
-                dtype = np.float64
-            else:
-                raise ValueError(
-                    "Parameter size mismatch when loading NumPy weights (raw-bytes)"
-                )
+            dtype = _deduce_dtype_from_bytes(p_src, n_elems)
             p_np = np.frombuffer(p_src, dtype=dtype)
         elif isinstance(p_src, np.ndarray):
             p_np = p_src

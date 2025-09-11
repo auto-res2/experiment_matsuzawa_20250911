@@ -1,7 +1,7 @@
 # src/main.py
 """Main orchestration entry point – executed via `python -m src.main`.
 
-This revision updates the research-artifact paths to comply with **iteration15**
+This revision updates the research-artifact paths to comply with **iteration17**
 (as mandated by the autopruner spec).  All helpers that write images/JSON must
 therefore use the new paths.
 """
@@ -22,12 +22,12 @@ from .train import CarbonController, Client
 from .evaluate import current_power_draw_watts, plot_accuracy, save_json
 
 # ---------------------------------------------------------------------------
-#  Resolve project root and mandatory research folders (iteration-15 layout)
+#  Resolve project root and mandatory research folders (iteration-17 layout)
 # ---------------------------------------------------------------------------
 ROOT = Path(__file__).resolve().parent.parent
-RESEARCH_DIR = ROOT / ".research" / "iteration15"  # UPDATED → iteration15
+RESEARCH_DIR = ROOT / ".research" / "iteration17"  # UPDATED → iteration17
 DATA_DIR = RESEARCH_DIR / "data"
-FIG_DIR = RESEARCH_DIR / "images"          # .research/iteration15/images
+FIG_DIR = RESEARCH_DIR / "images"          # .research/iteration17/images
 RES_DIR = RESEARCH_DIR                      # JSON files saved directly here
 CONFIG_DIR = ROOT / "config"
 
