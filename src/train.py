@@ -68,8 +68,8 @@ def build_model(kind: str, in_dim: int, hidden: int):
 # ---------------------------------------------------------------------------
 
 # Mandatory path change requested by policy: all JSON results under
-# .research/iteration4/  and all images under .research/iteration4/images
-RESULTS_DIR = Path(".research/iteration4").resolve()
+# .research/iteration5/  and all images under .research/iteration5/images
+RESULTS_DIR = Path(".research/iteration5").resolve()
 FIG_DIR = RESULTS_DIR / "images"
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 FIG_DIR.mkdir(parents=True, exist_ok=True)

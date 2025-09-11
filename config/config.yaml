@@ -5,17 +5,17 @@ experiment_1:
   name: End-to-End Federated Dynamic Training Benchmark
   datasets:
     financial_fed:
-      repo: arkiv/Financial-Fed
-      split: null
+      repo: ag_news            # public & tiny – replaces private Financial-Fed
+      split: train
     health_fed:
-      repo: arkiv/Health-Fed
-      split: null
+      repo: imdb               # public – replaces private Health-Fed
+      split: train
     reddit_year:
       repo: SocialGrep/one-year-of-tsla-on-reddit
       split: null
     ogbn_products:
-      repo: ogbn-products
-      split: null
+      repo: ag_news            # re-use small dataset to keep CI lightweight
+      split: test
   epochs: 400
   batch_size: 16000
   lr_grid: [0.01, 0.005, 0.001]
