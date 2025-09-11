@@ -1,0 +1,15 @@
+Using CPython 3.11.13
+Creating virtual environment at: .venv
+Resolved 39 packages in 383ms
+   Building phoenix-mem-minimal @ file:///home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911
+      Built phoenix-mem-minimal @ file:///home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911
+Prepared 1 package in 1.76s
+Installed 1 package in 14ms
+ + phoenix-mem-minimal==0.1.0 (from file:///home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911)
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/src/main.py", line 15, in <module>
+    import torch  # noqa: F401 – still required for device sanity checks
+    ^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'torch'
