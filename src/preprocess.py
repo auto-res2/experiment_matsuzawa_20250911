@@ -21,7 +21,6 @@ from torch_geometric.data import Data, InMemoryDataset
 from torch_geometric.datasets import Planetoid
 from torch_geometric.utils import subgraph
 
-
 # ---------------------------------------------------------------------------
 #  Local helper – fail fast on unrecoverable errors
 # ---------------------------------------------------------------------------
@@ -58,6 +57,8 @@ class FedPartitionDataset(InMemoryDataset):
         self._root = root
         self.partition_id, self.num_partitions = self._parse_repo(repo_id)
         super().__init__(str(root))
+        # After the parent constructor has finished, the processed file must
+        # exist.  We can therefore safely load it.
         self.data, self.slices = torch.load(self.processed_paths[0])
 
     # ------------------------------------------------------------------
@@ -73,7 +74,21 @@ class FedPartitionDataset(InMemoryDataset):
         return ["data.pt"]
 
     def download(self):  # noqa: D401
+        """Download (or fallback-generate) the partition and write the processed
+        file expected by `InMemoryDataset`.  We *must* create the parent
+        directory of the processed path before calling `torch.save`, otherwise
+        PyTorch will raise `FileNotFoundError` which in turn aborts the whole
+        experiment.  This missing-directory bug caused the previous CI failure
+        and is now fixed by explicit `mkdir`.
+        """
+        # Ensure the root directory itself exists so that subsequent sub-folders
+        # can be created without issues.
         self._root.mkdir(parents=True, exist_ok=True)
+
+        # `processed` sub-directory (root/processed/) is required by
+        # `self.processed_paths[0]`.
+        processed_dir = Path(self.processed_paths[0]).parent
+        processed_dir.mkdir(parents=True, exist_ok=True)
 
         try:
             cfg = DownloadConfig(resume_download=True, use_etag=True, num_proc=4)
@@ -102,7 +117,7 @@ class FedPartitionDataset(InMemoryDataset):
         dataset = Planetoid(str(cora_root), name="Cora")
         full = dataset[0]
         idx = torch.arange(full.num_nodes)
-        # simple deterministic partitioning by modulo
+        # Deterministic partitioning by modulo to simulate federated splits
         mask = (idx % self.num_partitions) == self.partition_id
         sub_nodes = idx[mask]
         _, new_edge_index = subgraph(sub_nodes, full.edge_index, relabel_nodes=True)

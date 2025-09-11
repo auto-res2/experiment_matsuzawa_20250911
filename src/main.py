@@ -17,12 +17,12 @@ from .train import CarbonController, Client
 from .evaluate import current_power_draw_watts, plot_accuracy, save_json
 
 # ---------------------------------------------------------------------------
-#  Resolve project root and mandatory research folders (iteration-9 layout)
+#  Resolve project root and mandatory research folders (iteration-10 layout)
 # ---------------------------------------------------------------------------
 ROOT = Path(__file__).resolve().parent.parent
-RESEARCH_DIR = ROOT / ".research" / "iteration9"
+RESEARCH_DIR = ROOT / ".research" / "iteration10"  # <-- UPDATED
 DATA_DIR = RESEARCH_DIR / "data"
-FIG_DIR = RESEARCH_DIR / "images"  # must equal .research/iteration9/images
+FIG_DIR = RESEARCH_DIR / "images"  # must equal .research/iteration10/images
 RES_DIR = RESEARCH_DIR              # JSON files are saved directly here
 CONFIG_DIR = ROOT / "config"
 
