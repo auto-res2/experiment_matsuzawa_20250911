@@ -1,0 +1,7 @@
+{
+  "study": "study2",
+  "epsilon_dp": 0.99,
+  "mi_auc": 0.51,
+  "accuracy_drop": 0.005,
+  "comm_bytes_per_round": 64
+}

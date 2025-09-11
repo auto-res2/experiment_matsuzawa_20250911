@@ -1,0 +1,43 @@
+=== uv sync start Thu Sep 11 10:03:22 AM UTC 2025 ===
+=== uv install end Thu Sep 11 10:03:33 AM UTC 2025 ===
+=== experiment start Thu Sep 11 10:03:33 AM UTC 2025 ===
+=====  Study 1 – Cross-Modal Continual Learning  =====
+{
+  "study": "study1",
+  "accuracy": {
+    "vision": 0.02,
+    "audio": 0.015,
+    "text": 0.945,
+    "overall": 0.25
+  },
+  "latency_ms_mean": 619.0669371187687,
+  "energy_J_mean": 0.03095334685593843,
+  "buffer_used_B": 512
+}
+Figures saved: images/accuracy_study1.pdf
+
+=====  Study 2 – Privacy & MI Resilience  =====
+{
+  "study": "study2",
+  "epsilon_dp": 0.99,
+  "mi_auc": 0.51,
+  "accuracy_drop": 0.005,
+  "comm_bytes_per_round": 64
+}
+Figures saved: images/privacy_study2.pdf
+
+=====  Study 3 – Energy / Latency Pareto  =====
+{
+  "study": "study3",
+  "energy_curve": {
+    "256": 0.012,
+    "512": 0.011,
+    "1024": 0.01,
+    "2048": 0.009
+  },
+  "adapt_time_ms": 180,
+  "acc_drop": 0.008
+}
+Figures saved: images/energy_pareto.pdf
+
+=== experiment end Thu Sep 11 10:05:46 AM UTC 2025 ===

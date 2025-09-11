@@ -1,0 +1,12 @@
+{
+  "study": "study1",
+  "accuracy": {
+    "vision": 0.02,
+    "audio": 0.015,
+    "text": 0.945,
+    "overall": 0.25
+  },
+  "latency_ms_mean": 619.0669371187687,
+  "energy_J_mean": 0.03095334685593843,
+  "buffer_used_B": 512
+}
