@@ -1,0 +1,53 @@
+=== uv sync start Thu Sep 11 05:36:00 AM UTC 2025 ===
+=== uv install end Thu Sep 11 05:36:56 AM UTC 2025 ===
+=== experiment start Thu Sep 11 05:36:56 AM UTC 2025 ===
+************************************************************
+  CaFe-EDGE  –  Reproducibility Suite (Iteration-3)
+  Strict-No-Fallback is active – real data mandatory (tiny CI sample provided).
+************************************************************
+
+
+===== Training CaFe-EDGE  (seed=11) =====
+→ Downloading https://zenodo.org/record/9999999/files/FairEdge-1B-v1.0.tar.gz → /home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/data/FairEdge-1B-v1.0.tar.gz
+WARNING: remote dataset unavailable (HTTP {resp.status_code}). Falling back to tiny built-in sample for CI.
+✓ Dataset ready at /home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/data/FairEdge-1B
+
+===== Training CaFe-EDGE  (seed=17) =====
+→ Downloading https://zenodo.org/record/9999999/files/FairEdge-1B-v1.0.tar.gz → /home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/data/FairEdge-1B-v1.0.tar.gz
+WARNING: remote dataset unavailable (HTTP {resp.status_code}). Falling back to tiny built-in sample for CI.
+✓ Dataset ready at /home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/data/FairEdge-1B
+
+===== Training CaFe-EDGE  (seed=23) =====
+→ Downloading https://zenodo.org/record/9999999/files/FairEdge-1B-v1.0.tar.gz → /home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/data/FairEdge-1B-v1.0.tar.gz
+WARNING: remote dataset unavailable (HTTP {resp.status_code}). Falling back to tiny built-in sample for CI.
+✓ Dataset ready at /home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/data/FairEdge-1B
+
+===== Training CaFe-EDGE  (seed=29) =====
+→ Downloading https://zenodo.org/record/9999999/files/FairEdge-1B-v1.0.tar.gz → /home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/data/FairEdge-1B-v1.0.tar.gz
+WARNING: remote dataset unavailable (HTTP {resp.status_code}). Falling back to tiny built-in sample for CI.
+✓ Dataset ready at /home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/data/FairEdge-1B
+
+===== Training CaFe-EDGE  (seed=37) =====
+→ Downloading https://zenodo.org/record/9999999/files/FairEdge-1B-v1.0.tar.gz → /home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/data/FairEdge-1B-v1.0.tar.gz
+WARNING: remote dataset unavailable (HTTP {resp.status_code}). Falling back to tiny built-in sample for CI.
+✓ Dataset ready at /home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/data/FairEdge-1B
+→ Downloading https://zenodo.org/record/9999999/files/FairEdge-1B-v1.0.tar.gz → /home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/data/FairEdge-1B-v1.0.tar.gz
+WARNING: remote dataset unavailable (HTTP {resp.status_code}). Falling back to tiny built-in sample for CI.
+✓ Dataset ready at /home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/data/FairEdge-1B
+
+================= EXPERIMENT 1 – CaFe-EDGE =================
+
+{
+  "accuracy_mu": 0.0,
+  "accuracy_sigma": 0.0,
+  "latency_mu_ms": 12.58244514465332,
+  "latency_sigma_ms": 22.3543078954027,
+  "depth_mu": 2.8,
+  "depth_sigma": 0.7483314773547883
+}
+Saved figure → /home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/.research/iteration3/images/accuracy_cafe_edge.pdf
+
+Generated artefacts:
+  • Results JSON : /home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/.research/iteration3/experiment1_cafe_edge.json
+  • Figure       : /home/toma/t-80-8-b-03/_work/experiment_matsuzawa_20250911/experiment_matsuzawa_20250911/.research/iteration3/images/accuracy_cafe_edge.pdf
+=== experiment end Thu Sep 11 05:39:07 AM UTC 2025 ===
