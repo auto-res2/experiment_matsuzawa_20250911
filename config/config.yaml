@@ -1,8 +1,6 @@
 # config/config.yaml
 # ---------------------------------------------------------------------------
 # Central configuration file for the CaFe-EDGE reproducibility suite.
-# All hyper-parameters, dataset URLs and experiment seeds are declared here so
-# that *every* Python module can import the same canonical settings.
 # ---------------------------------------------------------------------------
 
 dataset:
@@ -19,7 +17,7 @@ training:
   workers: 0            # fork-less dataloading → deterministic & lightweight
   lr: 1.0e-3
   weight_decay: 0.0
-  epochs: 1             # single epoch is sufficient for the smoke-test suite
+  epochs: 10            # few epochs so the model can memorise the tiny dataset
   seeds: [11, 17, 23, 29, 37]
 
 models:

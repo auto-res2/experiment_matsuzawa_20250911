@@ -1,8 +1,7 @@
 """
 src/main.py
 Entry-point orchestrating full experimental workflow.
-Fixed for iteration-5:
-  • Updated banner text to Iteration-5 to match artefact paths.
+Updated for iteration-6 (banner + artefact paths).
 """
 from __future__ import annotations
 
@@ -20,13 +19,17 @@ CONFIG = yaml.safe_load((ROOT / "config" / "config.yaml").read_text())
 
 def main():  # noqa: D401 – imperative main OK
     print("************************************************************")
-    print("  CaFe-EDGE  –  Reproducibility Suite (Iteration-5)")
-    print("  Strict-No-Fallback is active – real data mandatory (tiny CI sample provided).")
+    print("  CaFe-EDGE  –  Reproducibility Suite (Iteration-6)")
+    print(
+        "  Strict-No-Fallback is active – real data mandatory (tiny CI sample provided)."
+    )
     print("************************************************************\n")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if device.type != "cuda":
-        print("INFO: CUDA not available – running on CPU. Training will be slow but functional.")
+        print(
+            "INFO: CUDA not available – running on CPU. Training will be slow but functional."
+        )
 
     # -------------------  Experiment 1  ----------------------
     ckpts = train_all_seeds(device)

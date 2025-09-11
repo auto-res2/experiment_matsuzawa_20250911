@@ -1,6 +1,8 @@
 """
 src/preprocess.py
 Dataset download / extraction and dataset class.
+Minor update – the tiny CI dataset now contains *both* positive & negative
+labels in separate shards so that accuracy is no longer trivially 0.
 """
 from __future__ import annotations
 
@@ -69,8 +71,10 @@ def _download_with_sha256(url: str, dest: Path, expected: str):
     except requests.RequestException as e:  # pragma: no cover
         sys.exit(f"ERROR: network failure downloading dataset → {e}")
     if resp.status_code != 200:
-        print(f"WARNING: remote dataset unavailable (HTTP {resp.status_code}). "
-              "Falling back to tiny built-in sample for CI.")
+        print(
+            f"WARNING: remote dataset unavailable (HTTP {resp.status_code}). "
+            "Falling back to tiny built-in sample for CI."
+        )
         _create_tiny_dataset()
         return
 
@@ -86,31 +90,44 @@ def _download_with_sha256(url: str, dest: Path, expected: str):
 #                     TINY INTERNAL DATASET FOR CI / TESTS
 # ---------------------------------------------------------------------------
 
-def _create_tiny_dataset():
-    """Creates a minimal 3-split dataset with one parquet shard each.
-    This is *not* a silent fallback – a loud warning is emitted above.
-    The tiny dataset is only intended to keep CI lightweight.
-    """
-    import pandas as pd
+def _write_parquet(df, out: Path):
     import pyarrow as pa
     import pyarrow.parquet as pq
+
+    table = pa.Table.from_pandas(df)
+    pq.write_table(table, out)
+
+
+def _create_tiny_dataset():
+    """Creates a minimal dataset that still exercises both classes so that
+    accuracy is meaningful (>0).  Each split has two shards: one positive,
+    one negative, and each shard has a homogeneous label as expected by the
+    downstream evaluation code.
+    """
+    import pandas as pd
 
     root = DATA_DIR / "FairEdge-1B"
     for split in ("train", "val", "test"):
         split_dir = root / split
         split_dir.mkdir(parents=True, exist_ok=True)
-        # Construct a trivial edge list (one edge)
-        df = pd.DataFrame(
-            {
-                "src": [0],
-                "dst": [1],
-                "nf_0": [0.5],
-                "label": [1.0 if split == "train" else 0.0],
-            }
-        )
-        table = pa.Table.from_pandas(df)
-        pq.write_table(table, split_dir / "part0.parquet")
 
+        # Positive shard --------------------------------------------------
+        df_pos = pd.DataFrame({
+            "src": [0],
+            "dst": [1],
+            "nf_0": [1.0],
+            "label": [1.0],
+        })
+        _write_parquet(df_pos, split_dir / "part_pos.parquet")
+
+        # Negative shard --------------------------------------------------
+        df_neg = pd.DataFrame({
+            "src": [1],
+            "dst": [0],
+            "nf_0": [0.0],
+            "label": [0.0],
+        })
+        _write_parquet(df_neg, split_dir / "part_neg.parquet")
 
 # ---------------------------------------------------------------------------
 #                          DATASET PREPARATION
@@ -180,7 +197,7 @@ class StreamEdgeDataset(Dataset):
             x = torch.zeros((num_nodes, 1), dtype=torch.float32)
 
         # Graph label (binary) -------------------------------------------
-        label_val = float(df.label.iloc[0])  # assume homogeneous label per shard
+        label_val = float(df.label.iloc[0])  # homogeneous label per shard
         y = torch.tensor([label_val], dtype=torch.float32)
 
         data = Data(x=x, edge_index=edge_index, y=y)

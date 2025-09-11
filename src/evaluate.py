@@ -1,13 +1,8 @@
 """
 src/evaluate.py
 Evaluation + simple plotting for CaFe-EDGE.
-Fixed for iteration-5.1:
-  • Removed obsolete `# type: ignore` comment flagged by Ruff.
-  • Evaluation now *recreates* every model from the hyper-parameters that were
-    stored inside each checkpoint, guaranteeing shape compatibility with the
-    corresponding state_dict.  Falls back to config.yaml only if the metadata
-    is absent (e.g. legacy checkpoints).
-  • Artefacts continue to be written to .research/iteration5/ …
+Updated for iteration-6.
+  • Artefacts are now written to .research/iteration6/ … (mandatory rule).
 """
 from __future__ import annotations
 
@@ -42,7 +37,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CONFIG_PATH = ROOT / "config" / "config.yaml"
 CONFIG = yaml.safe_load(CONFIG_PATH.read_text())
 
-RESEARCH_DIR = ROOT / ".research" / "iteration5"
+RESEARCH_DIR = ROOT / ".research" / "iteration6"
 IMAGES_DIR = RESEARCH_DIR / "images"
 for _d in [RESEARCH_DIR, IMAGES_DIR]:
     _d.mkdir(parents=True, exist_ok=True)

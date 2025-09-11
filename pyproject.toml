@@ -5,21 +5,19 @@ version = "0.1.0"
 # ----------------------------------------------------------------------------
 # Dependency policy
 # ----------------------------------------------------------------------------
-# 1. NumPy is pinned to the latest 1.x series because many binary wheels in the
+# 1. Use the *CPU-only* PyTorch wheel to avoid gigantic CUDA dependencies that
+#    broke extraction in the CI runner.
+# 2. NumPy is pinned to the latest 1.x series because many binary wheels in the
 #    PyData ecosystem (and, critically, PyTorch < 2.3) are still built against
 #    the NumPy 1.x C-ABI.  NumPy 2.x causes import-time failures for those
-#    wheels, so we *must* stay below 2.0 until the entire stack has migrated.
-# 2. All other packages follow the lowest-compatible-latest strategy unless a
-#    strict pin is required for deterministic results.
+#    wheels.
 # ----------------------------------------------------------------------------
 
 dependencies = [
-  # PyTorch – CPU-only wheel keeps the CI image lightweight (<200 MB download).
-  "torch==2.2.2",
+  # PyTorch – CPU-only build keeps the dependency footprint minimal (<200 MB).
+  "torch==2.2.2+cpu",
 
-  # torch-geometric is optional.  If the wheel cannot be resolved for the
-  # current platform, the runtime stub in `src/tg_stub.py` seamlessly takes
-  # over so that the rest of the code remains importable.
+  # torch-geometric is optional; the runtime stub covers unsupported platforms.
   "torch-geometric>=2.2.0,<2.6.0",
 
   # **Critical ABI pin** – stay on NumPy 1.x.
