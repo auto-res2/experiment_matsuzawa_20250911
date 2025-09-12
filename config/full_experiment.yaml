@@ -1,21 +1,18 @@
-experiment_name: fashion_mnist_full
+experiment_name: iris_full
+
 dataset:
-  name: FashionMNIST
-  url: http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/
-  root: data/fashion_mnist
-  train_subset: null
-  test_subset: null
+  url: https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data
+  local_path: data/iris/iris.data
+  val_split: 0.15
+  test_split: 0.15
+
 model:
-  type: SimpleCNN
-  num_classes: 10
+  input_dim: 4
+  hidden_dims: [16, 12]
+  output_dim: 3
+
 training:
-  epochs: 10
-  batch_size: 64
-  lr: 0.01
-  momentum: 0.9
-evaluation:
-  metrics:
-    - accuracy
-output:
-  results_path: .research/iteration2
-  figures_path: .research/iteration2/images
+  batch_size: 16
+  epochs: 100  # full training run
+  learning_rate: 0.001
+  seed: 42

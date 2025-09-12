@@ -1,65 +1,89 @@
 """src/train.py
-Model definitions and training utilities.
+Model definition and training utilities.
 """
 from __future__ import annotations
 
+import random
 from typing import List, Tuple
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 
-__all__ = [
-    "SimpleCNN",
-    "train_one_epoch",
-]
+# -----------------------------------------------------------------------------
+#                               Model definition
+# -----------------------------------------------------------------------------
 
 
-class SimpleCNN(nn.Module):
-    """A very small convolutional network for Fashion-MNIST (1×28×28 → 10)."""
+class MLP(nn.Module):
+    """Simple multi-layer perceptron used for the Iris experiment."""
 
-    def __init__(self, num_classes: int = 10) -> None:  # noqa: D401
+    def __init__(self, input_dim: int, hidden_dims: List[int], output_dim: int):
         super().__init__()
-        self.features = nn.Sequential(
-            nn.Conv2d(1, 32, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2),  # 14×14
-            nn.Conv2d(32, 64, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2),  # 7×7
-        )
-        self.classifier = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(64 * 7 * 7, 128),
-            nn.ReLU(inplace=True),
-            nn.Linear(128, num_classes),
-        )
+        layers: List[nn.Module] = []
+        last = input_dim
+        for h in hidden_dims:
+            layers += [nn.Linear(last, h), nn.ReLU()]
+            last = h
+        layers.append(nn.Linear(last, output_dim))
+        self.model = nn.Sequential(*layers)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:  # noqa: D401
-        x = self.features(x)
-        x = self.classifier(x)
-        return x
+    def forward(self, x):  # noqa: D401
+        return self.model(x)
 
 
-def train_one_epoch(
+# -----------------------------------------------------------------------------
+#                           Training / validation loop
+# -----------------------------------------------------------------------------
+
+def train_model(
     model: nn.Module,
-    loader: torch.utils.data.DataLoader,
+    train_loader: torch.utils.data.DataLoader,
+    val_loader: torch.utils.data.DataLoader,
     criterion: nn.Module,
-    optimizer: optim.Optimizer,
-    device: torch.device,
-) -> float:
-    """Standard supervised training loop for a single epoch."""
+    optimiser: optim.Optimizer,
+    epochs: int,
+    seed: int,
+) -> Tuple[List[float], List[float], List[float]]:
+    """Train *model* returning the loss / accuracy curves."""
 
-    model.train()
-    running_loss = 0.0
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
 
-    for inputs, targets in loader:
-        inputs, targets = inputs.to(device), targets.to(device)
-        optimizer.zero_grad()
-        outputs = model(inputs)
-        loss = criterion(outputs, targets)
-        loss.backward()
-        optimizer.step()
-        running_loss += loss.item() * inputs.size(0)
+    train_losses: List[float] = []
+    val_losses: List[float] = []
+    val_accs: List[float] = []
 
-    return running_loss / len(loader.dataset)
+    for epoch in range(1, epochs + 1):
+        # ------------------- training phase -------------------
+        model.train()
+        epoch_loss = 0.0
+        for xb, yb in train_loader:
+            optimiser.zero_grad(set_to_none=True)
+            preds = model(xb)
+            loss = criterion(preds, yb)
+            loss.backward()
+            optimiser.step()
+            epoch_loss += loss.item() * len(xb)
+        epoch_loss /= len(train_loader.dataset)
+        train_losses.append(epoch_loss)
+
+        # ------------------ validation phase ------------------
+        model.eval()
+        with torch.no_grad():
+            for xb, yb in val_loader:
+                preds = model(xb)
+                vloss = criterion(preds, yb).item()
+                vacc = (preds.argmax(1) == yb).float().mean().item()
+        val_losses.append(vloss)
+        val_accs.append(vacc)
+
+        if epoch % 10 == 0 or epoch == 1 or epoch == epochs:
+            print(
+                f"Epoch {epoch:03d}/{epochs}  "
+                f"train_loss={epoch_loss:.4f}  val_loss={vloss:.4f}  val_acc={vacc:.4f}"
+            )
+
+    return train_losses, val_losses, val_accs

@@ -1,21 +1,21 @@
-experiment_name: fashion_mnist_smoke
+experiment_name: iris_smoke
+
+# Data-set parameters
 dataset:
-  name: FashionMNIST
-  url: http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/
-  root: data/fashion_mnist
-  train_subset: 1000
-  test_subset: 1000
+  url: https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data
+  local_path: data/iris/iris.data
+  val_split: 0.15
+  test_split: 0.15
+
+# Model architecture
 model:
-  type: SimpleCNN
-  num_classes: 10
+  input_dim: 4
+  hidden_dims: [8]
+  output_dim: 3
+
+# Training hyper-parameters
 training:
-  epochs: 1
-  batch_size: 64
-  lr: 0.01
-  momentum: 0.9
-evaluation:
-  metrics:
-    - accuracy
-output:
-  results_path: .research/iteration2
-  figures_path: .research/iteration2/images
+  batch_size: 16
+  epochs: 5  # minimal epochs for smoke validation
+  learning_rate: 0.01
+  seed: 42

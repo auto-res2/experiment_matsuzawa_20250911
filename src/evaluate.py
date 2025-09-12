@@ -1,110 +1,104 @@
 """src/evaluate.py
-Evaluation utilities and visualisations.
+Model evaluation, metric computation & visualisation utilities.
 """
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import List, Tuple
 
-import numpy as np
-import seaborn as sns
-import torch
 import matplotlib
 
-# Headless backend – *must* be set before pyplot import.
+# Use a non-interactive backend – required in head-less evaluation set-ups
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402  pylint: disable=wrong-import-position
 
-__all__ = [
-    "evaluate",
-    "plot_training_curves",
-    "plot_confusion_matrix",
-]
+import matplotlib.pyplot as plt  # noqa: E402  pylint: disable=C0413
+import numpy as np  # noqa: E402  pylint: disable=C0413
+import torch  # noqa: E402  pylint: disable=C0413
+from sklearn.metrics import confusion_matrix  # noqa: E402  pylint: disable=C0413
 
+# -----------------------------------------------------------------------------
+#                        Metrics & visualisation helpers
+# -----------------------------------------------------------------------------
 
-def evaluate(
+def evaluate_on_test(
     model: torch.nn.Module,
-    loader: torch.utils.data.DataLoader,
-    device: torch.device,
-) -> Tuple[float, List[int], List[int]]:
-    """Return accuracy together with the per-sample predictions and labels."""
+    test_loader: torch.utils.data.DataLoader,
+) -> Tuple[float, np.ndarray]:
+    """Return (*accuracy*, *confusion-matrix*) on the held-out test set."""
 
     model.eval()
-    correct = 0
-    all_preds: List[int] = []
-    all_labels: List[int] = []
-
     with torch.no_grad():
-        for inputs, targets in loader:
-            inputs, targets = inputs.to(device), targets.to(device)
-            outputs = model(inputs)
-            _, preds = torch.max(outputs, 1)
-            correct += (preds == targets).sum().item()
-            all_preds.extend(preds.cpu().tolist())
-            all_labels.extend(targets.cpu().tolist())
-
-    acc = correct / len(loader.dataset)
-    return acc, all_preds, all_labels
+        for xb, yb in test_loader:
+            preds = model(xb)
+            acc = (preds.argmax(1) == yb).float().mean().item()
+            cm = confusion_matrix(yb.numpy(), preds.argmax(1).numpy(), labels=[0, 1, 2])
+    return acc, cm
 
 
-def plot_training_curves(
-    losses: List[float],
-    accuracies: List[float],
-    fig_dir: Path,
-) -> Tuple[str, str]:
-    """Generate loss and accuracy curves and return file names (not full paths)."""
+def plot_curves(
+    train_losses: List[float],
+    val_accs: List[float],
+    cm: np.ndarray,
+    exp_name: str,
+    image_dir: Path,
+) -> List[str]:
+    """Generate & persist all figure files – return their relative names."""
 
-    fig_dir.mkdir(parents=True, exist_ok=True)
-    epochs = list(range(1, len(losses) + 1))
+    image_dir.mkdir(parents=True, exist_ok=True)
+    epochs = np.arange(1, len(train_losses) + 1)
 
-    # Loss
+    # ---------------- training-loss curve ----------------
     plt.figure(figsize=(6, 4))
-    plt.plot(epochs, losses, marker="o", label="Training Loss")
-    for x, y in zip(epochs, losses):
-        plt.annotate(f"{y:.3f}", (x, y), textcoords="offset points", xytext=(0, 5), ha="center", fontsize=8)
+    plt.plot(epochs, train_losses, marker="o", markersize=2, label="Training loss")
     plt.xlabel("Epoch")
-    plt.ylabel("Loss")
-    plt.title("Training Loss over Epochs")
+    plt.ylabel("Cross-entropy loss")
+    plt.title("Training Loss Curve")
     plt.legend()
-    fname_loss = fig_dir / "training_loss.pdf"
-    plt.savefig(fname_loss, bbox_inches="tight")
+    loss_file = f"training_loss_{exp_name}.pdf"
+    plt.savefig(image_dir / loss_file, bbox_inches="tight")
     plt.close()
 
-    # Accuracy
+    # ---------------- validation-accuracy curve ----------------
     plt.figure(figsize=(6, 4))
-    plt.plot(epochs, accuracies, marker="o", color="green", label="Test Accuracy")
-    for x, y in zip(epochs, accuracies):
-        plt.annotate(f"{y:.3f}", (x, y), textcoords="offset points", xytext=(0, 5), ha="center", fontsize=8)
+    plt.plot(epochs, val_accs, marker="o", markersize=2, color="green", label="Validation acc")
     plt.xlabel("Epoch")
     plt.ylabel("Accuracy")
-    plt.title("Test Accuracy over Epochs")
-    plt.ylim(0, 1)
+    plt.title("Validation Accuracy Curve")
     plt.legend()
-    fname_acc = fig_dir / "accuracy.pdf"
-    plt.savefig(fname_acc, bbox_inches="tight")
+    acc_file = f"val_accuracy_{exp_name}.pdf"
+    plt.savefig(image_dir / acc_file, bbox_inches="tight")
     plt.close()
 
-    return fname_loss.name, fname_acc.name
-
-
-def plot_confusion_matrix(
-    labels: List[int],
-    preds: List[int],
-    fig_dir: Path,
-) -> str:
-    """Plot a 10×10 confusion matrix and return the file name."""
-
-    fig_dir.mkdir(parents=True, exist_ok=True)
-    cm = np.zeros((10, 10), dtype=int)
-    for t, p in zip(labels, preds):
-        cm[t, p] += 1
-
-    plt.figure(figsize=(6, 5))
-    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", cbar=False, square=True)
-    plt.xlabel("Predicted")
-    plt.ylabel("True")
-    plt.title("Confusion Matrix")
-    fname_cm = fig_dir / "confusion_matrix.pdf"
-    plt.savefig(fname_cm, bbox_inches="tight")
+    # ---------------- confusion-matrix heat-map ----------------
+    plt.figure(figsize=(4, 4))
+    im = plt.imshow(cm, cmap="Blues")
+    plt.title("Confusion Matrix (Test)")
+    plt.xlabel("Predicted label")
+    plt.ylabel("True label")
+    plt.colorbar(im, fraction=0.046, pad=0.04)
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            plt.text(j, i, str(cm[i, j]), ha="center", va="center", color="black")
+    cm_file = f"confusion_matrix_{exp_name}.pdf"
+    plt.savefig(image_dir / cm_file, bbox_inches="tight")
     plt.close()
-    return fname_cm.name
+
+    return [loss_file, acc_file, cm_file]
+
+
+# -----------------------------------------------------------------------------
+#                      Persist numeric results as JSON
+# -----------------------------------------------------------------------------
+
+def persist_results(
+    results: dict,
+    research_dir: Path,
+) -> Path:
+    """Save *results* dictionary into *research_dir* returning the file path."""
+
+    research_dir.mkdir(parents=True, exist_ok=True)
+    path = research_dir / f"results_{results['experiment_name']}.json"
+    with path.open("w", encoding="utf-8") as fh:
+        json.dump(results, fh, indent=2)
+    return path
