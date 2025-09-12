@@ -1,129 +1,198 @@
-"""Main orchestration script – provides CLI for smoke/full experiments."""
+"""src/main.py
+Entry-point orchestrating smoke-test and full experiments.
+
+Usage
+-----
+Smoke-test only:
+    uv run python -m src.main --smoke-test
+Full experiment only:
+    uv run python -m src.main --full-experiment
+Both (default – runs smoke-test first, then full):
+    uv run python -m src.main
+"""
 from __future__ import annotations
 
 import argparse
 import json
+import os
+import sys
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
 
-import torch.nn as nn
-import torch.optim as optim
+import yaml
+import torch
 
-from .evaluate import evaluate, save_confusion_matrix, save_line_plot
-from .preprocess import get_data_loaders, load_yaml, set_seed
-from .train import Metrics, SimpleCNN, train_epoch
+from .preprocess import get_dataloaders
+from .train import SimpleCNN, train_one_epoch
+from .evaluate import evaluate, plot_confusion_matrix, plot_training_curves
 
-# ------------------------- paths / config -------------------------- #
-BASE_DIR = Path(__file__).resolve().parent.parent
-CONFIG_DIR = BASE_DIR / "config"
-SMOKE_CFG = CONFIG_DIR / "smoke_test.yaml"
-FULL_CFG = CONFIG_DIR / "full_experiment.yaml"
+# -----------------------------------------------------------------------------
+# DIRECTORIES (relative to project root)
+# -----------------------------------------------------------------------------
+ROOT_DIR = Path(__file__).resolve().parent.parent
+CONFIG_DIR = ROOT_DIR / "config"
+DATA_DIR = ROOT_DIR / "data"
+RESEARCH_DIR = ROOT_DIR / ".research" / "iteration2"
+FIG_DIR = RESEARCH_DIR / "images"
+RESULT_DIR = RESEARCH_DIR
 
-RESEARCH_DIR = BASE_DIR / ".research" / "iteration2"
-IMAGES_DIR = RESEARCH_DIR / "images"
+for _d in (CONFIG_DIR, DATA_DIR, FIG_DIR, RESULT_DIR):
+    _d.mkdir(parents=True, exist_ok=True)
 
-# Ensure top-level research directories exist
-IMAGES_DIR.mkdir(parents=True, exist_ok=True)
-
-
-# ------------------------ experiment logic ------------------------- #
+SMOKE_CFG_PATH = CONFIG_DIR / "smoke_test.yaml"
+FULL_CFG_PATH = CONFIG_DIR / "full_experiment.yaml"
 
 
-def run_experiment(cfg: Dict):
-    """Runs a *single* experiment as described by *cfg*."""
+# -----------------------------------------------------------------------------
+# DEFAULT YAML GENERATION (one-time)
+# -----------------------------------------------------------------------------
 
-    # reproducibility
-    set_seed(cfg["seed"])
+def _create_default_configs() -> None:
+    """Create the two YAML configuration files if they do not yet exist."""
 
-    # --------------- data ----------------
-    train_loader, val_loader, test_loader = get_data_loaders(cfg)
+    if not SMOKE_CFG_PATH.exists():
+        smoke = {
+            "experiment_name": "fashion_mnist_smoke",
+            "dataset": {
+                "name": "FashionMNIST",
+                "url": "http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/",
+                "root": str(DATA_DIR / "fashion_mnist"),
+                "train_subset": 1000,
+                "test_subset": 1000,
+            },
+            "model": {"type": "SimpleCNN", "num_classes": 10},
+            "training": {"epochs": 1, "batch_size": 64, "lr": 0.01, "momentum": 0.9},
+            "evaluation": {"metrics": ["accuracy"]},
+            "output": {"results_path": str(RESULT_DIR), "figures_path": str(FIG_DIR)},
+        }
+        with open(SMOKE_CFG_PATH, "w", encoding="utf-8") as fh:
+            yaml.safe_dump(smoke, fh)
 
-    # --------------- model --------------
-    model = SimpleCNN(cfg["model"]["input_channels"], cfg["model"]["num_classes"])
+    if not FULL_CFG_PATH.exists():
+        full = {
+            "experiment_name": "fashion_mnist_full",
+            "dataset": {
+                "name": "FashionMNIST",
+                "url": "http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/",
+                "root": str(DATA_DIR / "fashion_mnist"),
+                "train_subset": None,
+                "test_subset": None,
+            },
+            "model": {"type": "SimpleCNN", "num_classes": 10},
+            "training": {"epochs": 10, "batch_size": 64, "lr": 0.01, "momentum": 0.9},
+            "evaluation": {"metrics": ["accuracy"]},
+            "output": {"results_path": str(RESULT_DIR), "figures_path": str(FIG_DIR)},
+        }
+        with open(FULL_CFG_PATH, "w", encoding="utf-8") as fh:
+            yaml.safe_dump(full, fh)
 
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(
+
+# -----------------------------------------------------------------------------
+# SINGLE EXPERIMENT WORKFLOW
+# -----------------------------------------------------------------------------
+
+def _run_experiment(cfg: Dict) -> None:  # noqa: C901 – keep unified logic
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # ---------------- Data ----------------
+    train_loader, test_loader = get_dataloaders(cfg)
+
+    # ---------------- Model --------------
+    if cfg["model"]["type"] != "SimpleCNN":
+        raise ValueError("Unsupported model type in configuration – only SimpleCNN is available.")
+    model = SimpleCNN(num_classes=cfg["model"]["num_classes"]).to(device)
+
+    criterion = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.SGD(
         model.parameters(),
-        lr=cfg["training"]["learning_rate"],
-        weight_decay=cfg["training"]["weight_decay"],
+        lr=cfg["training"]["lr"],
+        momentum=cfg["training"]["momentum"],
     )
 
-    scheduler = None
-    if cfg["training"]["lr_scheduler"]["name"] == "StepLR":
-        scheduler = optim.lr_scheduler.StepLR(
-            optimizer,
-            step_size=cfg["training"]["lr_scheduler"]["step_size"],
-            gamma=cfg["training"]["lr_scheduler"]["gamma"],
-        )
+    all_losses: List[float] = []
+    all_accs: List[float] = []
 
-    metrics = Metrics(train_loss=[], train_acc=[], val_loss=[], val_acc=[], test_loss=0.0, test_acc=0.0)
+    # ------------- Training loop ---------
+    for epoch in range(1, cfg["training"]["epochs"] + 1):
+        loss_epoch = train_one_epoch(model, train_loader, criterion, optimizer, device)
+        acc_epoch, _, _ = evaluate(model, test_loader, device)
+        all_losses.append(loss_epoch)
+        all_accs.append(acc_epoch)
+        print(f"Epoch {epoch}/{cfg['training']['epochs']}  Loss: {loss_epoch:.4f}  Acc: {acc_epoch:.4f}")
+        sys.stdout.flush()
 
-    # --------------- training loop ---------------
-    for _ in range(cfg["training"]["epochs"]):
-        t_loss, t_acc = train_epoch(model, train_loader, criterion, optimizer)
-        v_loss, v_acc, _, _ = evaluate(model, val_loader, criterion)
-        metrics.train_loss.append(t_loss)
-        metrics.train_acc.append(t_acc)
-        metrics.val_loss.append(v_loss)
-        metrics.val_acc.append(v_acc)
-        if scheduler is not None:
-            scheduler.step()
+    # ------------- Final evaluation ------
+    final_acc, preds, labels = evaluate(model, test_loader, device)
 
-    # --------------- test phase ------------------
-    test_loss, test_acc, y_pred, y_true = evaluate(model, test_loader, criterion)
-    metrics.test_loss = test_loss
-    metrics.test_acc = test_acc
+    # ------------- Figures ---------------
+    fig_loss, fig_acc = plot_training_curves(all_losses, all_accs, FIG_DIR)
+    fig_cm = plot_confusion_matrix(labels, preds, FIG_DIR)
 
-    # --------------- persistence -----------------
-    exp_name = cfg["experiment_name"]
-    result_path = RESEARCH_DIR / f"{exp_name}.json"
-    with open(result_path, "w") as fp:
-        json.dump(metrics.__dict__, fp, indent=2)
+    # ------------- Results ---------------
+    results = {
+        "experiment_name": cfg["experiment_name"],
+        "final_test_accuracy": final_acc,
+        "loss_per_epoch": all_losses,
+        "accuracy_per_epoch": all_accs,
+        "figures": [fig_loss, fig_acc, fig_cm],
+    }
 
-    # figures
-    save_line_plot(metrics.train_loss, "Training Loss", IMAGES_DIR / f"{exp_name}_train_loss.pdf", f"{exp_name}: Training Loss")
-    save_line_plot(metrics.val_loss, "Validation Loss", IMAGES_DIR / f"{exp_name}_val_loss.pdf", f"{exp_name}: Validation Loss")
-    save_line_plot(metrics.train_acc, "Training Accuracy", IMAGES_DIR / f"{exp_name}_train_acc.pdf", f"{exp_name}: Training Accuracy")
-    save_line_plot(metrics.val_acc, "Validation Accuracy", IMAGES_DIR / f"{exp_name}_val_acc.pdf", f"{exp_name}: Validation Accuracy")
-    save_confusion_matrix(y_true, y_pred, IMAGES_DIR / f"{exp_name}_confusion_matrix.pdf")
+    result_path = RESULT_DIR / f"results_{cfg['experiment_name']}.json"
+    with open(result_path, "w", encoding="utf-8") as fh:
+        json.dump(results, fh, indent=2)
 
-    # ------------ stdout summary ---------------
-    print("\n================ EXPERIMENT SUMMARY ================")
-    print(json.dumps(metrics.__dict__, indent=2))
-    print("===================================================\n")
+    # ----------- Console summary ---------
+    print("\n=====================  EXPERIMENT DESCRIPTION  =====================")
+    print(
+        f"Experiment '{cfg['experiment_name']}' – Classification on {cfg['dataset']['name']}\n"
+        f"Training epochs : {cfg['training']['epochs']}\n"
+        f"Batch size      : {cfg['training']['batch_size']}\n"
+        f"Learning rate   : {cfg['training']['lr']}\n"
+        f"Momentum        : {cfg['training']['momentum']}\n"
+        f"Train subset    : {cfg['dataset']['train_subset']}\n"
+        f"Test  subset    : {cfg['dataset']['test_subset']}"
+    )
+    print("\n=====================  NUMERICAL RESULTS  ==========================")
+    print(json.dumps(results, indent=2))
+    print("\n=====================  FIGURE FILES  ===============================")
+    for f in results["figures"]:
+        print(f)
 
 
-# ----------------------------- CLI --------------------------------- #
+# -----------------------------------------------------------------------------
+# ARGPARSE & CONTROL FLOW
+# -----------------------------------------------------------------------------
 
-def parse_args():
-    parser = argparse.ArgumentParser(description="MNIST-CNN experiment runner")
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument("--smoke-test", action="store_true", help="Run only the smoke test experiment")
-    group.add_argument("--full-experiment", action="store_true", help="Run the full experiment (smoke test will be executed first)")
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Fashion-MNIST CNN experiment runner")
+    grp = parser.add_mutually_exclusive_group()
+    grp.add_argument("--smoke-test", action="store_true", help="run the quick smoke-test only")
+    grp.add_argument("--full-experiment", action="store_true", help="run the full experiment only")
     return parser.parse_args()
 
 
-def main():  # noqa: D401 – simple main
-    args = parse_args()
+# -----------------------------------------------------------------------------
+# MAIN
+# -----------------------------------------------------------------------------
 
-    if not SMOKE_CFG.exists() or not FULL_CFG.exists():
-        raise FileNotFoundError("Configuration YAML files not found under ./config/")
 
-    smoke_cfg = load_yaml(SMOKE_CFG)
-    full_cfg = load_yaml(FULL_CFG)
+def main() -> None:  # noqa: D401
+    _create_default_configs()
+    args = _parse_args()
 
-    # -------- execution path --------
     if args.smoke_test:
-        run_experiment(smoke_cfg)
+        cfg_paths = [SMOKE_CFG_PATH]
     elif args.full_experiment:
-        print("Running preliminary smoke test ...")
-        run_experiment(smoke_cfg)
-        print("Smoke test passed – running full experiment ...")
-        run_experiment(full_cfg)
-    else:
-        # default – only smoke test so that CI jobs remain quick
-        run_experiment(smoke_cfg)
+        cfg_paths = [FULL_CFG_PATH]
+    else:  # default – both, smoke-test first
+        cfg_paths = [SMOKE_CFG_PATH, FULL_CFG_PATH]
+
+    for cfg_path in cfg_paths:
+        with open(cfg_path, "r", encoding="utf-8") as fh:
+            cfg = yaml.safe_load(fh)
+        print("\n#######################  RUNNING", cfg["experiment_name"].upper(), "#######################\n")
+        _run_experiment(cfg)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()

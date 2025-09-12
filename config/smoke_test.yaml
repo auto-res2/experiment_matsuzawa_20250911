@@ -1,26 +1,21 @@
-experiment_name: mnist_cnn_smoke
-seed: 42
-
+experiment_name: fashion_mnist_smoke
 dataset:
-  name: MNIST
-  url: "http://yann.lecun.com/exdb/mnist/"
-  root: data/
-  download: true
+  name: FashionMNIST
+  url: http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/
+  root: data/fashion_mnist
   train_subset: 1000
-  val_subset: 200
-
+  test_subset: 1000
 model:
-  name: SimpleCNN
-  input_channels: 1
+  type: SimpleCNN
   num_classes: 10
-
 training:
-  batch_size: 64
   epochs: 1
-  learning_rate: 0.001
-  weight_decay: 0.0
-  lr_scheduler:
-    name: null
-
+  batch_size: 64
+  lr: 0.01
+  momentum: 0.9
 evaluation:
-  metrics: [accuracy, loss]
+  metrics:
+    - accuracy
+output:
+  results_path: .research/iteration2
+  figures_path: .research/iteration2/images

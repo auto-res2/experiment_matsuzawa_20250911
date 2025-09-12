@@ -1,68 +1,65 @@
+"""src/train.py
+Model definitions and training utilities.
+"""
+from __future__ import annotations
+
+from typing import List, Tuple
+
 import torch
 import torch.nn as nn
-from dataclasses import dataclass
-from torch.utils.data import DataLoader
+import torch.optim as optim
 
 __all__ = [
     "SimpleCNN",
-    "train_epoch",
-    "Metrics",
+    "train_one_epoch",
 ]
 
 
 class SimpleCNN(nn.Module):
-    """A very small CNN for MNIST-sized images (1×28×28)."""
+    """A very small convolutional network for Fashion-MNIST (1×28×28 → 10)."""
 
-    def __init__(self, input_channels: int = 1, num_classes: int = 10):
+    def __init__(self, num_classes: int = 10) -> None:  # noqa: D401
         super().__init__()
-        self.net = nn.Sequential(
-            nn.Conv2d(input_channels, 32, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
+        self.features = nn.Sequential(
+            nn.Conv2d(1, 32, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2),  # 14×14
             nn.Conv2d(32, 64, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2),  # 7×7
+        )
+        self.classifier = nn.Sequential(
             nn.Flatten(),
             nn.Linear(64 * 7 * 7, 128),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
             nn.Linear(128, num_classes),
         )
 
-    def forward(self, x):  # noqa: D401 – standard forward signature
-        return self.net(x)
+    def forward(self, x: torch.Tensor) -> torch.Tensor:  # noqa: D401
+        x = self.features(x)
+        x = self.classifier(x)
+        return x
 
 
-def train_epoch(
+def train_one_epoch(
     model: nn.Module,
-    loader: DataLoader,
+    loader: torch.utils.data.DataLoader,
     criterion: nn.Module,
-    optimizer: torch.optim.Optimizer,
-):
-    """Runs one training epoch and returns (loss, accuracy)."""
+    optimizer: optim.Optimizer,
+    device: torch.device,
+) -> float:
+    """Standard supervised training loop for a single epoch."""
 
     model.train()
-    running_loss, correct, total = 0.0, 0, 0
+    running_loss = 0.0
 
-    for x, y in loader:
+    for inputs, targets in loader:
+        inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
-        outputs = model(x)
-        loss = criterion(outputs, y)
+        outputs = model(inputs)
+        loss = criterion(outputs, targets)
         loss.backward()
         optimizer.step()
+        running_loss += loss.item() * inputs.size(0)
 
-        running_loss += loss.item() * x.size(0)
-        _, preds = torch.max(outputs, 1)
-        correct += (preds == y).sum().item()
-        total += y.size(0)
-
-    return running_loss / total, correct / total
-
-
-@dataclass
-class Metrics:
-    train_loss: list
-    train_acc: list
-    val_loss: list
-    val_acc: list
-    test_loss: float
-    test_acc: float
+    return running_loss / len(loader.dataset)
