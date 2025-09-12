@@ -1,42 +1,68 @@
-"""Model-training utilities.
+import torch
+import torch.nn as nn
+from dataclasses import dataclass
+from torch.utils.data import DataLoader
 
-The original experiment did not contain any concrete training logic –
-only an informational message embedded in the former monolithic script.
-That behaviour is preserved here so that the refactor introduces **no
-new model code** while still exposing a public `train` function that can
-be called from the orchestrating script.
-"""
-from __future__ import annotations
-
-from typing import Any, Dict
-
-__all__ = ["train"]
+__all__ = [
+    "SimpleCNN",
+    "train_epoch",
+    "Metrics",
+]
 
 
-def train(cfg: Dict[str, Any], dataset_path: str) -> Dict[str, Any]:
-    """Dummy training stub extracted from the original script.
+class SimpleCNN(nn.Module):
+    """A very small CNN for MNIST-sized images (1×28×28)."""
 
-    A real training loop is intentionally **not** implemented because the
-    user must supply a valid configuration and integrate their own model
-    code.  The function returns a minimal dictionary so that downstream
-    evaluation logic has a well-defined input.
-    """
-    # Inform the user that no training is executed – exactly as in the
-    # original single-file script.
-    print(
-        "[INFO] All mandatory configuration fields found.  However, "
-        "actual model training is disabled in this auto-generated stub.  "
-        "Please integrate your training pipeline here."
-    )
-    print(
-        "[INFO] Exiting without running experiments to comply with resource "
-        "constraints and awaiting valid, user-supplied configuration."
-    )
+    def __init__(self, input_channels: int = 1, num_classes: int = 10):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Conv2d(input_channels, 32, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+            nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+            nn.Flatten(),
+            nn.Linear(64 * 7 * 7, 128),
+            nn.ReLU(),
+            nn.Linear(128, num_classes),
+        )
 
-    # Return a minimal structure so that the caller can still serialise a
-    # result JSON.
-    return {
-        "status": "training_skipped",
-        "dataset": cfg.get("dataset", {}).get("name"),
-        "model": cfg.get("model", {}).get("name"),
-    }
+    def forward(self, x):  # noqa: D401 – standard forward signature
+        return self.net(x)
+
+
+def train_epoch(
+    model: nn.Module,
+    loader: DataLoader,
+    criterion: nn.Module,
+    optimizer: torch.optim.Optimizer,
+):
+    """Runs one training epoch and returns (loss, accuracy)."""
+
+    model.train()
+    running_loss, correct, total = 0.0, 0, 0
+
+    for x, y in loader:
+        optimizer.zero_grad()
+        outputs = model(x)
+        loss = criterion(outputs, y)
+        loss.backward()
+        optimizer.step()
+
+        running_loss += loss.item() * x.size(0)
+        _, preds = torch.max(outputs, 1)
+        correct += (preds == y).sum().item()
+        total += y.size(0)
+
+    return running_loss / total, correct / total
+
+
+@dataclass
+class Metrics:
+    train_loss: list
+    train_acc: list
+    val_loss: list
+    val_acc: list
+    test_loss: float
+    test_acc: float

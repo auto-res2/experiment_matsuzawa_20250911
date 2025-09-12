@@ -1,24 +1,26 @@
-# =============================================================
-# SMOKE-TEST CONFIGURATION
-# =============================================================
-# NOTE:  THIS FILE **MUST** BE EDITED BY A HUMAN BEFORE THE CODE CAN RUN.
-#        PROVIDE A VALID, PUBLIC DATASET URL.
-# -------------------------------------------------------------
+experiment_name: mnist_cnn_smoke
+seed: 42
+
 dataset:
-  name: <REQUIRED – e.g., "MNIST">
-  url:  <REQUIRED – direct download link to dataset archive>
-  checksum: <optional – sha256>
-  extract: true
+  name: MNIST
+  url: "http://yann.lecun.com/exdb/mnist/"
+  root: data/
+  download: true
+  train_subset: 1000
+  val_subset: 200
 
 model:
-  name: <REQUIRED – e.g., "resnet18">
-  pretrained: false
+  name: SimpleCNN
+  input_channels: 1
+  num_classes: 10
 
 training:
-  epochs: 1            # Single epoch for smoke-test
-  batch_size: 4        # Very small to respect 500 MB RAM limit
-  learning_rate: 1e-3
-  num_workers: 0       # CPU-only
+  batch_size: 64
+  epochs: 1
+  learning_rate: 0.001
+  weight_decay: 0.0
+  lr_scheduler:
+    name: null
 
-output:
-  dir: results/smoke
+evaluation:
+  metrics: [accuracy, loss]

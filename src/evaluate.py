@@ -1,31 +1,74 @@
-"""Evaluation utilities.
+from pathlib import Path
+from typing import List, Tuple
 
-The original code base only provided a `save_json` helper.  It is moved
-here unchanged so that other modules can persist results without adding
-new dependencies or files.
-"""
-from __future__ import annotations
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
+import torch
+from sklearn.metrics import confusion_matrix
+from torch.utils.data import DataLoader
 
-import json
-import pathlib
-from typing import Any, Dict
-
-__all__ = ["save_json", "evaluate"]
-
-
-def save_json(obj: Dict[str, Any] | Any, path: str | pathlib.Path) -> None:
-    path = pathlib.Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as f:
-        json.dump(obj, f, indent=2)
+__all__ = [
+    "evaluate",
+    "save_line_plot",
+    "save_confusion_matrix",
+]
 
 
-def evaluate(cfg: Dict[str, Any], train_outputs: Dict[str, Any]) -> Dict[str, Any]:
-    """A placeholder evaluation step so that the overall pipeline has a
-    consistent signature.  No additional logic is introduced beyond the
-    original repository’s functionality.
-    """
-    # Nothing to evaluate – faithfully propagate training information.
-    result = {"status": "evaluation_skipped"}
-    result.update(train_outputs)
-    return result
+def evaluate(model: torch.nn.Module, loader: DataLoader, criterion):
+    """Evaluate ``model`` over ``loader`` – returns (loss, acc, preds, targets)."""
+
+    model.eval()
+    running_loss, correct, total = 0.0, 0, 0
+    all_preds, all_targets = [], []
+
+    with torch.no_grad():
+        for x, y in loader:
+            outputs = model(x)
+            loss = criterion(outputs, y)
+            running_loss += loss.item() * x.size(0)
+            _, preds = torch.max(outputs, 1)
+            correct += (preds == y).sum().item()
+            total += y.size(0)
+            all_preds.extend(preds.cpu().numpy())
+            all_targets.extend(y.cpu().numpy())
+
+    return (
+        running_loss / total,
+        correct / total,
+        np.array(all_preds),
+        np.array(all_targets),
+    )
+
+
+def save_line_plot(values: List[float], ylabel: str, filename: Path, title: str):
+    plt.figure()
+    epochs = list(range(1, len(values) + 1))
+    sns.lineplot(x=epochs, y=values, marker="o", label=ylabel)
+    for x, y in zip(epochs, values):
+        plt.text(x, y, f"{y:.4f}")
+    plt.xlabel("Epoch")
+    plt.ylabel(ylabel)
+    plt.title(title)
+    plt.legend()
+    plt.tight_layout()
+    try:
+        filename.parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(filename, bbox_inches="tight")
+    finally:
+        plt.close()
+
+
+def save_confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray, filename: Path):
+    cm = confusion_matrix(y_true, y_pred)
+    plt.figure(figsize=(6, 5))
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
+    plt.xlabel("Predicted")
+    plt.ylabel("True")
+    plt.title("Confusion Matrix")
+    plt.tight_layout()
+    try:
+        filename.parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(filename, bbox_inches="tight")
+    finally:
+        plt.close()

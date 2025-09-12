@@ -1,119 +1,128 @@
-"""Command-line interface for the refactored experiment.
-
-Supported execution patterns:
-    uv run python -m src.main --smoke-test
-    uv run python -m src.main --full-experiment
-
-The script performs minimal structural validation exactly as the
-original single-file implementation did while delegating the three core
-stages (pre-processing, training, evaluation) to their respective
-modules.
-"""
+"""Main orchestration script – provides CLI for smoke/full experiments."""
 from __future__ import annotations
 
 import argparse
-import sys
+import json
 from pathlib import Path
-from typing import Any, Dict
+from typing import Dict
 
-import yaml
+import torch.nn as nn
+import torch.optim as optim
 
-import src.preprocess as _pre
-import src.train as _train
-import src.evaluate as _eval
+from .evaluate import evaluate, save_confusion_matrix, save_line_plot
+from .preprocess import get_data_loaders, load_yaml, set_seed
+from .train import Metrics, SimpleCNN, train_epoch
 
-# ---------------------------------------------------------------------------
-# Configuration helpers (adapted from the original src/config.py)
-# ---------------------------------------------------------------------------
+# ------------------------- paths / config -------------------------- #
+BASE_DIR = Path(__file__).resolve().parent.parent
+CONFIG_DIR = BASE_DIR / "config"
+SMOKE_CFG = CONFIG_DIR / "smoke_test.yaml"
+FULL_CFG = CONFIG_DIR / "full_experiment.yaml"
 
-def _validate_config(cfg: Dict[str, Any], cfg_path: Path) -> None:
-    missing: list[str] = []
-    if not cfg.get("dataset", {}).get("url"):
-        missing.append("dataset.url")
-    if not cfg.get("model", {}).get("name"):
-        missing.append("model.name")
-    if missing:
-        sys.stderr.write(
-            f"[FATAL] Configuration error in {cfg_path} – missing required field(s): "
-            f"{', '.join(missing)}\n"
+RESEARCH_DIR = BASE_DIR / ".research" / "iteration2"
+IMAGES_DIR = RESEARCH_DIR / "images"
+
+# Ensure top-level research directories exist
+IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+
+
+# ------------------------ experiment logic ------------------------- #
+
+
+def run_experiment(cfg: Dict):
+    """Runs a *single* experiment as described by *cfg*."""
+
+    # reproducibility
+    set_seed(cfg["seed"])
+
+    # --------------- data ----------------
+    train_loader, val_loader, test_loader = get_data_loaders(cfg)
+
+    # --------------- model --------------
+    model = SimpleCNN(cfg["model"]["input_channels"], cfg["model"]["num_classes"])
+
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(
+        model.parameters(),
+        lr=cfg["training"]["learning_rate"],
+        weight_decay=cfg["training"]["weight_decay"],
+    )
+
+    scheduler = None
+    if cfg["training"]["lr_scheduler"]["name"] == "StepLR":
+        scheduler = optim.lr_scheduler.StepLR(
+            optimizer,
+            step_size=cfg["training"]["lr_scheduler"]["step_size"],
+            gamma=cfg["training"]["lr_scheduler"]["gamma"],
         )
-        sys.stderr.write(
-            "The STRICT NO-FALLBACK RULE prohibits the use of synthetic or "
-            "placeholder data.  Please provide real dataset URLs before "
-            "re-running.\n"
-        )
-        sys.exit(1)
+
+    metrics = Metrics(train_loss=[], train_acc=[], val_loss=[], val_acc=[], test_loss=0.0, test_acc=0.0)
+
+    # --------------- training loop ---------------
+    for _ in range(cfg["training"]["epochs"]):
+        t_loss, t_acc = train_epoch(model, train_loader, criterion, optimizer)
+        v_loss, v_acc, _, _ = evaluate(model, val_loader, criterion)
+        metrics.train_loss.append(t_loss)
+        metrics.train_acc.append(t_acc)
+        metrics.val_loss.append(v_loss)
+        metrics.val_acc.append(v_acc)
+        if scheduler is not None:
+            scheduler.step()
+
+    # --------------- test phase ------------------
+    test_loss, test_acc, y_pred, y_true = evaluate(model, test_loader, criterion)
+    metrics.test_loss = test_loss
+    metrics.test_acc = test_acc
+
+    # --------------- persistence -----------------
+    exp_name = cfg["experiment_name"]
+    result_path = RESEARCH_DIR / f"{exp_name}.json"
+    with open(result_path, "w") as fp:
+        json.dump(metrics.__dict__, fp, indent=2)
+
+    # figures
+    save_line_plot(metrics.train_loss, "Training Loss", IMAGES_DIR / f"{exp_name}_train_loss.pdf", f"{exp_name}: Training Loss")
+    save_line_plot(metrics.val_loss, "Validation Loss", IMAGES_DIR / f"{exp_name}_val_loss.pdf", f"{exp_name}: Validation Loss")
+    save_line_plot(metrics.train_acc, "Training Accuracy", IMAGES_DIR / f"{exp_name}_train_acc.pdf", f"{exp_name}: Training Accuracy")
+    save_line_plot(metrics.val_acc, "Validation Accuracy", IMAGES_DIR / f"{exp_name}_val_acc.pdf", f"{exp_name}: Validation Accuracy")
+    save_confusion_matrix(y_true, y_pred, IMAGES_DIR / f"{exp_name}_confusion_matrix.pdf")
+
+    # ------------ stdout summary ---------------
+    print("\n================ EXPERIMENT SUMMARY ================")
+    print(json.dumps(metrics.__dict__, indent=2))
+    print("===================================================\n")
 
 
-def _load_yaml(path: Path) -> Dict[str, Any]:
-    if not path.exists():
-        sys.stderr.write(f"[FATAL] Configuration file not found: {path}\n")
-        sys.exit(1)
-    with path.open("r", encoding="utf-8") as f:
-        cfg = yaml.safe_load(f)
-    _validate_config(cfg, path)
-    return cfg
+# ----------------------------- CLI --------------------------------- #
 
-# ---------------------------------------------------------------------------
-# Main orchestration helpers
-# ---------------------------------------------------------------------------
-
-def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Experimental pipeline runner")
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--smoke-test", action="store_true", help="run quick smoke test")
-    group.add_argument("--full-experiment", action="store_true", help="run full experiment")
+def parse_args():
+    parser = argparse.ArgumentParser(description="MNIST-CNN experiment runner")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--smoke-test", action="store_true", help="Run only the smoke test experiment")
+    group.add_argument("--full-experiment", action="store_true", help="Run the full experiment (smoke test will be executed first)")
     return parser.parse_args()
 
 
-def _config_path_from_args(args: argparse.Namespace) -> Path:
+def main():  # noqa: D401 – simple main
+    args = parse_args()
+
+    if not SMOKE_CFG.exists() or not FULL_CFG.exists():
+        raise FileNotFoundError("Configuration YAML files not found under ./config/")
+
+    smoke_cfg = load_yaml(SMOKE_CFG)
+    full_cfg = load_yaml(FULL_CFG)
+
+    # -------- execution path --------
     if args.smoke_test:
-        return Path("config/smoke_test.yaml")
-    if args.full_experiment:
-        return Path("config/full_experiment.yaml")
-    # argparse guarantees one flag, but keep mypy happy
-    raise AssertionError("Unreachable")
-
-
-# ---------------------------------------------------------------------------
-# Entry-point
-# ---------------------------------------------------------------------------
-
-def main() -> None:  # pragma: no cover – CLI entry-point
-    args = _parse_args()
-    cfg_path = _config_path_from_args(args)
-    cfg = _load_yaml(cfg_path)
-
-    # ---------------------------------------------------------
-    # Phase 1 – Pre-processing (download / extract)
-    # ---------------------------------------------------------
-    try:
-        dataset_path = _pre.download_and_prepare(cfg["dataset"])
-    except Exception as e:  # noqa: BLE001 – generic handler (network, checksum …)
-        sys.stderr.write(f"[FATAL] Dataset preparation failed: {e}\n")
-        sys.exit(1)
-
-    # ---------------------------------------------------------
-    # Phase 2 – Training (stub)
-    # ---------------------------------------------------------
-    train_outputs = _train.train(cfg, dataset_path)
-
-    # ---------------------------------------------------------
-    # Phase 3 – Evaluation (stub)
-    # ---------------------------------------------------------
-    results = _eval.evaluate(cfg, train_outputs)
-
-    # ---------------------------------------------------------
-    # Persist & report
-    # ---------------------------------------------------------
-    mode = "smoke" if args.smoke_test else "full"
-    out_path = Path(".research/iteration2") / f"{mode}_results.json"
-    _eval.save_json(results, out_path)
-
-    # Print to STDOUT for verification (keeps CI happy)
-    import json  # local import keeps global namespace tidy
-
-    sys.stdout.write(json.dumps(results, indent=2) + "\n")
+        run_experiment(smoke_cfg)
+    elif args.full_experiment:
+        print("Running preliminary smoke test ...")
+        run_experiment(smoke_cfg)
+        print("Smoke test passed – running full experiment ...")
+        run_experiment(full_cfg)
+    else:
+        # default – only smoke test so that CI jobs remain quick
+        run_experiment(smoke_cfg)
 
 
 if __name__ == "__main__":

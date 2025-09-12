@@ -1,83 +1,84 @@
-"""Dataset download & extraction utilities (verbatim from original code).
+"""Data-set and misc helper utilities."""
+from pathlib import Path
+from typing import Dict, Tuple
 
-These functions honour the STRICT NO-FALLBACK RULE – they refuse to run
-without a real, reachable dataset URL and (optionally) checksum.
-"""
-from __future__ import annotations
+import random
 
-import hashlib
-import os
-import shutil
-import tarfile
-import zipfile
-from urllib.parse import urlparse
+import numpy as np
+import torch
+import yaml
+from torch.utils.data import DataLoader, Subset
+from torchvision import datasets, transforms
 
-import requests
-import tqdm.auto as tqdm
-
-__all__ = ["download_and_prepare"]
-
-
-def _sha256(path: str, chunk_size: int = 8192) -> str:
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(chunk_size), b""):
-            h.update(chunk)
-    return h.hexdigest()
+__all__ = [
+    "set_seed",
+    "load_yaml",
+    "get_data_loaders",
+]
 
 
-def _maybe_extract(archive_path: str, extract_dir: str) -> None:
-    if tarfile.is_tarfile(archive_path):
-        with tarfile.open(archive_path, "r:*") as tar:
-            tar.extractall(path=extract_dir)
-    elif zipfile.is_zipfile(archive_path):
-        with zipfile.ZipFile(archive_path, "r") as zf:
-            zf.extractall(path=extract_dir)
-    else:
-        # Not an archive – nothing to extract
-        shutil.copy(archive_path, extract_dir)
+def set_seed(seed: int):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
 
 
-def download_and_prepare(cfg_dataset: dict, dest_root: str = "data") -> str:
-    """Download (if necessary) and extract the dataset defined in
-    ``cfg_dataset``.  Returns the path to the prepared dataset directory.
-    """
-    url = cfg_dataset["url"]
-    checksum = cfg_dataset.get("checksum")
-    extract = bool(cfg_dataset.get("extract", True))
+def load_yaml(path: Path) -> Dict:
+    with open(path, "r") as f:
+        return yaml.safe_load(f)
 
-    os.makedirs(dest_root, exist_ok=True)
 
-    filename = os.path.basename(urlparse(url).path)
-    archive_path = os.path.join(dest_root, filename)
+def _split_indices(total_size: int, val_size: int):
+    indices = list(range(total_size))
+    random.shuffle(indices)
+    val_indices = indices[:val_size]
+    train_indices = indices[val_size:]
+    return train_indices, val_indices
 
-    # Step 1: Download
-    if not os.path.exists(archive_path):
-        with requests.get(url, stream=True, timeout=30) as r:
-            r.raise_for_status()
-            total = int(r.headers.get("content-length", 0))
-            with open(archive_path, "wb") as f, tqdm.tqdm(
-                total=total, unit="B", unit_scale=True, desc="Downloading"
-            ) as bar:
-                for chunk in r.iter_content(chunk_size=8192):
-                    if chunk:
-                        f.write(chunk)
-                        bar.update(len(chunk))
 
-    # Step 2: Verify checksum, if provided
-    if checksum is not None:
-        digest = _sha256(archive_path)
-        if digest != checksum:
-            raise RuntimeError(
-                f"Checksum mismatch for {archive_path}: expected {checksum}, got {digest}"
-            )
+def get_data_loaders(cfg: Dict):
+    """Returns train/val/test data loaders according to *cfg*."""
 
-    # Step 3: Extract
-    dataset_dir = os.path.join(dest_root, cfg_dataset["name"])
-    if extract:
-        if not os.path.isdir(dataset_dir):
-            _maybe_extract(archive_path, dataset_dir)
-    else:
-        dataset_dir = archive_path
+    transform = transforms.Compose([transforms.ToTensor()])
+    root = cfg["dataset"]["root"]
+    download_flag = cfg["dataset"].get("download", True)
 
-    return dataset_dir
+    try:
+        train_full = datasets.MNIST(
+            root=root,
+            train=True,
+            download=download_flag,
+            transform=transform,
+        )
+        test_set = datasets.MNIST(
+            root=root,
+            train=False,
+            download=download_flag,
+            transform=transform,
+        )
+    except Exception as e:  # noqa: BLE001
+        raise RuntimeError("Failed to download or load MNIST – check network connectivity.") from e
+
+    # ---------------- split -----------------
+    val_subset_size = cfg["dataset"].get("val_subset")
+    if val_subset_size is None:
+        val_subset_size = int(0.1 * len(train_full))
+
+    train_idx, val_idx = _split_indices(len(train_full), val_subset_size)
+
+    if cfg["dataset"].get("train_subset"):
+        train_idx = train_idx[: cfg["dataset"]["train_subset"]]
+    if cfg["dataset"].get("val_subset"):
+        val_idx = val_idx[: cfg["dataset"]["val_subset"]]
+
+    train_set = Subset(train_full, train_idx)
+    val_set = Subset(train_full, val_idx)
+
+    batch_size = cfg["training"]["batch_size"]
+
+    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False)
+    test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
+
+    return train_loader, val_loader, test_loader

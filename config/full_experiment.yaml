@@ -1,24 +1,28 @@
-# =============================================================
-# FULL EXPERIMENT CONFIGURATION
-# =============================================================
-# NOTE:  THIS FILE **MUST** BE EDITED BY A HUMAN BEFORE THE CODE CAN RUN.
-#        PROVIDE A VALID, PUBLIC DATASET URL.
-# -------------------------------------------------------------
+experiment_name: mnist_cnn_full
+seed: 42
+
 dataset:
-  name: <REQUIRED – e.g., "CIFAR-10">
-  url:  <REQUIRED – direct download link to dataset archive>
-  checksum: <optional – sha256>
-  extract: true
+  name: MNIST
+  url: "http://yann.lecun.com/exdb/mnist/"
+  root: data/
+  download: true
+  train_subset: null
+  val_subset: 5000
 
 model:
-  name: <REQUIRED – e.g., "resnet18">
-  pretrained: false
+  name: SimpleCNN
+  input_channels: 1
+  num_classes: 10
 
 training:
-  epochs: 20           # Full-scale experiment
-  batch_size: 32
-  learning_rate: 1e-3
-  num_workers: 0
+  batch_size: 64
+  epochs: 10
+  learning_rate: 0.001
+  weight_decay: 0.0
+  lr_scheduler:
+    name: StepLR
+    step_size: 5
+    gamma: 0.5
 
-output:
-  dir: results/full
+evaluation:
+  metrics: [accuracy, loss]
