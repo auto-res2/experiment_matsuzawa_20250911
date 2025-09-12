@@ -1,0 +1,24 @@
+# =============================================================
+# SMOKE-TEST CONFIGURATION
+# =============================================================
+# NOTE:  THIS FILE **MUST** BE EDITED BY A HUMAN BEFORE THE CODE CAN RUN.
+#        PROVIDE A VALID, PUBLIC DATASET URL.
+# -------------------------------------------------------------
+dataset:
+  name: <REQUIRED – e.g., "MNIST">
+  url:  <REQUIRED – direct download link to dataset archive>
+  checksum: <optional – sha256>
+  extract: true
+
+model:
+  name: <REQUIRED – e.g., "resnet18">
+  pretrained: false
+
+training:
+  epochs: 1            # Single epoch for smoke-test
+  batch_size: 4        # Very small to respect 500 MB RAM limit
+  learning_rate: 1e-3
+  num_workers: 0       # CPU-only
+
+output:
+  dir: results/smoke

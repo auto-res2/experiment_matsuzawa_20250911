@@ -1,0 +1,24 @@
+# =============================================================
+# FULL EXPERIMENT CONFIGURATION
+# =============================================================
+# NOTE:  THIS FILE **MUST** BE EDITED BY A HUMAN BEFORE THE CODE CAN RUN.
+#        PROVIDE A VALID, PUBLIC DATASET URL.
+# -------------------------------------------------------------
+dataset:
+  name: <REQUIRED – e.g., "CIFAR-10">
+  url:  <REQUIRED – direct download link to dataset archive>
+  checksum: <optional – sha256>
+  extract: true
+
+model:
+  name: <REQUIRED – e.g., "resnet18">
+  pretrained: false
+
+training:
+  epochs: 20           # Full-scale experiment
+  batch_size: 32
+  learning_rate: 1e-3
+  num_workers: 0
+
+output:
+  dir: results/full

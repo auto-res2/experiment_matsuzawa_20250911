@@ -1,44 +1,83 @@
-# src/preprocess.py
-"""Dataset download and tokenisation utilities."""
+"""Dataset download & extraction utilities (verbatim from original code).
+
+These functions honour the STRICT NO-FALLBACK RULE – they refuse to run
+without a real, reachable dataset URL and (optionally) checksum.
+"""
 from __future__ import annotations
 
-import pathlib
-from typing import TYPE_CHECKING
+import hashlib
+import os
+import shutil
+import tarfile
+import zipfile
+from urllib.parse import urlparse
 
-import torch
-from datasets import load_dataset
+import requests
+import tqdm.auto as tqdm
 
-from .train import DatasetCfg
-
-_DATA_ROOT = pathlib.Path("data")
-_DATA_ROOT.mkdir(parents=True, exist_ok=True)
+__all__ = ["download_and_prepare"]
 
 
-def prepare_dataset(cfg: DatasetCfg) -> pathlib.Path:
-    """Download *cfg.hf_id* via 🤗 Datasets (if not already cached) and serialize
-    the splits as torch tensors.  Returns the root directory that contains the
-    cached dataset."""
-    ds_root = _DATA_ROOT / cfg.hf_id.replace("/", "__")
-    if ds_root.exists():
-        return ds_root  # dataset already prepared
+def _sha256(path: str, chunk_size: int = 8192) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(chunk_size), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
-    print(f"Downloading dataset {cfg.hf_id} …", flush=True)
-    try:
-        ds_kwargs = {}
-        if cfg.config:
-            ds_kwargs["name"] = cfg.config
-        dataset = load_dataset(cfg.hf_id, **ds_kwargs)
-    except Exception as exc:  # pragma: no cover
-        raise RuntimeError(
-            f"Failed to download {cfg.hf_id}. The exact exception was:\n{exc}\n"
-        ) from exc
 
-    ds_root.mkdir(parents=True, exist_ok=True)
-    # Serialise splits for fast future loading --------------------------------
-    try:
-        torch.save(dataset[cfg.split_train], ds_root / "train.pt")
-        torch.save(dataset[cfg.split_test], ds_root / "test.pt")
-    except Exception as exc:  # pragma: no cover
-        raise RuntimeError(f"Could not cache dataset to disk: {exc}") from exc
+def _maybe_extract(archive_path: str, extract_dir: str) -> None:
+    if tarfile.is_tarfile(archive_path):
+        with tarfile.open(archive_path, "r:*") as tar:
+            tar.extractall(path=extract_dir)
+    elif zipfile.is_zipfile(archive_path):
+        with zipfile.ZipFile(archive_path, "r") as zf:
+            zf.extractall(path=extract_dir)
+    else:
+        # Not an archive – nothing to extract
+        shutil.copy(archive_path, extract_dir)
 
-    return ds_root
+
+def download_and_prepare(cfg_dataset: dict, dest_root: str = "data") -> str:
+    """Download (if necessary) and extract the dataset defined in
+    ``cfg_dataset``.  Returns the path to the prepared dataset directory.
+    """
+    url = cfg_dataset["url"]
+    checksum = cfg_dataset.get("checksum")
+    extract = bool(cfg_dataset.get("extract", True))
+
+    os.makedirs(dest_root, exist_ok=True)
+
+    filename = os.path.basename(urlparse(url).path)
+    archive_path = os.path.join(dest_root, filename)
+
+    # Step 1: Download
+    if not os.path.exists(archive_path):
+        with requests.get(url, stream=True, timeout=30) as r:
+            r.raise_for_status()
+            total = int(r.headers.get("content-length", 0))
+            with open(archive_path, "wb") as f, tqdm.tqdm(
+                total=total, unit="B", unit_scale=True, desc="Downloading"
+            ) as bar:
+                for chunk in r.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+                        bar.update(len(chunk))
+
+    # Step 2: Verify checksum, if provided
+    if checksum is not None:
+        digest = _sha256(archive_path)
+        if digest != checksum:
+            raise RuntimeError(
+                f"Checksum mismatch for {archive_path}: expected {checksum}, got {digest}"
+            )
+
+    # Step 3: Extract
+    dataset_dir = os.path.join(dest_root, cfg_dataset["name"])
+    if extract:
+        if not os.path.isdir(dataset_dir):
+            _maybe_extract(archive_path, dataset_dir)
+    else:
+        dataset_dir = archive_path
+
+    return dataset_dir
