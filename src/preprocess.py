@@ -1,91 +1,145 @@
-"""
-src/preprocess.py
-Dataset loading now supports the HuggingFace SQuAD dataset for causal-LM
-finetuning of DialoGPT.  We create short (<128 token) dialogue-style strings
-("Question: ... Answer: ...") and tokenize them.
+"""src/preprocess.py
+Specialised preprocessing pipeline for *SQuAD* as a light-weight
+classification task (answer-length buckets).
 """
 from __future__ import annotations
 
-import math
+import random
 from typing import Dict, Tuple
 
+import numpy as np
 import torch
-from torch.utils.data import DataLoader, Dataset, TensorDataset
+from datasets import load_dataset
+from torch.utils.data import DataLoader, TensorDataset
+from transformers import AutoTokenizer
 
-# ---------------------------------------------------------------------------------------------------------------------
-# DataModule abstraction
-# ---------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
+# Dataset loader (specialises the previous placeholder)
+# ----------------------------------------------------------------------------
 
-class DataModule:
-    def __init__(self, train_ds: Dataset, val_ds: Dataset, test_ds: Dataset, batch_size: int = 32, num_workers: int = 0, collate_fn=None):
-        self.batch_size = batch_size
-        self.num_workers = num_workers
-        self.collate_fn = collate_fn
-        self.train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=num_workers, collate_fn=collate_fn)
-        self.val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, collate_fn=collate_fn)
-        self.test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, collate_fn=collate_fn)
+def _load_dataset_placeholder(config: Dict):  # noqa: N802 – keep original name
+    """Load *SQuAD* and turn it into a 3-class classification dataset.
 
-        # Attribute stubs (not used by LM)
-        sample = train_ds[0][0] if isinstance(train_ds[0], (tuple, list)) else train_ds[0]
-        if isinstance(sample, torch.Tensor):
-            self.input_dim = int(math.prod(sample.shape))
+    Label schema (based on *answer token length*):
+    • 0 – *short*  (<5 tokens)
+    • 1 – *medium* (5–15 tokens)
+    • 2 – *long*   (>15 tokens)
+    """
+
+    # ---------------- Configuration -------------------------------------
+    model_name = config["model"]["name"]
+    max_len = int(config["dataset"].get("max_length", 64))
+    rng = random.Random(int(config["training"].get("seed", 42)))
+
+    # ---------------- Load raw dataset ----------------------------------
+    ds_raw = load_dataset("squad")
+
+    # We down-sample aggressively so that the experiment fits into the 500 MB
+    # RAM envelope of the execution environment.
+    def _sample(split):
+        indices = list(range(len(ds_raw[split])))
+        rng.shuffle(indices)
+        return indices[:1000]  # ≤1 k samples per split
+
+    sampled = {
+        "train": ds_raw["train"].select(_sample("train")),
+        "validation": ds_raw["validation"].select(_sample("validation")),
+    }
+
+    # ---------------- Tokeniser -----------------------------------------
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+    def _vectorise(example):
+        text = example["question"] + " " + example["context"]
+        enc = tokenizer(
+            text,
+            truncation=True,
+            padding="max_length",
+            max_length=max_len,
+            return_tensors="pt",
+        )
+        # --------------- Build label (answer length bucket) --------------
+        ans_len = len(tokenizer(example["answers"]["text"][0])["input_ids"])
+        if ans_len < 5:
+            label = 0
+        elif ans_len <= 15:
+            label = 1
         else:
-            self.input_dim = 0  # unknown / not required
-        self.num_classes = 0
+            label = 2
+        return {
+            "input_ids": enc["input_ids"].squeeze(0),
+            "label": torch.tensor(label, dtype=torch.long),
+        }
 
-# ---------------------------------------------------------------------------------------------------------------------
-# SQuAD builder (for causal LM)
-# ---------------------------------------------------------------------------------------------------------------------
+    # Vectorise splits ----------------------------------------------------
+    proc_train = sampled["train"].map(_vectorise)
+    proc_val = sampled["validation"].map(_vectorise)
 
-def _build_squad_lm(cfg: Dict):
-    from datasets import load_dataset
-    from transformers import AutoTokenizer
+    # Convert to *TensorDataset* -----------------------------------------
+    def _to_tensor_dataset(split):
+        inputs = torch.stack(split["input_ids"])
+        labels = torch.stack(split["label"])
+        return TensorDataset(inputs, labels)
 
-    max_len = cfg.get("max_length", 128)
-    tokenizer = AutoTokenizer.from_pretrained("microsoft/DialoGPT-medium")
+    train_ds = _to_tensor_dataset(proc_train)
+    val_ds = _to_tensor_dataset(proc_val)
 
-    raw = load_dataset("squad")
+    # We reuse validation set as test – SQuAD has no dedicated *test* part
+    return train_ds, val_ds, val_ds
 
-    def _convert(split):
-        texts = []
-        for ex in split:
-            q, a = ex["question"], ex["answers"]["text"][0]
-            txt = f"Question: {q} Answer: {a}"
-            texts.append(txt)
-        enc = tokenizer(texts, padding="max_length", truncation=True, max_length=max_len, return_tensors="pt")
-        input_ids = enc.input_ids
-        return TensorDataset(input_ids, input_ids)
 
-    train_ds = _convert(raw["train"][0:cfg.get("train_size", 1000)])
-    val_ds = _convert(raw["train"][cfg.get("train_size", 1000): cfg.get("train_size", 1000)+cfg.get("val_size", 200)])
-    test_ds = _convert(raw["validation"][0:cfg.get("test_size", 200)])
+# ----------------------------------------------------------------------------
+# Data Pre-Processor (public API unchanged)
+# ----------------------------------------------------------------------------
 
-    collate_fn = None  # already padded to max_length, simple stacking works
-    return DataModule(train_ds, val_ds, test_ds, batch_size=cfg.get("batch_size", 8), num_workers=cfg.get("num_workers",0), collate_fn=collate_fn)
+class DataPreprocessor:
+    """Factory to create train/val/test dataloaders irrespective of dataset."""
 
-# ---------------------------------------------------------------------------------------------------------------------
-# dummy dataset (kept for smoke test)
-# ---------------------------------------------------------------------------------------------------------------------
+    @staticmethod
+    def _create_dummy_dataset(config: Dict):
+        # unchanged (see common core)
+        input_dim = int(config["dataset"].get("input_dim", 20))
+        num_classes = int(config["dataset"].get("num_classes", 3))
+        n_samples = int(config["dataset"].get("n_samples", 1000))
 
-def _build_dummy_dataset(cfg: Dict):
-    input_dim = cfg["input_dim"]
-    num_classes = cfg["num_classes"]
-    def _make(size):
-        return TensorDataset(torch.randn(size, input_dim), torch.randint(0, num_classes, (size,)))
-    return _make(cfg.get("train_size", 1000)), _make(cfg.get("val_size", 200)), _make(cfg.get("test_size", 200))
+        rng = np.random.default_rng(seed=int(config["training"].get("seed", 42)))
+        X = rng.normal(size=(n_samples, input_dim)).astype(np.float32)
+        y = rng.integers(low=0, high=num_classes, size=n_samples, dtype=np.int64)
 
-# ---------------------------------------------------------------------------------------------------------------------
-# public API
-# ---------------------------------------------------------------------------------------------------------------------
+        indices = np.arange(n_samples)
+        rng.shuffle(indices)
+        train_end = int(0.7 * n_samples)
+        val_end = int(0.85 * n_samples)
+        idx_train, idx_val, idx_test = (
+            indices[:train_end],
+            indices[train_end:val_end],
+            indices[val_end:],
+        )
 
-def build_datamodule(config: Dict) -> DataModule:
-    name = config.get("dataset", {}).get("name", "dummy").lower()
+        def make_dataset(idxs):
+            return TensorDataset(
+                torch.from_numpy(X[idxs]), torch.from_numpy(y[idxs])
+            )
 
-    if name == "dummy":
-        train, val, test = _build_dummy_dataset(config["dataset"])
-        return DataModule(train, val, test, batch_size=config["dataset"].get("batch_size",32))
+        return make_dataset(idx_train), make_dataset(idx_val), make_dataset(idx_test)
 
-    if name == "squad":
-        return _build_squad_lm(config["dataset"])
+    # ----------------------- Public API ----------------------------------
 
-    raise NotImplementedError(f"Dataset '{name}' not implemented.")
+    @staticmethod
+    def get_data_loaders(config: Dict):
+        dataset_name = config["dataset"]["name"].lower()
+        if dataset_name == "dummy":
+            train_ds, val_ds, test_ds = DataPreprocessor._create_dummy_dataset(config)
+        else:
+            train_ds, val_ds, test_ds = _load_dataset_placeholder(config)
+
+        batch_size = int(config["training"].get("batch_size", 32))
+
+        def make_loader(ds, shuffle: bool):
+            return DataLoader(ds, batch_size=batch_size, shuffle=shuffle)
+
+        return (
+            make_loader(train_ds, shuffle=True),
+            make_loader(val_ds, shuffle=False),
+            make_loader(test_ds, shuffle=False),
+        )

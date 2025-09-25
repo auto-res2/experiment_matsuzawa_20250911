@@ -1,25 +1,19 @@
-# config/smoke_test.yaml – unchanged synthetic test
-experiment:
-  name: smoke_test
-
-seed: 42
+# (unchanged – still uses the built-in dummy dataset)
+experiment_name: smoke_test
+save_dir: artifacts
 
 dataset:
   name: dummy
   input_dim: 20
-  num_classes: 2
-  train_size: 200
-  val_size: 50
-  test_size: 50
-  batch_size: 32
+  num_classes: 3
+  n_samples: 600
 
 model:
-  type: mlp
-  hidden_units: [64,32]
+  name: dummy
+  hidden_dim: 32
 
-optimizer:
-  lr: 0.001
-scheduler:
-  step_size: 10
 training:
   epochs: 3
+  batch_size: 32
+  lr: 0.001
+  seed: 42

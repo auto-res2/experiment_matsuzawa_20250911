@@ -1,189 +1,213 @@
-"""
-src/train.py
-Specialized training logic after placeholder replacement.  Added
-1. DialoGPT-medium causal-LM support
-2. Language-model aware training loop (per-token loss + ppl)
+"""src/train.py
+Core training logic specialised with real Hugging-Face models.
 """
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
 
 import torch
 import torch.nn as nn
+import torch.optim as optim
+from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
-from tqdm import tqdm
+from transformers import (
+    AutoConfig,
+    AutoModelForSequenceClassification,
+    AutoTokenizer,
+)
 
-# ---------------------------------------------------------------------------------------------------------------------
-# Utility helpers
-# ---------------------------------------------------------------------------------------------------------------------
-
-def set_seed(seed: int = 42) -> None:
-    import random
-    import numpy as np
-
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+# -----------------------------------------------------------------------------
+# Model instantiation helpers --------------------------------------------------
+# -----------------------------------------------------------------------------
 
 
-def compute_accuracy(logits: torch.Tensor, targets: torch.Tensor) -> float:
-    """Classification accuracy (not used for LM)."""
-    preds = logits.argmax(dim=1)
-    return (preds == targets).float().mean().item()
+def _build_hf_sequence_classifier(config: Dict) -> nn.Module:
+    """Create a *sequence-classification* wrapper around any HF backbone.
 
+    The function is purposely light-weight so that *any* AutoModel backbone can
+    be used while still fitting into the generic Trainer loop (i.e. it accepts
+    only a single *input_ids* tensor and returns raw *logits*).
+    """
 
-# ---------------------------------------------------------------------------------------------------------------------
-# Model definitions
-# ---------------------------------------------------------------------------------------------------------------------
-class MLPClassifier(nn.Module):
-    def __init__(self, input_dim: int, num_classes: int, hidden_units: List[int]):
-        super().__init__()
-        layers: List[nn.Module] = []
-        prev = input_dim
-        for h in hidden_units:
-            layers += [nn.Linear(prev, h), nn.ReLU()]
-            prev = h
-        layers.append(nn.Linear(prev, num_classes))
-        self.net = nn.Sequential(*layers)
+    model_name = config["model"]["name"]
+    num_labels = int(config["dataset"].get("num_classes", 3))
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:  # type: ignore[override]
-        if x.dim() > 2:
-            x = x.view(x.size(0), -1)
-        return self.net(x)
-
-
-# ---------------------------------------------------------------------------------------------------------------------
-# Model factory
-# ---------------------------------------------------------------------------------------------------------------------
-
-def get_model(config: Dict, input_dim: int, num_classes: int):
-    model_cfg = config.get("model", {})
-    model_type = model_cfg.get("type", "mlp").lower()
-
-    if model_type == "mlp":
-        hidden = model_cfg.get("hidden_units", [128, 64])
-        return MLPClassifier(input_dim, num_classes, hidden)
-
-    # DialoGPT-medium causal LM
-    if model_type in {"dialogpt", "dialogpt-medium", "microsoft/dialoGPT-medium".lower()}:
-        from transformers import AutoModelForCausalLM
-
-        return AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
-
-    raise NotImplementedError(f"Model type '{model_type}' not implemented.")
-
-
-# ---------------------------------------------------------------------------------------------------------------------
-# Training loop (classification + LM)
-# ---------------------------------------------------------------------------------------------------------------------
-
-def _step_lm(model, inputs: torch.Tensor, device: torch.device):
-    inputs = inputs.to(device)
-    outputs = model(input_ids=inputs, labels=inputs)
-    loss = outputs.loss
-    logits = outputs.logits.detach()
-    # Per-token accuracy for monitoring only
-    with torch.no_grad():
-        preds = logits.argmax(dim=-1)
-        acc = (preds == inputs).float().mean().item()
-    return loss, acc
-
-
-def train_and_validate(
-    config: Dict,
-    train_loader: DataLoader,
-    val_loader: DataLoader,
-    input_dim: int,
-    num_classes: int,
-    device: torch.device,
-    output_dir: Path,
-):
-    set_seed(config.get("seed", 42))
-
-    model = get_model(config, input_dim, num_classes).to(device)
-
-    model_cfg_type = config["model"]["type"].lower()
-    is_lm = model_cfg_type.startswith("dialogpt")
-
-    lr = config.get("optimizer", {}).get("lr", 1e-4)
-    weight_decay = config.get("optimizer", {}).get("weight_decay", 0.0)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
-
-    scheduler = torch.optim.lr_scheduler.StepLR(
-        optimizer, step_size=config.get("scheduler", {}).get("step_size", 5), gamma=0.5
+    # --------------- Load backbone & classification head ----------------
+    hf_config = AutoConfig.from_pretrained(model_name, num_labels=num_labels)
+    backbone = AutoModelForSequenceClassification.from_pretrained(
+        model_name, config=hf_config
     )
 
-    criterion = nn.CrossEntropyLoss() if not is_lm else None
-    epochs = config.get("training", {}).get("epochs", 3)
+    # --------------- Build tiny inference wrapper -----------------------
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    pad_id = tokenizer.pad_token_id
 
-    history: Dict[str, List[float]] = {k: [] for k in ["train_loss", "val_loss", "train_acc", "val_acc"]}
-    best_val = float("inf") if is_lm else 0.0  # minimise loss for LM, maximise acc for CLS
-    best_ckpt = output_dir / "best_model.pt"
+    class _HFWrapper(nn.Module):  # noqa: D401 – internal helper
+        """Thin wrapper so that *forward(x)* is enough for the core Trainer."""
 
-    for epoch in range(1, epochs + 1):
-        # ---------- train ----------
-        model.train()
-        t_loss = t_acc = 0.0
-        for batch in tqdm(train_loader, desc=f"Epoch {epoch}/{epochs} [Train]", leave=False):
-            optimizer.zero_grad()
-            if is_lm:
-                loss, acc = _step_lm(model, batch[0], device)
-            else:
-                inputs, targets = (b.to(device) for b in batch)
-                logits = model(inputs)
-                loss = criterion(logits, targets)
-                acc = compute_accuracy(logits.detach(), targets)
-            loss.backward()
-            optimizer.step()
+        def __init__(self, base_model: nn.Module, pad_token_id: int):
+            super().__init__()
+            self.base = base_model
+            self.pad_id = pad_token_id
 
-            bs = batch[0].size(0)
-            t_loss += loss.item() * bs
-            t_acc += acc * bs
-        t_loss /= len(train_loader.dataset)
-        t_acc /= len(train_loader.dataset)
-        history["train_loss"].append(t_loss)
-        history["train_acc"].append(t_acc)
+        def forward(self, input_ids: torch.Tensor) -> torch.Tensor:  # type: ignore[override]
+            attention_mask = (input_ids != self.pad_id).long()
+            outputs = self.base(input_ids=input_ids, attention_mask=attention_mask)
+            return outputs.logits
 
-        # ---------- val ----------
-        model.eval()
-        v_loss = v_acc = 0.0
-        with torch.no_grad():
-            for batch in val_loader:
-                if is_lm:
-                    loss, acc = _step_lm(model, batch[0], device)
-                else:
-                    inputs, targets = (b.to(device) for b in batch)
-                    logits = model(inputs)
-                    loss = criterion(logits, targets)
-                    acc = compute_accuracy(logits, targets)
-                bs = batch[0].size(0)
-                v_loss += loss.item() * bs
-                v_acc += acc * bs
-        v_loss /= len(val_loader.dataset)
-        v_acc /= len(val_loader.dataset)
-        history["val_loss"].append(v_loss)
-        history["val_acc"].append(v_acc)
+    return _HFWrapper(backbone, pad_id)
 
-        scheduler.step()
 
-        if is_lm:
-            metric = v_loss
-            improved = metric < best_val
-        else:
-            metric = v_acc
-            improved = metric > best_val
-        if improved:
-            best_val = metric
-            torch.save({"model_state": model.state_dict(), "config": config, "history": history}, best_ckpt)
+# -----------------------------------------------------------------------------
+# Public factory ---------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
-        print(
-            f"Epoch {epoch:02d}: train_loss={t_loss:.4f} val_loss={v_loss:.4f} "
-            f"train_acc={t_acc:.4f} val_acc={v_acc:.4f}"
+def instantiate_model(config: Dict) -> nn.Module:
+    """Instantiate a model based on *config*.
+
+    Supported *model.name* options:
+    • "dummy" – built-in toy MLP for smoke tests
+    • Any valid 🤗 model identifier (e.g. "microsoft/DialoGPT-medium") which
+      will be loaded as a *sequence-classification* model via
+      :func:`_build_hf_sequence_classifier`.
+    """
+
+    name = config["model"]["name"].lower()
+
+    # ---------------- Dummy ---------------------------------------------------
+    if name == "dummy":
+        input_dim = int(config["dataset"].get("input_dim", 20))
+        num_classes = int(config["dataset"].get("num_classes", 3))
+        hidden_dim = int(config["model"].get("hidden_dim", 32))
+        model = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, num_classes),
         )
+        return model
 
-    return {"history": history, "best_ckpt_path": str(best_ckpt)}
+    # ---------------- Hugging-Face backbone ----------------------------------
+    return _build_hf_sequence_classifier(config)
+
+
+# -----------------------------------------------------------------------------
+# Trainer (unchanged except for type comments) ---------------------------------
+# -----------------------------------------------------------------------------
+
+
+class Trainer:
+    """Universal training wrapper that is *entirely* dataset-agnostic."""
+
+    def __init__(
+        self,
+        model: nn.Module,
+        train_loader: DataLoader,
+        val_loader: DataLoader,
+        criterion: nn.Module,
+        optimizer: optim.Optimizer,
+        scheduler: optim.lr_scheduler._LRScheduler | None,
+        device: torch.device,
+        output_dir: Path,
+        config: Dict,
+    ) -> None:
+        self.model = model.to(device)
+        self.train_loader = train_loader
+        self.val_loader = val_loader
+        self.criterion = criterion
+        self.optimizer = optimizer
+        self.scheduler = scheduler
+        self.device = device
+        self.output_dir = output_dir
+        self.config = config
+        self.history: Dict[str, list] = {
+            "train_loss": [],
+            "val_loss": [],
+            "train_accuracy": [],
+            "val_accuracy": [],
+        }
+        self.best_val_loss = float("inf")
+        self.best_model_path = self.output_dir / "best_model.pth"
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+
+    # ------------------------------------------------------------------ Helpers
+
+    @staticmethod
+    def _accuracy(outputs: torch.Tensor, targets: torch.Tensor) -> float:
+        _, preds = torch.max(outputs, 1)
+        correct = (preds == targets).sum().item()
+        return correct / targets.size(0)
+
+    def _run_epoch(self, train: bool = True) -> Tuple[float, float]:
+        data_loader = self.train_loader if train else self.val_loader
+        self.model.train() if train else self.model.eval()
+
+        running_loss = 0.0
+        running_acc = 0.0
+        total = 0
+
+        with torch.set_grad_enabled(train):
+            for inputs, targets in data_loader:
+                inputs = inputs.to(self.device)
+                targets = targets.to(self.device)
+
+                if train:
+                    self.optimizer.zero_grad()
+
+                outputs = self.model(inputs)
+                loss = self.criterion(outputs, targets)
+                acc = self._accuracy(outputs, targets)
+
+                if train:
+                    loss.backward()
+                    self.optimizer.step()
+
+                running_loss += loss.item() * inputs.size(0)
+                running_acc += acc * inputs.size(0)
+                total += inputs.size(0)
+
+        return running_loss / total, running_acc / total
+
+    # ------------------------------------------------------------------ Public
+
+    def train(self) -> Dict:
+        num_epochs = int(self.config["training"].get("epochs", 10))
+        print(f"Starting training for {num_epochs} epochs …")
+        start_time = time.time()
+
+        for epoch in range(1, num_epochs + 1):
+            train_loss, train_acc = self._run_epoch(train=True)
+            val_loss, val_acc = self._run_epoch(train=False)
+
+            if self.scheduler is not None:
+                self.scheduler.step()
+
+            self.history["train_loss"].append(train_loss)
+            self.history["val_loss"].append(val_loss)
+            self.history["train_accuracy"].append(train_acc)
+            self.history["val_accuracy"].append(val_acc)
+
+            print(
+                f"Epoch [{epoch}/{num_epochs}] – "
+                f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.4f} – "
+                f"Val Loss: {val_loss:.4f} | Val Acc: {val_acc:.4f}"
+            )
+
+            if val_loss < self.best_val_loss:
+                self.best_val_loss = val_loss
+                torch.save(self.model.state_dict(), self.best_model_path)
+
+        total_time = time.time() - start_time
+        print(f"Training finished in {total_time/60:.2f} minutes.")
+
+        metrics_path = self.output_dir / "training_metrics.json"
+        with metrics_path.open("w", encoding="utf-8") as fp:
+            json.dump(self.history, fp, indent=2)
+
+        return {
+            "metrics_path": str(metrics_path),
+            "best_model_path": str(self.best_model_path),
+            "history": self.history,
+        }

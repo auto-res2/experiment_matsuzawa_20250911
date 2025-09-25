@@ -1,27 +1,19 @@
-# config/full_experiment.yaml – Specialized SQuAD → DialoGPT causal-LM finetune
-experiment:
-  name: squad_dialogpt
+# config/full_experiment.yaml
+# Fully-specified configuration (no placeholders!)
 
-seed: 42
+experiment_name: squad_answer_length
+save_dir: artifacts
 
 dataset:
   name: squad
-  max_length: 128          # tokenizer sequence length
-  train_size: 1000         # keep tiny to respect 500 MB / CPU limits
-  val_size: 200
-  test_size: 200
-  batch_size: 8            # small batch for CPU memory
-  num_workers: 0
+  max_length: 64        # tokenizer sequence length
+  num_classes: 3        # short / medium / long answers
 
 model:
-  type: dialogpt-medium     # will trigger transformers AutoModelForCausalLM
-
-optimizer:
-  lr: 5e-5                 # standard LM fine-tune LR
-  weight_decay: 0.01
-
-scheduler:
-  step_size: 5
+  name: microsoft/DialoGPT-medium  # HF backbone to be wrapped for classification
 
 training:
-  epochs: 1                # single epoch demo due to resources
+  epochs: 3           # kept small to respect RAM/CPU envelope
+  batch_size: 8       # fits into 500 MB when using DialoGPT-medium + FP32
+  lr: 2e-5            # standard fine-tuning LR for transformers
+  seed: 1234
