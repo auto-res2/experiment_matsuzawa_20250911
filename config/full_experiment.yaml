@@ -1,18 +1,27 @@
-experiment_name: iris_full
+# config/full_experiment.yaml – Specialized SQuAD → DialoGPT causal-LM finetune
+experiment:
+  name: squad_dialogpt
+
+seed: 42
 
 dataset:
-  url: https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data
-  local_path: data/iris/iris.data
-  val_split: 0.15
-  test_split: 0.15
+  name: squad
+  max_length: 128          # tokenizer sequence length
+  train_size: 1000         # keep tiny to respect 500 MB / CPU limits
+  val_size: 200
+  test_size: 200
+  batch_size: 8            # small batch for CPU memory
+  num_workers: 0
 
 model:
-  input_dim: 4
-  hidden_dims: [16, 12]
-  output_dim: 3
+  type: dialogpt-medium     # will trigger transformers AutoModelForCausalLM
+
+optimizer:
+  lr: 5e-5                 # standard LM fine-tune LR
+  weight_decay: 0.01
+
+scheduler:
+  step_size: 5
 
 training:
-  batch_size: 16
-  epochs: 100  # full training run
-  learning_rate: 0.001
-  seed: 42
+  epochs: 1                # single epoch demo due to resources

@@ -1,130 +1,91 @@
-"""src/preprocess.py
-Dataset download, loading & DataLoader preparation utilities.
+"""
+src/preprocess.py
+Dataset loading now supports the HuggingFace SQuAD dataset for causal-LM
+finetuning of DialoGPT.  We create short (<128 token) dialogue-style strings
+("Question: ... Answer: ...") and tokenize them.
 """
 from __future__ import annotations
 
-import shutil
-from pathlib import Path
-from typing import List, Tuple
+import math
+from typing import Dict, Tuple
 
-import numpy as np
-import requests
 import torch
+from torch.utils.data import DataLoader, Dataset, TensorDataset
 
-# -----------------------------------------------------------------------------
-#                               Dataset helpers
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------
+# DataModule abstraction
+# ---------------------------------------------------------------------------------------------------------------------
 
-def download_dataset(url: str, dest: Path) -> None:
-    """Download *url* to *dest* (if not already present)."""
+class DataModule:
+    def __init__(self, train_ds: Dataset, val_ds: Dataset, test_ds: Dataset, batch_size: int = 32, num_workers: int = 0, collate_fn=None):
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+        self.collate_fn = collate_fn
+        self.train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=num_workers, collate_fn=collate_fn)
+        self.val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, collate_fn=collate_fn)
+        self.test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, collate_fn=collate_fn)
 
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    if dest.exists():
-        return  # already downloaded
+        # Attribute stubs (not used by LM)
+        sample = train_ds[0][0] if isinstance(train_ds[0], (tuple, list)) else train_ds[0]
+        if isinstance(sample, torch.Tensor):
+            self.input_dim = int(math.prod(sample.shape))
+        else:
+            self.input_dim = 0  # unknown / not required
+        self.num_classes = 0
 
-    print(f"Downloading dataset from {url} …")
-    try:
-        with requests.get(url, stream=True, timeout=30) as r:
-            r.raise_for_status()
-            with dest.open("wb") as fh:
-                shutil.copyfileobj(r.raw, fh)
-    except requests.RequestException as exc:
-        raise RuntimeError(f"Failed to download dataset → {exc}") from exc
-    print("Dataset successfully downloaded.")
+# ---------------------------------------------------------------------------------------------------------------------
+# SQuAD builder (for causal LM)
+# ---------------------------------------------------------------------------------------------------------------------
 
+def _build_squad_lm(cfg: Dict):
+    from datasets import load_dataset
+    from transformers import AutoTokenizer
 
-def load_iris_dataset(csv_path: Path) -> Tuple[np.ndarray, np.ndarray]:
-    """Return *(features, labels)* numpy arrays from the Iris CSV file."""
+    max_len = cfg.get("max_length", 128)
+    tokenizer = AutoTokenizer.from_pretrained("microsoft/DialoGPT-medium")
 
-    features: List[List[float]] = []
-    labels: List[int] = []
-    with csv_path.open("r", encoding="utf-8") as fh:
-        for line in fh:
-            line = line.strip()
-            if not line:
-                continue
-            parts = line.split(",")
-            if len(parts) != 5:
-                continue  # skip malformed lines
-            features.append([float(x) for x in parts[:4]])
-            label_str = parts[4]
-            if label_str == "Iris-setosa":
-                labels.append(0)
-            elif label_str == "Iris-versicolor":
-                labels.append(1)
-            elif label_str == "Iris-virginica":
-                labels.append(2)
-            else:
-                raise ValueError(f"Unknown label '{label_str}' in dataset.")
-    return np.array(features, dtype=np.float32), np.array(labels, dtype=np.int64)
+    raw = load_dataset("squad")
 
+    def _convert(split):
+        texts = []
+        for ex in split:
+            q, a = ex["question"], ex["answers"]["text"][0]
+            txt = f"Question: {q} Answer: {a}"
+            texts.append(txt)
+        enc = tokenizer(texts, padding="max_length", truncation=True, max_length=max_len, return_tensors="pt")
+        input_ids = enc.input_ids
+        return TensorDataset(input_ids, input_ids)
 
-class IrisDataset(torch.utils.data.Dataset):
-    """Thin torch.utils.data.Dataset wrapper for (x, y) numpy arrays."""
+    train_ds = _convert(raw["train"][0:cfg.get("train_size", 1000)])
+    val_ds = _convert(raw["train"][cfg.get("train_size", 1000): cfg.get("train_size", 1000)+cfg.get("val_size", 200)])
+    test_ds = _convert(raw["validation"][0:cfg.get("test_size", 200)])
 
-    def __init__(self, x: np.ndarray, y: np.ndarray):
-        assert len(x) == len(y)
-        self.x = torch.from_numpy(x)
-        self.y = torch.from_numpy(y)
+    collate_fn = None  # already padded to max_length, simple stacking works
+    return DataModule(train_ds, val_ds, test_ds, batch_size=cfg.get("batch_size", 8), num_workers=cfg.get("num_workers",0), collate_fn=collate_fn)
 
-    def __len__(self):
-        return len(self.y)
+# ---------------------------------------------------------------------------------------------------------------------
+# dummy dataset (kept for smoke test)
+# ---------------------------------------------------------------------------------------------------------------------
 
-    def __getitem__(self, idx):
-        return self.x[idx], self.y[idx]
+def _build_dummy_dataset(cfg: Dict):
+    input_dim = cfg["input_dim"]
+    num_classes = cfg["num_classes"]
+    def _make(size):
+        return TensorDataset(torch.randn(size, input_dim), torch.randint(0, num_classes, (size,)))
+    return _make(cfg.get("train_size", 1000)), _make(cfg.get("val_size", 200)), _make(cfg.get("test_size", 200))
 
+# ---------------------------------------------------------------------------------------------------------------------
+# public API
+# ---------------------------------------------------------------------------------------------------------------------
 
-# -----------------------------------------------------------------------------
-#                      Train/val/test split & DataLoaders
-# -----------------------------------------------------------------------------
+def build_datamodule(config: Dict) -> DataModule:
+    name = config.get("dataset", {}).get("name", "dummy").lower()
 
-def _split_dataset(
-    x: np.ndarray,
-    y: np.ndarray,
-    val_split: float,
-    test_split: float,
-    seed: int,
-):
-    rng = np.random.default_rng(seed)
-    idxs = np.arange(len(x))
-    rng.shuffle(idxs)
+    if name == "dummy":
+        train, val, test = _build_dummy_dataset(config["dataset"])
+        return DataModule(train, val, test, batch_size=config["dataset"].get("batch_size",32))
 
-    test_size = int(len(x) * test_split)
-    val_size = int(len(x) * val_split)
+    if name == "squad":
+        return _build_squad_lm(config["dataset"])
 
-    test_idx = idxs[:test_size]
-    val_idx = idxs[test_size : test_size + val_size]
-    train_idx = idxs[test_size + val_size :]
-
-    return (x[train_idx], y[train_idx]), (x[val_idx], y[val_idx]), (x[test_idx], y[test_idx])
-
-
-def create_dataloaders(cfg):
-    """Prepare DataLoaders as configured – returns *(train, val, test)* loaders."""
-
-    # ---------- data acquisition ----------
-    url = cfg["dataset"]["url"]
-    local_path = Path(cfg["dataset"]["local_path"])
-    download_dataset(url, local_path)
-    x, y = load_iris_dataset(local_path)
-
-    # ---------- splitting ----------
-    (x_train, y_train), (x_val, y_val), (x_test, y_test) = _split_dataset(
-        x,
-        y,
-        cfg["dataset"]["val_split"],
-        cfg["dataset"]["test_split"],
-        cfg["training"]["seed"],
-    )
-
-    train_ds = IrisDataset(x_train, y_train)
-    val_ds = IrisDataset(x_val, y_val)
-    test_ds = IrisDataset(x_test, y_test)
-
-    train_loader = torch.utils.data.DataLoader(
-        train_ds, batch_size=cfg["training"]["batch_size"], shuffle=True
-    )
-    val_loader = torch.utils.data.DataLoader(val_ds, batch_size=len(val_ds))
-    test_loader = torch.utils.data.DataLoader(test_ds, batch_size=len(test_ds))
-
-    return train_loader, val_loader, test_loader
+    raise NotImplementedError(f"Dataset '{name}' not implemented.")

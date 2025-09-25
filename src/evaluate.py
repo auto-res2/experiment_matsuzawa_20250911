@@ -1,104 +1,104 @@
-"""src/evaluate.py
-Model evaluation, metric computation & visualisation utilities.
+"""
+src/evaluate.py
+Now supports both classification and causal-LM evaluation.
 """
 from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import List, Tuple
+from typing import Dict, Tuple
 
-import matplotlib
+import torch
+from torch.utils.data import DataLoader
 
-# Use a non-interactive backend – required in head-less evaluation set-ups
-matplotlib.use("Agg")
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-import matplotlib.pyplot as plt  # noqa: E402  pylint: disable=C0413
-import numpy as np  # noqa: E402  pylint: disable=C0413
-import torch  # noqa: E402  pylint: disable=C0413
-from sklearn.metrics import confusion_matrix  # noqa: E402  pylint: disable=C0413
+plt.switch_backend("Agg")
 
-# -----------------------------------------------------------------------------
-#                        Metrics & visualisation helpers
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------
+# helpers
+# ---------------------------------------------------------------------------------------------------------------------
 
-def evaluate_on_test(
-    model: torch.nn.Module,
-    test_loader: torch.utils.data.DataLoader,
-) -> Tuple[float, np.ndarray]:
-    """Return (*accuracy*, *confusion-matrix*) on the held-out test set."""
-
+def _collect_preds_cls(model, loader, device):
     model.eval()
+    preds, targets = [], []
     with torch.no_grad():
-        for xb, yb in test_loader:
-            preds = model(xb)
-            acc = (preds.argmax(1) == yb).float().mean().item()
-            cm = confusion_matrix(yb.numpy(), preds.argmax(1).numpy(), labels=[0, 1, 2])
-    return acc, cm
+        for x, y in loader:
+            x = x.to(device)
+            logits = model(x)
+            preds.extend(logits.argmax(dim=1).cpu().tolist())
+            targets.extend(y.tolist())
+    return preds, targets
 
 
-def plot_curves(
-    train_losses: List[float],
-    val_accs: List[float],
-    cm: np.ndarray,
-    exp_name: str,
-    image_dir: Path,
-) -> List[str]:
-    """Generate & persist all figure files – return their relative names."""
-
-    image_dir.mkdir(parents=True, exist_ok=True)
-    epochs = np.arange(1, len(train_losses) + 1)
-
-    # ---------------- training-loss curve ----------------
-    plt.figure(figsize=(6, 4))
-    plt.plot(epochs, train_losses, marker="o", markersize=2, label="Training loss")
-    plt.xlabel("Epoch")
-    plt.ylabel("Cross-entropy loss")
-    plt.title("Training Loss Curve")
-    plt.legend()
-    loss_file = f"training_loss_{exp_name}.pdf"
-    plt.savefig(image_dir / loss_file, bbox_inches="tight")
-    plt.close()
-
-    # ---------------- validation-accuracy curve ----------------
-    plt.figure(figsize=(6, 4))
-    plt.plot(epochs, val_accs, marker="o", markersize=2, color="green", label="Validation acc")
-    plt.xlabel("Epoch")
-    plt.ylabel("Accuracy")
-    plt.title("Validation Accuracy Curve")
-    plt.legend()
-    acc_file = f"val_accuracy_{exp_name}.pdf"
-    plt.savefig(image_dir / acc_file, bbox_inches="tight")
-    plt.close()
-
-    # ---------------- confusion-matrix heat-map ----------------
-    plt.figure(figsize=(4, 4))
-    im = plt.imshow(cm, cmap="Blues")
-    plt.title("Confusion Matrix (Test)")
-    plt.xlabel("Predicted label")
-    plt.ylabel("True label")
-    plt.colorbar(im, fraction=0.046, pad=0.04)
-    for i in range(cm.shape[0]):
-        for j in range(cm.shape[1]):
-            plt.text(j, i, str(cm[i, j]), ha="center", va="center", color="black")
-    cm_file = f"confusion_matrix_{exp_name}.pdf"
-    plt.savefig(image_dir / cm_file, bbox_inches="tight")
-    plt.close()
-
-    return [loss_file, acc_file, cm_file]
+def _collect_loss_lm(model, loader, device):
+    model.eval()
+    total_loss = 0.0
+    n_tokens = 0
+    with torch.no_grad():
+        for (inputs, _) in loader:
+            inputs = inputs.to(device)
+            out = model(input_ids=inputs, labels=inputs)
+            tokens = inputs.numel()
+            total_loss += out.loss.item() * tokens
+            n_tokens += tokens
+    return total_loss / n_tokens  # mean loss per token
 
 
-# -----------------------------------------------------------------------------
-#                      Persist numeric results as JSON
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------
+# main entry
+# ---------------------------------------------------------------------------------------------------------------------
 
-def persist_results(
-    results: dict,
-    research_dir: Path,
-) -> Path:
-    """Save *results* dictionary into *research_dir* returning the file path."""
+def evaluate_model(checkpoint_path, test_loader: DataLoader, device: torch.device, output_dir: Path, experiment_name: str):
+    ckpt = torch.load(checkpoint_path, map_location=device)
+    cfg = ckpt["config"]
 
-    research_dir.mkdir(parents=True, exist_ok=True)
-    path = research_dir / f"results_{results['experiment_name']}.json"
-    with path.open("w", encoding="utf-8") as fh:
-        json.dump(results, fh, indent=2)
-    return path
+    from src.train import get_model  # local import to avoid circular
+
+    model = get_model(cfg, cfg["dataset"]["input_dim"], cfg["dataset"]["num_classes"])
+    model.load_state_dict(ckpt["model_state"], strict=False)
+    model.to(device)
+
+    model_type = cfg["model"]["type"].lower()
+    metrics: Dict
+
+    if model_type.startswith("dialogpt"):
+        avg_loss = _collect_loss_lm(model, test_loader, device)
+        ppl = torch.exp(torch.tensor(avg_loss)).item()
+        metrics = {"avg_token_loss": avg_loss, "perplexity": ppl}
+    else:
+        preds, targets = _collect_preds_cls(model, test_loader, device)
+        metrics = {
+            "accuracy": accuracy_score(targets, preds),
+            "precision": precision_score(targets, preds, average="weighted", zero_division=0),
+            "recall": recall_score(targets, preds, average="weighted", zero_division=0),
+            "f1": f1_score(targets, preds, average="weighted", zero_division=0),
+            "confusion_matrix": confusion_matrix(targets, preds).tolist(),
+        }
+        _plot_confusion_matrix(torch.tensor(metrics["confusion_matrix"]), output_dir / "figures" / "confusion_matrix.pdf")
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / "figures").mkdir(exist_ok=True)
+
+    res_path = output_dir / f"{experiment_name}_results.json"
+    with open(res_path, "w", encoding="utf-8") as fp:
+        json.dump(metrics, fp, indent=2)
+
+    return {"metrics": metrics, "results_path": str(res_path)}
+
+
+# ----------------------------------------------------------------------------
+# plotting (classification only)
+# ----------------------------------------------------------------------------
+
+def _plot_confusion_matrix(cm, save_path):
+    fig, ax = plt.subplots(figsize=(4, 3))
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", cbar=False, ax=ax)
+    ax.set_xlabel("Predicted")
+    ax.set_ylabel("True")
+    ax.set_title("Confusion Matrix")
+    fig.tight_layout()
+    fig.savefig(save_path, bbox_inches="tight")
+    plt.close(fig)
