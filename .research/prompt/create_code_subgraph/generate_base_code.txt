@@ -1,0 +1,125 @@
+
+Input:
+You are a cutting-edge AI researcher preparing the COMMON CORE FOUNDATION for experiments that will ensure consistency across all experimental variations.
+
+This step generates the **COMMON CORE FOUNDATION** for experiments that will ensure consistency across all experimental variations.
+
+**Current Task**: Generate common base logic, evaluation framework, and infrastructure with placeholders for specific datasets/models
+**Next Step**: A subsequent step will derive specific experiments by replacing placeholders with actual datasets/models
+
+Based on the research method in # Current Research Method and experimental design in # Experimental Design, generate the foundational code that will serve as the common base for ALL experimental variations.
+
+# Instructions: Common Core Foundation Generation
+
+## Core Requirements
+- **COMMON EVALUATION LOGIC**: Implement consistent evaluation metrics, result collection, and comparison logic that will work across all experimental variations
+- **CORE ALGORITHM IMPLEMENTATION**: Implement the main method/algorithm with full functionality
+- **INFRASTRUCTURE CODE**: Complete training loops, model saving/loading, configuration handling, and result visualization
+- **PLACEHOLDER STRATEGY**: Use clear, descriptive placeholders for dataset-specific and model-specific components that will be replaced in subsequent steps
+- **CONSISTENCY FRAMEWORK**: Ensure all experiments will use identical evaluation criteria, metrics calculation, and result formatting
+
+## Placeholder Guidelines
+- Use descriptive placeholder names like `DATASET_PLACEHOLDER`, `MODEL_PLACEHOLDER`, `SPECIFIC_CONFIG_PLACEHOLDER`
+- Include comments explaining what will be replaced: `# PLACEHOLDER: Will be replaced with specific dataset loading logic`
+- Ensure placeholders are easily identifiable and replaceable in the next phase
+- Keep the base logic intact - only dataset/model-specific parts should be placeholders
+
+## Implementation Requirements
+- **ZERO PLACEHOLDER POLICY FOR CORE LOGIC**: Generate complete, production-ready base framework. NO placeholders for training loops, evaluation logic, or result processing.
+- **COMPLETE IMPLEMENTATION**: Every base component must be fully functional. No "omitted for brevity", no "simplified version" for base logic.
+- **PUBLICATION-READY INFRASTRUCTURE**: Framework must produce actual publication-worthy results when datasets/models are specified
+- **USE PYTORCH EXCLUSIVELY** as the deep learning framework
+- **COMPLETE DATA PIPELINE FRAMEWORK**: Implement data loading and preprocessing pipeline with placeholders for specific datasets
+- **COMPREHENSIVE EXPERIMENT INFRASTRUCTURE**: Full-scale experiment framework with sufficient training epochs, proper validation splits, and thorough evaluation metrics
+- **STRUCTURED PLACEHOLDER APPROACH**: Use well-defined placeholders for dataset/model specifics while ensuring base logic is complete and functional
+
+## Results Documentation Requirements
+- Save the results of each experiment as separate JSON files and modify the code to print the contents of the JSON files to standard output using a print statement.
+
+## Standard Output Content Requirements
+- Experiment description: Before printing experimental results, the standard output must include a detailed description of the experiment.
+- Experimental numerical data: All experimental data obtained in the experiments must be output to the standard output.
+- Names of figures summarizing the numerical data
+
+## Figure Output Requirements
+- Experimental results must always be presented in clear and interpretable figures without exception.
+- Use matplotlib or seaborn to output the results (e.g., accuracy, loss curves, confusion matrix).
+- Numeric values must be annotated on the axes of the graphs.
+- For line graphs, annotate values on the plot; for bar graphs, annotate values above each bar.
+- Include legends in the figures.
+- All figures must be saved in .pdf format (e.g., using plt.savefig("filename.pdf", bbox_inches="tight")).
+  - Do not use .png or any other formats—only .pdf is acceptable for publication quality.
+
+## Figure Naming Convention
+File names must follow the format: `<figure_topic>[_<condition>][_pairN].pdf`
+- `<figure_topic>`: The main subject of the figure (e.g., training_loss, accuracy, inference_latency)
+- `_<condition>` (optional): Indicates model, setting, or comparison condition (e.g., amict, baseline, tokens, multimodal_vs_text)
+- `_pairN` (optional): Used when presenting figures in pairs (e.g., _pair1, _pair2)
+- For standalone figures, do not include _pairN.
+
+
+- Environment Variables: The following environment variables are available: HF_TOKEN
+
+
+## Command Line Interface
+The generated main.py must support:
+```bash
+# Smoke test with any dataset/model combination
+uv run python -m src.main --smoke-test
+
+# Full experiment with any dataset/model combination
+uv run python -m src.main --full-experiment
+```
+
+## Output Structure
+Generate complete foundational code for these files ONLY. Do not create any additional files beyond this structure:
+
+### Script Structure (ExperimentCode format)
+Your output must contain EXACTLY these 7 files with NO additional files:
+- `src/train.py`: Core training logic with algorithm implementation and placeholder data loading
+- `src/evaluate.py`: Universal evaluation framework that works across all experimental variations
+- `src/preprocess.py`: Common preprocessing pipeline with dataset placeholders
+- `src/main.py`: Main execution script with flexible configuration system
+- `pyproject.toml`: Complete project dependencies
+- `config/smoke_test.yaml`: Base configuration template for quick validation
+- `config/full_experiment.yaml`: Base configuration template for full experiments
+
+### Key Implementation Focus Areas
+1. **Evaluation Consistency**: Identical metrics calculation, result formatting, and comparison logic
+2. **Algorithm Core**: Full implementation of the proposed method with proper abstraction
+3. **Result Infrastructure**: Consistent figure generation, data saving, and output formatting
+4. **Configuration Flexibility**: System that can handle different datasets/models via configuration
+
+
+## Core code Validation Feedback
+
+
+
+
+# Experimental Environment
+cpu
+RAM：500 MB
+
+# Current Research Method (Target for Experiment Design)
+Simple test method for validation
+
+# Experimental Design
+- Strategy: Test strategy for validation
+- Details: Simple test details for validation
+
+
+
+# Reference Information from Previous Iteration
+
+
+Remember: This is the FOUNDATION that will ensure ALL experimental variations are conducted on the same rigorous, consistent basis. Focus on creating robust base logic with strategic placeholders for dataset/model specifics.
+Output:
+{
+    "train_py": "\"\"\"src/train.py\nCore training logic with algorithm implementation and placeholder data loading.\n\"\"\"\nfrom __future__ import annotations\n\nimport json\nimport os\nimport time\nfrom dataclasses import asdict, dataclass\nfrom pathlib import Path\nfrom typing import Dict, List\n\nimport torch\nimport torch.nn as nn\nimport torch.optim as optim\nfrom torch.utils.data import DataLoader\n\nfrom .utils import set_seed, TimestampedWriter, get_device\n\n__all__ = [\"Trainer\", \"ModelFactory\"]\n\n\nclass ModelFactory:\n    \"\"\"Factory that builds a model based on configuration.\n\n    The actual model definition MUST be supplied in the next stage by replacing\n    the placeholders below. A lightweight *dummy* implementation is provided so\n    that the framework can execute end-to-end smoke tests on a CPU-only\n    workstation without external resources.\n    \"\"\"\n\n    @staticmethod\n    def build(config: Dict) -> nn.Module:\n        model_name = config.get(\"model\", \"MODEL_PLACEHOLDER\")\n        num_features = config.get(\"num_features\", 784)\n        num_classes = config.get(\"num_classes\", 10)\n\n        if model_name == \"dummy\":\n            return nn.Sequential(\n                nn.Flatten(),\n                nn.Linear(num_features, 128),\n                nn.ReLU(),\n                nn.Linear(128, num_classes),\n            )\n\n        # ============================================================\n        # PLACEHOLDER: Will be replaced with specific model selection\n        # logic. Add additional branches for models (e.g., resnet50,\n        # vit_base, bert_classifier, etc.) in subsequent experiment\n        # iterations.\n        # ============================================================\n        raise NotImplementedError(\n            f\"Model '{model_name}' is not implemented in the common core foundation.\"\n        )\n\n\n@dataclass\nclass TrainHistory:\n    train_loss: List[float]\n    val_loss: List[float]\n    train_acc: List[float]\n    val_acc: List[float]\n\n    def to_dict(self):\n        return asdict(self)\n\n\nclass Trainer:\n    \"\"\"Generic PyTorch training loop that is dataset- and model-agnostic.\"\"\"\n\n    def __init__(\n        self,\n        model: nn.Module,\n        data_loaders: Dict[str, DataLoader],\n        config: Dict,\n        output_dir: Path,\n    ) -> None:\n        self.device = get_device()\n        self.model = model.to(self.device)\n        self.train_loader = data_loaders[\"train\"]\n        self.val_loader = data_loaders[\"val\"]\n        self.config = config\n        self.output_dir = output_dir\n\n        self.criterion = nn.CrossEntropyLoss()\n        self.optimizer = optim.Adam(\n            self.model.parameters(), lr=float(config[\"hyperparameters\"][\"lr\"])\n        )\n        self.epochs = int(config[\"hyperparameters\"][\"epochs\"])\n        self.writer = TimestampedWriter(self.output_dir)\n\n        set_seed(int(config.get(\"seed\", 42)))\n\n    def _epoch_step(self, loader: DataLoader, train: bool):\n        mode = \"train\" if train else \"val\"\n        if train:\n            self.model.train()\n        else:\n            self.model.eval()\n        epoch_loss = 0.0\n        correct = 0\n        total = 0\n        for inputs, targets in loader:\n            inputs, targets = inputs.to(self.device), targets.to(self.device)\n            if train:\n                self.optimizer.zero_grad()\n            with torch.set_grad_enabled(train):\n                outputs = self.model(inputs)\n                loss = self.criterion(outputs, targets)\n                if train:\n                    loss.backward()\n                    self.optimizer.step()\n            epoch_loss += loss.item() * inputs.size(0)\n            _, predicted = torch.max(outputs.data, 1)\n            total += targets.size(0)\n            correct += (predicted == targets).sum().item()\n        avg_loss = epoch_loss / total\n        accuracy = correct / total\n        self.writer.add_scalar(f\"{mode}/loss\", avg_loss)\n        self.writer.add_scalar(f\"{mode}/accuracy\", accuracy)\n        return avg_loss, accuracy\n\n    def fit(self) -> TrainHistory:\n        train_loss_hist, val_loss_hist = [], []\n        train_acc_hist, val_acc_hist = [], []\n        best_val_acc = 0.0\n        best_state = None\n\n        for epoch in range(1, self.epochs + 1):\n            tl, ta = self._epoch_step(self.train_loader, train=True)\n            vl, va = self._epoch_step(self.val_loader, train=False)\n            train_loss_hist.append(tl)\n            val_loss_hist.append(vl)\n            train_acc_hist.append(ta)\n            val_acc_hist.append(va)\n\n            print(\n                f\"Epoch [{epoch}/{self.epochs}]\\t\"\n                f\"Train Loss: {tl:.4f}, Train Acc: {ta:.4f}\\t\"\n                f\"Val Loss: {vl:.4f}, Val Acc: {va:.4f}\"\n            )\n\n            # Checkpoint best model based on validation accuracy\n            if va > best_val_acc:\n                best_val_acc = va\n                best_state = {\n                    \"epoch\": epoch,\n                    \"model_state\": self.model.state_dict(),\n                    \"optimizer_state\": self.optimizer.state_dict(),\n                    \"val_accuracy\": best_val_acc,\n                }\n\n        # Save best checkpoint\n        if best_state is not None:\n            ckpt_path = self.output_dir / \"model_best.pth\"\n            torch.save(best_state, ckpt_path)\n            print(f\"Best model saved to: {ckpt_path}\")\n\n        history = TrainHistory(\n            train_loss=train_loss_hist,\n            val_loss=val_loss_hist,\n            train_acc=train_acc_hist,\n            val_acc=val_acc_hist,\n        )\n\n        # Persist training history as JSON\n        hist_path = self.output_dir / \"train_history.json\"\n        with open(hist_path, \"w\", encoding=\"utf-8\") as fp:\n            json.dump(history.to_dict(), fp, indent=2)\n        print(f\"Training history saved to: {hist_path}\")\n\n        return history\n",
+    "evaluate_py": "\"\"\"src/evaluate.py\nUniversal evaluation framework that works across all experimental variations.\n\"\"\"\nfrom __future__ import annotations\n\nimport json\nfrom pathlib import Path\nfrom typing import Dict, List\n\nimport matplotlib.pyplot as plt\nimport seaborn as sns\nimport torch\nfrom sklearn.metrics import (\n    accuracy_score,\n    confusion_matrix,\n    f1_score,\n    precision_recall_fscore_support,\n)\nfrom torch.utils.data import DataLoader\n\nfrom .utils import TimestampedWriter, get_device, annotate_heatmap\n\n__all__ = [\"Evaluator\"]\n\n\nclass Evaluator:\n    \"\"\"Consistent evaluation across datasets and models.\"\"\"\n\n    def __init__(\n        self,\n        model: torch.nn.Module,\n        data_loader: DataLoader,\n        output_dir: Path,\n    ) -> None:\n        self.model = model.to(get_device()).eval()\n        self.loader = data_loader\n        self.output_dir = output_dir\n        self.writer = TimestampedWriter(output_dir)\n\n    @torch.no_grad()\n    def _collect_outputs(self):\n        preds: List[int] = []\n        targets: List[int] = []\n        for inputs, labels in self.loader:\n            inputs = inputs.to(get_device())\n            outputs = self.model(inputs)\n            _, predicted = torch.max(outputs.data, 1)\n            preds.extend(predicted.cpu().tolist())\n            targets.extend(labels.cpu().tolist())\n        return preds, targets\n\n    def evaluate(self) -> Dict:\n        preds, targets = self._collect_outputs()\n        acc = accuracy_score(targets, preds)\n        precision, recall, f1, _ = precision_recall_fscore_support(\n            targets, preds, average=\"weighted\", zero_division=0\n        )\n        cm = confusion_matrix(targets, preds)\n\n        # Save numeric results\n        results = {\n            \"accuracy\": acc,\n            \"precision\": precision,\n            \"recall\": recall,\n            \"f1_score\": f1,\n            \"confusion_matrix\": cm.tolist(),\n        }\n        results_path = self.output_dir / \"evaluation_results.json\"\n        with open(results_path, \"w\", encoding=\"utf-8\") as fp:\n            json.dump(results, fp, indent=2)\n\n        # Generate figures\n        self._plot_cm(cm)\n        self.writer.add_scalar(\"test/accuracy\", acc)\n        self.writer.add_scalar(\"test/f1\", f1)\n        return results\n\n    # ---------------------------------------------------------------------\n    # Figure generation routines (publication quality, PDF only)\n    # ---------------------------------------------------------------------\n    def _plot_cm(self, cm):\n        plt.figure(figsize=(6, 5))\n        ax = sns.heatmap(cm, annot=True, fmt=\"d\", cmap=\"Blues\")\n        ax.set_xlabel(\"Predicted label\")\n        ax.set_ylabel(\"True label\")\n        ax.set_title(\"Confusion Matrix\")\n        plt.tight_layout()\n        fig_path = self.output_dir / \"confusion_matrix.pdf\"\n        plt.savefig(fig_path, bbox_inches=\"tight\")\n        plt.close()\n        print(f\"Figure saved: {fig_path}\")\n",
+    "preprocess_py": "\"\"\"src/preprocess.py\nCommon preprocessing pipeline with dataset placeholders.\n\"\"\"\nfrom __future__ import annotations\n\nfrom pathlib import Path\nfrom typing import Dict, Tuple\n\nimport torch\nfrom torch.utils.data import DataLoader, random_split, TensorDataset\n\n__all__ = [\"DataModule\"]\n\n\nclass DataModule:\n    \"\"\"Universal data handling with placeholders for real datasets.\n\n    This class MUST be dataset-agnostic. The actual dataset loading logic will\n    be injected in the next stage by replacing placeholder blocks. For now, a\n    *dummy* dataset (10-class classification on random data) is provided so that\n    smoke tests can run.\n    \"\"\"\n\n    def __init__(self, config: Dict, data_dir: Path):\n        self.config = config\n        self.dataset_name = config.get(\"dataset\", \"DATASET_PLACEHOLDER\")\n        self.data_dir = data_dir\n        self.batch_size = int(config[\"hyperparameters\"][\"batch_size\"])\n        self.num_workers = int(config.get(\"num_workers\", 0))\n        self.train_set = None\n        self.val_set = None\n        self.test_set = None\n\n    # ------------------------------------------------------------------\n    # Public API\n    # ------------------------------------------------------------------\n    def prepare_data(self):\n        if self.dataset_name == \"dummy\":\n            self._prepare_dummy()\n        else:\n            # =========================================================\n            # PLACEHOLDER: Will be replaced with dataset-specific logic\n            # =========================================================\n            raise NotImplementedError(\n                f\"Dataset '{self.dataset_name}' is not implemented in the common core foundation.\"\n            )\n\n    def train_dataloader(self) -> DataLoader:\n        return DataLoader(\n            self.train_set,\n            batch_size=self.batch_size,\n            shuffle=True,\n            num_workers=self.num_workers,\n        )\n\n    def val_dataloader(self) -> DataLoader:\n        return DataLoader(\n            self.val_set,\n            batch_size=self.batch_size,\n            shuffle=False,\n            num_workers=self.num_workers,\n        )\n\n    def test_dataloader(self) -> DataLoader:\n        return DataLoader(\n            self.test_set,\n            batch_size=self.batch_size,\n            shuffle=False,\n            num_workers=self.num_workers,\n        )\n\n    # ------------------------------------------------------------------\n    # Internal helpers\n    # ------------------------------------------------------------------\n    def _prepare_dummy(self):\n        \"\"\"Prepare a synthetic dataset for smoke testing purposes.\"\"\"\n        num_samples = 1_000\n        num_features = 28 * 28  # Fake flattened images\n        num_classes = 10\n\n        X = torch.randn(num_samples, num_features)\n        y = torch.randint(0, num_classes, (num_samples,))\n\n        full_dataset = TensorDataset(X, y)\n        train_size = int(0.8 * num_samples)\n        val_size = int(0.1 * num_samples)\n        test_size = num_samples - train_size - val_size\n        self.train_set, self.val_set, self.test_set = random_split(\n            full_dataset, [train_size, val_size, test_size]\n        )\n\n        # Write back core metadata for model construction\n        self.config[\"num_features\"] = num_features\n        self.config[\"num_classes\"] = num_classes\n",
+    "main_py": "\"\"\"src/main.py\nMain execution script with flexible configuration system.\n\"\"\"\nfrom __future__ import annotations\n\nimport argparse\nimport json\nimport os\nimport sys\nimport time\nfrom pathlib import Path\n\nimport torch\nimport yaml\n\n# Local imports\nfrom .preprocess import DataModule\nfrom .train import ModelFactory, Trainer\nfrom .evaluate import Evaluator\nfrom .utils import set_seed, get_device, create_experiment_dir, print_experiment_summary\n\nCONFIG_DIR = Path(__file__).resolve().parent.parent / \"config\"\nDEFAULT_OUTPUT_ROOT = Path(\"results\")\n\n\ndef load_config(path: Path):\n    with open(path, \"r\", encoding=\"utf-8\") as fp:\n        return yaml.safe_load(fp)\n\n\ndef run_experiment(config_path: Path):\n    config = load_config(config_path)\n    set_seed(int(config.get(\"seed\", 42)))\n\n    # ------------------------------------------------------------------\n    # Prepare directories\n    # ------------------------------------------------------------------\n    experiment_name = config.get(\"experiment_name\", config_path.stem)\n    output_dir = create_experiment_dir(DEFAULT_OUTPUT_ROOT, experiment_name)\n\n    # ------------------------------------------------------------------\n    # Data preparation\n    # ------------------------------------------------------------------\n    data_module = DataModule(config=config, data_dir=Path(config.get(\"data_dir\", \"datasets\")))\n    data_module.prepare_data()\n\n    # ------------------------------------------------------------------\n    # Model & trainer\n    # ------------------------------------------------------------------\n    model = ModelFactory.build(config)\n    trainer = Trainer(model, {\n        \"train\": data_module.train_dataloader(),\n        \"val\": data_module.val_dataloader(),\n    }, config, output_dir)\n\n    history = trainer.fit()\n\n    # ------------------------------------------------------------------\n    # Evaluation\n    # ------------------------------------------------------------------\n    # Load the best checkpoint\n    ckpt = torch.load(output_dir / \"model_best.pth\", map_location=get_device())\n    model.load_state_dict(ckpt[\"model_state\"])\n    evaluator = Evaluator(model, data_module.test_dataloader(), output_dir)\n    results = evaluator.evaluate()\n\n    # ------------------------------------------------------------------\n    # Reporting\n    # ------------------------------------------------------------------\n    print_experiment_summary(config, history, results)\n\n\n# ----------------------------------------------------------------------\n# CLI\n# ----------------------------------------------------------------------\n\ndef parse_args():\n    parser = argparse.ArgumentParser(description=\"Common Core Experiment Runner\")\n    group = parser.add_mutually_exclusive_group(required=True)\n    group.add_argument(\"--smoke-test\", action=\"store_true\", help=\"Run quick smoke test\")\n    group.add_argument(\"--full-experiment\", action=\"store_true\", help=\"Run full experiment\")\n    return parser.parse_args()\n\n\nif __name__ == \"__main__\":\n    args = parse_args()\n    if args.smoke_test:\n        cfg = CONFIG_DIR / \"smoke_test.yaml\"\n    elif args.full_experiment:\n        cfg = CONFIG_DIR / \"full_experiment.yaml\"\n    else:\n        print(\"Either --smoke-test or --full-experiment must be specified.\")\n        sys.exit(1)\n    run_experiment(cfg)\n",
+    "pyproject_toml": "[build-system]\nrequires = [\"setuptools\", \"wheel\"]\n\n[project]\nname = \"common-core-experiment\"\nversion = \"0.1.0\"\ndescription = \"Common core foundation for consistent experimental variations.\"\nrequires-python = \">=3.9\"\nauthors = [\n  { name = \"Researcher\", email = \"research@lab.org\" }\n]\n\n[project.dependencies]\ntorch = \"*\"\nmatplotlib = \"*\"\nseaborn = \"*\"\nscikit-learn = \"*\"\nPyYAML = \"*\"\n\n[tool.setuptools.packages.find]\nwhere = [\"src\"]",
+    "smoke_test_yaml": "# config/smoke_test.yaml\nexperiment_name: \"smoke_test_dummy\"\ndataset: \"dummy\"\nmodel: \"dummy\"\nhyperparameters:\n  epochs: 1\n  batch_size: 16\n  lr: 0.001\nseed: 42\n",
+    "full_experiment_yaml": "# config/full_experiment.yaml\nexperiment_name: \"FULL_EXPERIMENT_PLACEHOLDER\"\n# PLACEHOLDER: Will be replaced with specific dataset name (e.g., cifar10, imdb_reviews)\ndataset: \"DATASET_PLACEHOLDER\"\n# PLACEHOLDER: Will be replaced with specific model identifier (e.g., resnet18, bert_base)\nmodel: \"MODEL_PLACEHOLDER\"\n\nhyperparameters:\n  epochs: 20\n  batch_size: 32\n  lr: 0.001\nseed: 42\n"
+}
